@@ -1,0 +1,46 @@
+{
+  "name": "ipb",
+  "version": "0.1.0",
+  "main": "bin/index.js",
+  "bin": {
+    "ipb": "./bin/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "check-format": "prettier --check .",
+    "ci": "npm run build && npm run check-format && npm run check-exports && npm run test",
+    "dev": "vitest",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "investec",
+    "card",
+    "emulator",
+    "programmable banking",
+    "open banking",
+    "banking"
+  ],
+  "author": "Devin Pearson",
+  "license": "MIT",
+  "description": "An emulator for the Programmable Card Code Lamda function",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2",
+    "programmable-card-code-emulator": "^1.4.2",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.17.2",
+    "@types/node": "^22.12.0",
+    "@types/yargs": "^17.0.33",
+    "prettier": "3.0.3",
+    "vitest": "^2.1.8"
+  },
+  "files": [
+    "bin"
+  ]
+}
