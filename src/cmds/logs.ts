@@ -3,8 +3,8 @@ import fs from 'fs'
 import { fetchExecutions, getAccessToken } from "../api.js"
 import { credentials } from "../index.js"
 import type { CommandModule } from "yargs"
-export const executionsCmd: CommandModule = {
-    command: 'executions',
+export const logsCmd: CommandModule = {
+    command: 'logs',
     describe: 'card execution logs',
     builder: {
         cardkey: {

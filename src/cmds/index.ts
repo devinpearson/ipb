@@ -1,6 +1,6 @@
 import { cardsCmd } from './cards.js'
 import { envsCmd } from './env.js'
-import { executionsCmd } from './executions.js'
+import { logsCmd } from './logs.js'
 import { fetchCmd } from './fetch.js'
 import { publishCmd } from './publish.js'
 import { publishedCmd } from './published.js'
@@ -10,4 +10,4 @@ import { uploadCmd } from './upload.js'
 import { uploadEnvsCmd } from './upload-env.js'
 import { deployCmd } from './deploy.js'
 import { setCmd } from './set.js'
-export const commands = [cardsCmd, envsCmd, executionsCmd, deployCmd, fetchCmd, publishCmd, publishedCmd, runCmd, toggleCmd, uploadCmd, uploadEnvsCmd, setCmd]
+export const commands = [cardsCmd, envsCmd, logsCmd, deployCmd, fetchCmd, publishCmd, publishedCmd, runCmd, toggleCmd, uploadCmd, uploadEnvsCmd, setCmd]
