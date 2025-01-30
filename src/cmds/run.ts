@@ -3,19 +3,19 @@ import fs from 'fs'
 import path from 'path'
 import { createTransaction, run } from "programmable-card-code-emulator"
 import type { CommandModule } from "yargs"
+
 export const runCmd: CommandModule = {
-    command: 'run [filename]',
+    command: 'run',
     describe: 'run your code locally',
     builder: {
         filename: {
+            alias: 'f',
             type: 'string',
-            default: 'data/main.js',
             describe: 'the filename'
         },
-        environment: {
+        env: {
             alias: 'e',
             describe: 'env to run',
-            default: 'env.json',
             type: 'string',
         },
         amount: {
@@ -57,13 +57,13 @@ export const runCmd: CommandModule = {
     handler: async function (argv: any) {
     try {
         const template = argv.filename;
-        const templatePath = path.join(path.resolve(), template);
+        const templatePath = path.join(path.resolve(), argv.filename);
         if (!fs.existsSync(templatePath)) {
-        // The template doesnt exist, process exit
-        console.log(chalk.red(`Template ${template} does not exist`));
-        process.exit(0);
+            // The template doesnt exist, process exit
+            console.log(chalk.red(`${template} does not exist`));
+            process.exit(0);
         }
-            console.log(chalk.white(`Running template:`), chalk.blueBright(template));
+        console.log(chalk.white(`Running code:`), chalk.blueBright(template));
         const transaction = createTransaction(
             argv.currency,
             argv.amount,
@@ -79,19 +79,23 @@ export const runCmd: CommandModule = {
         console.log(chalk.blue(`merchant city:`), chalk.green(transaction.merchant.city));
         console.log(chalk.blue(`merchant country:`), chalk.green(transaction.merchant.country.code));
         // Read the template env.json file and replace the values with the process.env values
-        let environmentvariables = JSON.parse(
-            fs.readFileSync(path.join(path.resolve(), argv.environment), 'utf8')
-        );
-        for (const key in environmentvariables) {
-            if (`${key}` in process.env) {
-            environmentvariables[`${key}`] = process.env[`${key}`];
+
+        let environmentvariables: { [key: string]: string } = {};
+        if (argv.env) {
+            if (!fs.existsSync(`.env.${argv.env}`)) {
+                throw new Error('Env does not exist');
             }
+
+            const data = fs.readFileSync(`.env.${argv.env}`, 'utf8');
+            let lines = data.split("\n");
+
+            environmentvariables = convertToJson(lines);
         }
         // Convert the environmentvariables to a string
-        environmentvariables = JSON.stringify(environmentvariables);
+        let environmentvariablesString = JSON.stringify(environmentvariables);
         const code = fs.readFileSync(path.join(path.resolve(), argv.filename), 'utf8');
         // Run the code
-        const executionItems = await run(transaction, code, environmentvariables);
+        const executionItems = await run(transaction, code, environmentvariablesString);
         executionItems.forEach((item) => {
             console.log('\n💻 ', chalk.green(item.type));
             item.logs.forEach((log) => {
@@ -106,4 +110,24 @@ export const runCmd: CommandModule = {
             }
         }
     }
+}
+
+function convertToJson(arr: string[]) {
+    let output: { [key: string]: string } = {};
+    for (let i = 0; i < arr.length; i++) {
+        let line = arr[i];
+
+        if (line !== "\r") {
+            let txt = line?.trim();
+
+            if (line) {
+                let key = line.split("=")[0]?.trim();
+                let value = line.split("=")[1]?.trim();
+                if (key && value) {
+                    output[key] = value;
+                }
+            }
+        }
+    }
+    return output;
 }

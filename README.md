@@ -28,16 +28,17 @@ npm install
 ### Usage
 Commands:
   fetch-cards                            Gets a list of cards
-  fetch-env [cardkey] [filename]         fetches your environmental variables
-  executions [cardkey] [filename]        card execution logs
+  fetch-env [cardkey] [filename]          fetches your environmental variables
+  executions                             card execution logs
   deploy                                 deploys your code to your card
-  fetch [cardkey] [filename]             fetches your saved code
-  publish [cardkey] [codeid] [filename]  publishes your saved code
-  fetch-published [cardkey] [filename]   fetches your published code
-  run [filename]                         run your code locally
-  toggle [cardkey] [enabled]             enable/disable card code
-  upload [cardkey] [filename]            uploads your code to saved code
-  upload-env [cardkey] [filename]        publishes your environmental variables
+  fetch [filename]                        fetches your saved code
+  publish [cardkey] [codeid] [filename]   publishes your saved code
+  fetch-published [cardkey] [filename]    fetches your published code
+  run                                    run your code locally
+  toggle [enabled]                       enable/disable card code
+  upload [cardkey] [filename]             uploads your code to saved code
+  upload-env [cardkey] [filename]         publishes your environmental variables
+  set                                    set auth credentials
 
 Options:
   -h, --help     Show help                                             [boolean]
@@ -45,7 +46,7 @@ Options:
 
 Options:
 
-`-e, --environment [environment]` The environment to use
+`-e, --env [environment]` The environment to use
 
 `-a, --amount [amount]` The amount of the transaction
 
@@ -66,14 +67,9 @@ Options:
 To run a transaction against a template, run the following command:
 
 ```
-node . main.js -e env.json --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+node . main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
-## Testing
 
-To run the tests, use the following command:
-```bash
-npm test
-```
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or open an issue for any suggestions or improvements.

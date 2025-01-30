@@ -4,10 +4,11 @@ import { fetchCode, getAccessToken } from "../api.js"
 import { credentials } from "../index.js"
 import type { CommandModule } from "yargs"
 export const fetchCmd: CommandModule = {
-    command: 'fetch [cardkey] [filename]',
+    command: 'fetch [filename]',
     describe: 'fetches your saved code',
     builder: {
         cardkey: {
+            alias: 'c',
             type: 'number',
             describe: 'the cardkey'
         },
@@ -24,6 +25,12 @@ export const fetchCmd: CommandModule = {
     },
     handler: async function (argv: any) {
         try {
+             if (argv.cardkey === undefined) {
+                if (credentials.cardkey === '') {
+                throw new Error('cardkey is required');
+                }
+                argv.cardkey = credentials.cardkey;
+            }
             if (fs.existsSync(argv.filename) && !argv.overwrite) {
                 throw new Error('File already exists, overwrite with -y');
             }

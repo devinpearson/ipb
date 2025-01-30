@@ -9,5 +9,5 @@ import { toggleCmd } from './toggle.js'
 import { uploadCmd } from './upload.js'
 import { uploadEnvsCmd } from './upload-env.js'
 import { deployCmd } from './deploy.js'
-
-export const commands = [cardsCmd, envsCmd, executionsCmd, deployCmd, fetchCmd, publishCmd, publishedCmd, runCmd, toggleCmd, uploadCmd, uploadEnvsCmd]
+import { setCmd } from './set.js'
+export const commands = [cardsCmd, envsCmd, executionsCmd, deployCmd, fetchCmd, publishCmd, publishedCmd, runCmd, toggleCmd, uploadCmd, uploadEnvsCmd, setCmd]

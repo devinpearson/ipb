@@ -1,6 +1,6 @@
 {
-  "name": "ipb",
-  "version": "0.1.0",
+  "name": "investec-ipb",
+  "version": "0.3.0",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"

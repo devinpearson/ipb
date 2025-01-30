@@ -9,7 +9,7 @@ export const cardsCmd: CommandModule = {
     handler: async function (argv: any) {
         try {
             const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-            console.log('fetching cards');
+            console.log('💳 fetching cards');
             const result = await fetchCards(credentials.host, token)
             console.table(result);
         } catch (err) {
