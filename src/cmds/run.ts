@@ -2,75 +2,35 @@ import chalk from 'chalk'
 import fs from 'fs'
 import path from 'path'
 import { createTransaction, run } from "programmable-card-code-emulator"
-import type { CommandModule } from "yargs"
-
-export const runCmd: CommandModule = {
-    command: 'run',
-    describe: 'run your code locally',
-    builder: {
-        filename: {
-            alias: 'f',
-            type: 'string',
-            describe: 'the filename'
-        },
-        env: {
-            alias: 'e',
-            describe: 'env to run',
-            type: 'string',
-        },
-        amount: {
-            alias: 'a',
-            describe: 'amount in cents',
-            default: 10000,
-            type: 'number',
-        },
-        currency: {
-            alias: 'c',
-            describe: 'currency code',
-            default: 'zar',
-            type: 'string',
-        },
-        mcc: {
-            describe: 'merchant category code',
-            default: '0000',
-            type: 'string',
-        },
-        merchant: {
-            alias: 'm',
-            describe: 'merchant name',
-            default: 'The Coders Bakery',
-            type: 'string',
-        },
-        city: {
-            alias: 'i',
-            describe: 'merchant city',
-            default: 'Cape Town',
-            type: 'string',
-        },
-        country: {
-            alias: 'o',
-            describe: 'merchant country',
-            default: 'ZA',
-            type: 'string',
-        }
-    },
-    handler: async function (argv: any) {
+import { printTitleBox } from '../index.js'
+interface Options {
+    filename: string
+    env: string
+    currency: string
+    amount: number
+    mcc: string
+    merchant: string
+    city: string
+    country: string
+}
+export async function runCommand(options: Options) {
     try {
-        const template = argv.filename;
-        const templatePath = path.join(path.resolve(), argv.filename);
+        const template = options.filename;
+        const templatePath = path.join(path.resolve(), options.filename);
         if (!fs.existsSync(templatePath)) {
             // The template doesnt exist, process exit
             console.log(chalk.red(`${template} does not exist`));
             process.exit(0);
         }
+        printTitleBox()
         console.log(chalk.white(`Running code:`), chalk.blueBright(template));
         const transaction = createTransaction(
-            argv.currency,
-            argv.amount,
-            argv.mcc,
-            argv.merchant,
-            argv.city,
-            argv.country
+            options.currency,
+            options.amount,
+            options.mcc,
+            options.merchant,
+            options.city,
+            options.country
         );
         console.log(chalk.blue(`currency:`), chalk.green(transaction.currencyCode));
         console.log(chalk.blue(`amount:`), chalk.green(transaction.centsAmount));
@@ -81,19 +41,19 @@ export const runCmd: CommandModule = {
         // Read the template env.json file and replace the values with the process.env values
 
         let environmentvariables: { [key: string]: string } = {};
-        if (argv.env) {
-            if (!fs.existsSync(`.env.${argv.env}`)) {
+        if (options.env) {
+            if (!fs.existsSync(`.env.${options.env}`)) {
                 throw new Error('Env does not exist');
             }
 
-            const data = fs.readFileSync(`.env.${argv.env}`, 'utf8');
+            const data = fs.readFileSync(`.env.${options.env}`, 'utf8');
             let lines = data.split("\n");
 
             environmentvariables = convertToJson(lines);
         }
         // Convert the environmentvariables to a string
         let environmentvariablesString = JSON.stringify(environmentvariables);
-        const code = fs.readFileSync(path.join(path.resolve(), argv.filename), 'utf8');
+        const code = fs.readFileSync(path.join(path.resolve(), options.filename), 'utf8');
         // Run the code
         const executionItems = await run(transaction, code, environmentvariablesString);
         executionItems.forEach((item) => {
@@ -102,12 +62,11 @@ export const runCmd: CommandModule = {
             console.log('\n', chalk.yellow(log.level), chalk.white(log.content));
             });
         });
-        } catch (err) {
-            if (err instanceof Error) {
-                console.log(chalk.red(err.message));
-            } else {
-                console.log(chalk.red('An unknown error occurred'));
-            }
+    } catch (err) {
+        if (err instanceof Error) {
+            console.log(chalk.red(err.message));
+        } else {
+            console.log(chalk.red('An unknown error occurred'));
         }
     }
 }

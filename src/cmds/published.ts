@@ -1,45 +1,27 @@
 import chalk from 'chalk'
 import fs from 'fs'
 import { fetchPublishedCode, getAccessToken } from "../api.js"
-import { credentials } from "../index.js"
-import type { CommandModule } from "yargs"
-export const publishedCmd: CommandModule = {
-    command: 'fetch-published [cardkey] [filename]',
-    describe: 'fetches your published code',
-    builder: {
-        cardkey: {
-            type: 'number',
-            default: 700615,
-            describe: 'the cardkey'
-        },
-        filename: {
-            type: 'string',
-            default: 'data/main.js',
-            describe: 'the filename'
-        },
-        overwrite: {
-            alias: 'y',
-            default: false,
-            describe: 'overwrite the file',
-            type: 'boolean',
+import { credentials, printTitleBox } from "../index.js"
+interface Options {
+    cardKey: number
+    filename: string
+}
+export async function publishedCommand(options: Options) {
+    try {
+        if (!fs.existsSync(options.filename)) {
+            throw new Error('File does not exist');
         }
-    },
-    handler: async function (argv: any) {
-        try {
-            if (fs.existsSync(argv.filename) && !argv.overwrite) {
-                throw new Error('File already exists, overwrite with -y');
-            }
-            const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-            console.log('fetching code');
-            const result = await fetchPublishedCode(argv.cardkey, credentials.host, token)
-            console.log(result);
-            await fs.writeFileSync(argv.filename, result);
-        } catch (err) {
-            if (err instanceof Error) {
-                console.log(chalk.red(err.message));
-            } else {
-                console.log(chalk.red('An unknown error occurred'));
-            }
+        printTitleBox()
+        const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
+        console.log('fetching code');
+        const result = await fetchPublishedCode(options.cardKey, credentials.host, token)
+        console.log(result);
+        await fs.writeFileSync(options.filename, result);
+    } catch (err) {
+        if (err instanceof Error) {
+            console.log(chalk.red(err.message));
+        } else {
+            console.log(chalk.red('An unknown error occurred'));
         }
     }
 }

@@ -1,13 +1,29 @@
-import { cardsCmd } from './cards.js'
-import { envsCmd } from './env.js'
-import { logsCmd } from './logs.js'
-import { fetchCmd } from './fetch.js'
-import { publishCmd } from './publish.js'
-import { publishedCmd } from './published.js'
-import { runCmd } from './run.js'
-import { toggleCmd } from './toggle.js'
-import { uploadCmd } from './upload.js'
-import { uploadEnvsCmd } from './upload-env.js'
-import { deployCmd } from './deploy.js'
-import { setCmd } from './set.js'
-export const commands = [cardsCmd, envsCmd, logsCmd, deployCmd, fetchCmd, publishCmd, publishedCmd, runCmd, toggleCmd, uploadCmd, uploadEnvsCmd, setCmd]
+import { cardsCommand } from './cards.js'
+import { envCommand } from './env.js'
+import { logsCommand } from './logs.js'
+import { fetchCommand } from './fetch.js'
+import { publishCommand } from './publish.js'
+import { publishedCommand } from './published.js'
+import { runCommand } from './run.js'
+import { enableCommand } from './toggle.js'
+import { disableCommand } from './disable.js'
+import { uploadCommand } from './upload.js'
+import { uploadEnvCommand } from './upload-env.js'
+import { deployCommand } from './deploy.js'
+import { configCommand } from './set.js'
+
+export { 
+    cardsCommand,
+    configCommand,
+    deployCommand,
+    disableCommand,
+    enableCommand,
+    envCommand,
+    fetchCommand,
+    runCommand,
+    logsCommand,
+    publishCommand,
+    publishedCommand,
+    uploadCommand,
+    uploadEnvCommand
+ };
