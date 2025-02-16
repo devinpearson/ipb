@@ -2,9 +2,10 @@
 import 'dotenv/config'
 import process from 'process'
 import fs from 'fs'
-import { cardsCommand, configCommand, logsCommand, deployCommand } from './cmds/index.js'
+import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, uploadCommand, envCommand, uploadEnvCommand, publishedCommand, publishCommand } from './cmds/index.js'
 import {homedir}  from 'os'
 import { Command } from 'commander';
+import chalk from 'chalk'
 const version = '0.4.0'
 const program = new Command();
 export const credentialLocation = {
@@ -86,7 +87,58 @@ program
         console.log(`server on port ${options.port}`);
     });
 
-await program.parseAsync(process.argv);
+program
+    .command('fetch')
+    .description('fetches the saved code')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .action(fetchCommand);
+
+program
+    .command('upload')
+    .description('uploads to saved code')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .action(uploadCommand);
+
+program
+    .command('env')
+    .description('downloads to env to a local file')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .action(envCommand);
+
+program
+    .command('upload-env')
+    .description('uploads env to the card')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .action(uploadEnvCommand);
+
+program
+    .command('published')
+    .description('downloads to published code to a local file')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .action(publishedCommand);
+
+program
+    .command('publish')
+    .description('publishes code to the card')
+    .requiredOption('-f,--filename <filename>', 'the filename')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
+    .option('-i,--code-id <codeId>', 'the code id of the save code')
+    .action(publishCommand);
+
+    try {
+        await program.parseAsync(process.argv);
+    } catch (err) {
+        if (err instanceof Error) {
+            console.log(chalk.red(err.message));
+        } else {
+            console.log(chalk.red('An unknown error occurred'));
+        }
+    }
 }
 
 main()
