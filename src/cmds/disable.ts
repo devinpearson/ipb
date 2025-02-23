@@ -12,7 +12,12 @@ export async function disableCommand(options: Options)  {
             options.cardKey = Number(credentials.cardkey);
     }
     const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-    console.log('toggle code');
+    console.log('disabling code on card...');
     const result = await toggleCode(options.cardKey, false, credentials.host, token)
-    console.log(result);
+    if (!result) {
+        console.log('code disabled');
+    }
+    else {
+        console.log('code disable failed');
+    }
 }

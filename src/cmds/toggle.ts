@@ -6,13 +6,18 @@ interface Options {
 export async function enableCommand(options: Options)  {
     if (options.cardKey === undefined) {
             if (credentials.cardkey === '') {
-            throw new Error('cardkey is required');
+            throw new Error('card-key is required');
             }
             options.cardKey = Number(credentials.cardkey);
     }
     printTitleBox()
     const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-    console.log('toggle code');
+    console.log('enabling code on card...');
     const result = await toggleCode(options.cardKey, true, credentials.host, token)
-    console.log(result);
+    if (result) {
+        console.log('code enabled');
+    }
+    else {
+        console.log('code enable failed');
+    }
 }

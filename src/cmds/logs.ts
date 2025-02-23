@@ -22,5 +22,6 @@ export async function logsCommand(options: Options) {
     console.log(' ')
     const result = await fetchExecutions(options.cardKey, credentials.host, token)
     console.log(`saving to file: ${options.filename}`);
+    console.log('logs saved to file');
     fs.writeFileSync(options.filename, JSON.stringify(result.data.result.executionItems, null, 4));
 }

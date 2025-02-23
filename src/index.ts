@@ -2,7 +2,7 @@
 import 'dotenv/config'
 import process from 'process'
 import fs from 'fs'
-import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, uploadCommand, envCommand, uploadEnvCommand, publishedCommand, publishCommand } from './cmds/index.js'
+import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, uploadCommand, envCommand, uploadEnvCommand, publishedCommand, publishCommand, enableCommand, disableCommand } from './cmds/index.js'
 import {homedir}  from 'os'
 import { Command } from 'commander';
 import chalk from 'chalk'
@@ -130,6 +130,16 @@ program
     .option('-i,--code-id <codeId>', 'the code id of the save code')
     .action(publishCommand);
 
+program
+    .command('enable')
+    .description('enables code to be used on card')
+    .action(enableCommand);
+
+program
+    .command('disable')
+    .description('disables code to be used on card')
+    .action(disableCommand);
+    
     try {
         await program.parseAsync(process.argv);
     } catch (err) {
