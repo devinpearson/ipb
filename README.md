@@ -90,7 +90,7 @@ ipb enable -c <card-id>
 ```bash
 ipb disable -c <card-id>
 ```
-
+![toggle command](assets/toggle.gif)
 ### Fetch Code
 To fetch the code saved on the card, run the following command:
 ```bash
