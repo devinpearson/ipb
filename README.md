@@ -31,6 +31,21 @@ ipb config --client-id <client-id> --client-secret <client-secret> --card-id <ca
 The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
 
 ## Usage
+There is 6 main commands that you can use to interact with the card:
+- cards
+- deploy
+- run
+- logs
+- enable
+- disable
+
+There is also additional functions that you can use to interact with the card if you prefer handling the process yourself.
+- fetch
+- upload
+- env
+- upload-env
+- published
+- publish
 
 ### Card list
 To get a list of your cards, run the following command:
@@ -61,8 +76,48 @@ The amount is is in cents and the currency is the ISO 4217 currency code.
 
 To run a transaction against your local files, run the following command:
 
+```bash
+ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
-node . main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+
+### Enable and Disable Code
+To enable or disable code on your card, run the following commands:
+```bash
+ipb enable -c <card-id>
+```
+```bash
+ipb disable -c <card-id>
+```
+
+### Fetch Code
+To fetch the code saved on the card, run the following command:
+```bash
+ipb fetch -f <filename> -c <card-id>
+```
+### Upload Code
+To upload code to the cards saved code, run the following command:
+```bash
+ipb upload -f <filename> -c <card-id>
+```
+### Fetch Environment Variables
+To fetch the environment variables saved on the card, run the following command:
+```bash
+ipb env -f <filename> -c <card-id>
+```
+### Upload Environment Variables
+To upload environment variables to the card, run the following command:
+```bash
+ipb upload-env -f <filename> -c <card-id>
+```
+### Fetch Published Code
+To fetch the published code saved on the card, run the following command:
+```bash
+ipb published -f <filename> -c <card-id>
+```
+### Publish Code
+To publish code to the card you will need the codeId returned when saving the code using the upload command, run the following command:
+```bash
+ipb publish -f <filename> --code-id <code-id> -c <card-id>
 ```
 
 ### CLI usage
@@ -89,11 +144,6 @@ Commands:
   enable                enables code to be used on card
   disable               disables code to be used on card
   help [command]        display help for command
-
-There is 3 main commands that you can use to interact with the card:
-- deploy
-- run
-- logs
 
 ## Development
 For development on this library, clone the repository and run the following commands:
