@@ -14,15 +14,11 @@ interface Options {
     country: string
 }
 export async function runCommand(options: Options) {
-    const template = options.filename;
-    const templatePath = path.join(path.resolve(), options.filename);
-    if (!fs.existsSync(templatePath)) {
-        // The template doesnt exist, process exit
-        console.log(chalk.red(`${template} does not exist`));
-        process.exit(0);
-    }
     printTitleBox()
-    console.log(chalk.white(`Running code:`), chalk.blueBright(template));
+    if (!fs.existsSync(options.filename)) {
+            throw new Error('File does not exist');
+    }
+    console.log(chalk.white(`Running code:`), chalk.blueBright(options.filename));
     const transaction = createTransaction(
         options.currency,
         options.amount,

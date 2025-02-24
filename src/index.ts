@@ -2,7 +2,7 @@
 import 'dotenv/config'
 import process from 'process'
 import fs from 'fs'
-import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, uploadCommand, envCommand, uploadEnvCommand, publishedCommand, publishCommand, enableCommand, disableCommand } from './cmds/index.js'
+import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, uploadCommand, envCommand, uploadEnvCommand, publishedCommand, publishCommand, enableCommand, disableCommand, runCommand } from './cmds/index.js'
 import {homedir}  from 'os'
 import { Command } from 'commander';
 import chalk from 'chalk'
@@ -83,9 +83,7 @@ program
     .option('-m,--merchant <merchant>', 'merchant name', 'The Coders Bakery')
     .option('-i,--city <city>', 'city name', 'Cape Town')
     .option('-o,--country <country>', 'country code', 'ZA')
-    .action((options) => {
-        console.log(`server on port ${options.port}`);
-    });
+    .action(runCommand);
 
 program
     .command('fetch')
