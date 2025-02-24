@@ -27,7 +27,13 @@ let cred = {
     cardKey: ''
 }
 if (fs.existsSync(credentialLocation.filename)) {
-    cred = JSON.parse(fs.readFileSync(credentialLocation.filename, 'utf8'));
+    try {
+        const data = fs.readFileSync(credentialLocation.filename, 'utf8');
+        cred = JSON.parse(data);
+    } catch (err) {
+        console.error(chalk.red(`Invalid credentials file format: ${err.message}`));
+    }
+}
 }
 
 export const credentials = {
