@@ -6,8 +6,9 @@ Allows you to deploy your code directly to your card. It also includes a emulato
 
 ## Table of Contents
 - [Installation](#installation)
+- [Configuration](#configuration)
 - [Usage](#usage)
-- [Testing](#testing)
+- [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -22,17 +23,22 @@ To install the CLI, run the following commands:
 npm install -g investec-ipb
 ```
 
+## Configuration
 To configure the CLI, run the following command:
 ```bash
-ipb set --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
+ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
 ```
 The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
 
+## Usage
+
+### Card list
 To get a list of your cards, run the following command:
 ```bash
 ipb cards
 ```
 
+### Code Deployment
 for environment variables, you can set them in a `.env` file in the root of your project. 
 You should name your environments such as `.env.prod` or `.env.dev` and then specify the environment when running the command.
 To call on these environments you will specify prod or dev as the environment.
@@ -43,12 +49,27 @@ To deploy code to your card, run the following command:
 ipb deploy -f <filename> -e <environment> -c <card-id>
 ```
 
-To fetch your execution logs, run the following command:
+### Fetching Execution Logs
+To fetch your execution logs and saving them to a file. This output is json format so `executions.json` or `logs.json`, run the following command:
 ```bash
 ipb logs -f <filename> -c <card-id>
 ```
+### Run - Local Simulation
 
-### Usage
+You can run local simulation of your code and specify the transactions details as arguments.
+The amount is is in cents and the currency is the ISO 4217 currency code.
+
+To run a transaction against your local files, run the following command:
+
+```
+node . main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+```
+
+### CLI usage
+Usage: ipb [options] [command]
+
+CLI to manage Investec Programmable Banking
+
 Options:
   -V, --version         output the version number
   -h, --help            display help for command
@@ -69,31 +90,11 @@ Commands:
   disable               disables code to be used on card
   help [command]        display help for command
 
-Options:
+There is 3 main commands that you can use to interact with the card:
+- deploy
+- run
+- logs
 
-`-e, --env [environment]` The environment to use
-
-`-a, --amount [amount]` The amount of the transaction
-
-`-c, --currency [currency]` The currency of the transaction
-
-`--mcc [mcc]` The merchant category code of the transaction
-
-`-m, --merchant [merchant]` The merchant name of the transaction
-
-`-i, --city [city]` The city of the transaction
-
-`-o, --country [country]` The country of the transaction
-
-`-h, --help` Display help for command
-
-`-v, --version` Display the current version
-
-To run a transaction against a template, run the following command:
-
-```
-node . main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
-```
 ## Development
 For development on this library, clone the repository and run the following commands:
 ```bash
