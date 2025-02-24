@@ -1,51 +1,24 @@
-import chalk from 'chalk'
 import fs from 'fs'
 import { fetchCode, getAccessToken } from "../api.js"
-import { credentials } from "../index.js"
-import type { CommandModule } from "yargs"
-export const fetchCmd: CommandModule = {
-    command: 'fetch [filename]',
-    describe: 'fetches your saved code',
-    builder: {
-        cardkey: {
-            alias: 'c',
-            type: 'number',
-            describe: 'the cardkey'
-        },
-        filename: {
-            type: 'string',
-            describe: 'the filename'
-        },
-        overwrite: {
-            alias: 'y',
-            default: false,
-            describe: 'overwrite the file',
-            type: 'boolean',
+import { credentials, printTitleBox } from "../index.js"
+interface Options {
+    cardKey: number
+    filename: string
+}
+export async function fetchCommand(options: Options) {
+    if (options.cardKey === undefined) {
+        if (credentials.cardkey === '') {
+            throw new Error('card-key is required');
         }
-    },
-    handler: async function (argv: any) {
-        try {
-             if (argv.cardkey === undefined) {
-                if (credentials.cardkey === '') {
-                throw new Error('cardkey is required');
-                }
-                argv.cardkey = credentials.cardkey;
-            }
-            if (fs.existsSync(argv.filename) && !argv.overwrite) {
-                throw new Error('File already exists, overwrite with -y');
-            }
-            const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-            console.log('fetching code');
-            console.log(argv.cardkey, argv.filename);
-            const result = await fetchCode(argv.cardkey, credentials.host, token)
-            console.log(result);
-            await fs.writeFileSync(argv.filename, result.code);
-        } catch (err) {
-            if (err instanceof Error) {
-                console.log(chalk.red(err.message));
-            } else {
-                console.log(chalk.red('An unknown error occurred'));
-            }
-        }
+        options.cardKey = Number(credentials.cardkey);
     }
+    printTitleBox()
+    const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
+    console.log('fetching code...');
+    console.log(' ')
+    const result = await fetchCode(options.cardKey, credentials.host, token)
+    // console.log(result);
+    console.log(`saving to file: ${options.filename}`);
+    console.log('code saved to file');
+    await fs.writeFileSync(options.filename, result.code);
 }

@@ -6,8 +6,9 @@ Allows you to deploy your code directly to your card. It also includes a emulato
 
 ## Table of Contents
 - [Installation](#installation)
+- [Configuration](#configuration)
 - [Usage](#usage)
-- [Testing](#testing)
+- [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -17,57 +18,143 @@ Allows you to deploy your code directly to your card. It also includes a emulato
 ## Installation
 Before installing, [download and install Node.js](https://nodejs.org/en/download/).
 
+To install the CLI, run the following commands:
+```bash
+npm install -g investec-ipb
+```
+
+## Configuration
+To configure the CLI, run the following command:
+```bash
+ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
+```
+The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
+
+## Usage
+There is 6 main commands that you can use to interact with the card:
+- cards
+- deploy
+- run
+- logs
+- enable
+- disable
+
+There is also additional functions that you can use to interact with the card if you prefer handling the process yourself.
+- fetch
+- upload
+- env
+- upload-env
+- published
+- publish
+
+### Card list
+To get a list of your cards, run the following command:
+```bash
+ipb cards
+```
+![cards command](assets/cards.gif)
+
+### Code Deployment
+for environment variables, you can set them in a `.env` file in the root of your project. 
+You should name your environments such as `.env.prod` or `.env.dev` and then specify the environment when running the command.
+To call on these environments you will specify prod or dev as the environment.
+This makes sure you dont upload the .env file for your current code project.
+
+To deploy code to your card, run the following command:
+```bash
+ipb deploy -f <filename> -e <environment> -c <card-id>
+```
+![deploy command](assets/deploy.gif)
+### Fetching Execution Logs
+To fetch your execution logs and saving them to a file. This output is json format so `executions.json` or `logs.json`, run the following command:
+```bash
+ipb logs -f <filename> -c <card-id>
+```
+![logs command](assets/logs.gif)
+### Run - Local Simulation
+
+You can run local simulation of your code and specify the transactions details as arguments.
+The amount is is in cents and the currency is the ISO 4217 currency code.
+
+To run a transaction against your local files, run the following command:
+
+```bash
+ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+```
+![run command](assets/run.gif)
+### Enable and Disable Code
+To enable or disable code on your card, run the following commands:
+```bash
+ipb enable -c <card-id>
+```
+```bash
+ipb disable -c <card-id>
+```
+![toggle command](assets/toggle.gif)
+### Fetch Code
+To fetch the code saved on the card, run the following command:
+```bash
+ipb fetch -f <filename> -c <card-id>
+```
+### Upload Code
+To upload code to the cards saved code, run the following command:
+```bash
+ipb upload -f <filename> -c <card-id>
+```
+### Fetch Environment Variables
+To fetch the environment variables saved on the card, run the following command:
+```bash
+ipb env -f <filename> -c <card-id>
+```
+### Upload Environment Variables
+To upload environment variables to the card, run the following command:
+```bash
+ipb upload-env -f <filename> -c <card-id>
+```
+### Fetch Published Code
+To fetch the published code saved on the card, run the following command:
+```bash
+ipb published -f <filename> -c <card-id>
+```
+### Publish Code
+To publish code to the card you will need the codeId returned when saving the code using the upload command, run the following command:
+```bash
+ipb publish -f <filename> --code-id <code-id> -c <card-id>
+```
+
+### CLI usage
+Usage: ipb [options] [command]
+
+CLI to manage Investec Programmable Banking
+
+Options:
+  -V, --version         output the version number
+  -h, --help            display help for command
+
+Commands:
+  cards                 Gets a list of your cards
+  config [options]      set auth credentials
+  deploy [options]      deploy code to card
+  logs [options]        fetches logs from the api
+  run [options]         runs the code locally
+  fetch [options]       fetches the saved code
+  upload [options]      uploads to saved code
+  env [options]         downloads to env to a local file
+  upload-env [options]  uploads env to the card
+  published [options]   downloads to published code to a local file
+  publish [options]     publishes code to the card
+  enable                enables code to be used on card
+  disable               disables code to be used on card
+  help [command]        display help for command
+
+## Development
+For development on this library, clone the repository and run the following commands:
 ```bash
 git clone https://github.com/devinpearson/ipb.git
 cd ipb
 ```
 ```bash
 npm install
-```
-
-### Usage
-Commands:
-  fetch-cards                            Gets a list of cards
-  fetch-env [cardkey] [filename]          fetches your environmental variables
-  executions                             card execution logs
-  deploy                                 deploys your code to your card
-  fetch [filename]                        fetches your saved code
-  publish [cardkey] [codeid] [filename]   publishes your saved code
-  fetch-published [cardkey] [filename]    fetches your published code
-  run                                    run your code locally
-  toggle [enabled]                       enable/disable card code
-  upload [cardkey] [filename]             uploads your code to saved code
-  upload-env [cardkey] [filename]         publishes your environmental variables
-  set                                    set auth credentials
-
-Options:
-  -h, --help     Show help                                             [boolean]
-  -v, --version  Show version number                                   [boolean]
-
-Options:
-
-`-e, --env [environment]` The environment to use
-
-`-a, --amount [amount]` The amount of the transaction
-
-`-c, --currency [currency]` The currency of the transaction
-
-`--mcc [mcc]` The merchant category code of the transaction
-
-`-m, --merchant [merchant]` The merchant name of the transaction
-
-`-i, --city [city]` The city of the transaction
-
-`-o, --country [country]` The country of the transaction
-
-`-h, --help` Display help for command
-
-`-v, --version` Display the current version
-
-To run a transaction against a template, run the following command:
-
-```
-node . main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
 
 ## Contributing
@@ -84,8 +171,9 @@ For inquiries, please open an issue.
 
 ## Acknowledgments
 
-- [Yargs](https://yargs.js.org/)
+- [Commander](https://www.npmjs.com/package/commander)
 - [Chalk](https://github.com/chalk/chalk)
+- [VHS](https://github.com/charmbracelet/vhs)
 
 ## Other Projects
 - [Banking API Simulator](https://github.com/devinpearson/programmable-banking-sim)

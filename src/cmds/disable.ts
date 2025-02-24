@@ -3,21 +3,21 @@ import { credentials, printTitleBox } from "../index.js"
 interface Options {
     cardKey: number
 }
-export async function enableCommand(options: Options)  {
+export async function disableCommand(options: Options)  {
+    printTitleBox()
     if (options.cardKey === undefined) {
             if (credentials.cardkey === '') {
-            throw new Error('card-key is required');
+            throw new Error('cardkey is required');
             }
             options.cardKey = Number(credentials.cardkey);
     }
-    printTitleBox()
     const token = await getAccessToken(credentials.host, credentials.clientId, credentials.secret, credentials.apikey)
-    console.log('enabling code on card...');
-    const result = await toggleCode(options.cardKey, true, credentials.host, token)
-    if (result) {
-        console.log('code enabled');
+    console.log('disabling code on card...');
+    const result = await toggleCode(options.cardKey, false, credentials.host, token)
+    if (!result) {
+        console.log('code disabled');
     }
     else {
-        console.log('code enable failed');
+        console.log('code disable failed');
     }
 }

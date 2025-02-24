@@ -1,6 +1,6 @@
 {
   "name": "investec-ipb",
-  "version": "0.4.0",
+  "version": "0.5.1",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
@@ -28,15 +28,15 @@
   "description": "An emulator for the Programmable Card Code Lamda function",
   "dependencies": {
     "chalk": "^4.1.2",
+    "commander": "^13.1.0",
     "dotenv": "^16.3.1",
     "node-fetch": "^3.3.2",
-    "programmable-card-code-emulator": "^1.4.2",
-    "yargs": "^17.7.2"
+    "programmable-card-code-emulator": "^1.4.2"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.2",
+    "@commander-js/extra-typings": "^13.1.0",
     "@types/node": "^22.12.0",
-    "@types/yargs": "^17.0.33",
     "prettier": "3.0.3",
     "vitest": "^2.1.8"
   },
