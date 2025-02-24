@@ -52,6 +52,7 @@ To get a list of your cards, run the following command:
 ```bash
 ipb cards
 ```
+![cards command](assets/cards.gif)
 
 ### Code Deployment
 for environment variables, you can set them in a `.env` file in the root of your project. 
@@ -63,12 +64,13 @@ To deploy code to your card, run the following command:
 ```bash
 ipb deploy -f <filename> -e <environment> -c <card-id>
 ```
-
+![deploy command](assets/deploy.gif)
 ### Fetching Execution Logs
 To fetch your execution logs and saving them to a file. This output is json format so `executions.json` or `logs.json`, run the following command:
 ```bash
 ipb logs -f <filename> -c <card-id>
 ```
+![logs command](assets/logs.gif)
 ### Run - Local Simulation
 
 You can run local simulation of your code and specify the transactions details as arguments.
@@ -79,7 +81,7 @@ To run a transaction against your local files, run the following command:
 ```bash
 ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
-
+![run command](assets/run.gif)
 ### Enable and Disable Code
 To enable or disable code on your card, run the following commands:
 ```bash

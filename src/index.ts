@@ -6,7 +6,7 @@ import { cardsCommand, configCommand, logsCommand, deployCommand, fetchCommand, 
 import {homedir}  from 'os'
 import { Command } from 'commander';
 import chalk from 'chalk'
-const version = '0.4.0'
+const version = '0.5.1'
 const program = new Command();
 export const credentialLocation = {
     folder: `${homedir()}/.ipb`,
@@ -131,11 +131,13 @@ program
 program
     .command('enable')
     .description('enables code to be used on card')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
     .action(enableCommand);
 
 program
     .command('disable')
     .description('disables code to be used on card')
+    .option('-c,--card-key <cardKey>', 'the cardkey')
     .action(disableCommand);
     
     try {
