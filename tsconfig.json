@@ -29,7 +29,7 @@
     "lib": ["es2022"]
   },
   "include": ["./src/**/*"],
-    "exclude": [
-        "./bin/**/*" // This is what fixed it!
-    ]
+  "exclude": [
+    "./bin/**/*" // This is what fixed it!
+  ]
 }
