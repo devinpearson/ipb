@@ -42,27 +42,29 @@ The card id is optional and can be set when calling each command. If you specify
 
 ## Usage
 
-There is 6 main commands that you can use to interact with the card:
+There are six main commands that you can use to interact with the card:
 
-- cards
-- deploy
-- run
-- logs
-- enable
-- disable
+- `cards`
+- `deploy`
+- `run`
+- `logs`
+- `enable`
+- `disable`
 
-There is also additional functions that you can use to interact with the card if you prefer handling the process yourself.
+There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
 
-- fetch
-- upload
-- env
-- upload-env
-- published
-- publish
+- `fetch`
+- `upload`
+- `env`
+- `upload-env`
+- `published`
+- `publish`
 
 ### Card list
 
-To get a list of your cards, run the following command:
+To get a list of your cards with card keys, card number and whether the card is enabled for card code,
+
+run the following command for card list:
 
 ```bash
 ipb cards
@@ -87,7 +89,9 @@ ipb deploy -f <filename> -e <environment> -c <card-id>
 
 ### Fetching Execution Logs
 
-To fetch your execution logs and saving them to a file. This output is json format so `executions.json` or `logs.json`, run the following command:
+To fetch your execution logs and saving them to a file. This output is json format, example naming such as `executions.json` or `logs.json`, 
+This function will overwrite the file if it already exists.
+run the following command to save the logs to the filename specified:
 
 ```bash
 ipb logs -f <filename> -c <card-id>
