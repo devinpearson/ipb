@@ -1,6 +1,10 @@
 # Investec Programmable Banking CLI
-
 Allows you to deploy your code directly to your card. It also includes a emulator to test your code locally.
+
+## 🌟 Community-Powered Repository 🌟
+
+This repository is crafted with ❤️ by our talented community members. It's a space for everyone to use, contribute to, and share. While it aligns with the spirit of our community, please note that this repo is not directly endorsed or supported by Investec. Always exercise caution and discretion when using or contributing to community-driven projects.
+
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![NPM Version](https://img.shields.io/npm/v/investec-ipb)
