@@ -20,7 +20,7 @@ import {
 import { homedir } from "os";
 import { Command } from "commander";
 import chalk from "chalk";
-const version = "0.6.0";
+const version = "0.6.1";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
