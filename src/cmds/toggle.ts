@@ -17,7 +17,7 @@ export async function enableCommand(options: Options) {
     credentials.secret,
     credentials.apikey,
   );
-  console.log("enabling code on card...");
+  console.log("⚙ enabling code on card...");
   const result = await toggleCode(
     options.cardKey,
     true,
@@ -25,8 +25,9 @@ export async function enableCommand(options: Options) {
     token,
   );
   if (result) {
-    console.log("code enabled");
+    console.log("✅ code enabled");
   } else {
-    console.log("code enable failed");
+    console.log("❌ code enable failed");
   }
+  console.log("");
 }

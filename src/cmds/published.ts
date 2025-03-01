@@ -25,7 +25,8 @@ export async function publishedCommand(options: Options) {
     credentials.host,
     token,
   );
-  console.log(`saving to file: ${options.filename}`);
+  console.log(`💾 saving to file: ${options.filename}`);
   await fs.writeFileSync(options.filename, result);
-  console.log("code saved to file");
+  console.log("🎉 code saved to file");
+  console.log("");
 }

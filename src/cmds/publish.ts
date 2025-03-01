@@ -32,5 +32,6 @@ export async function publishCommand(options: Options) {
     credentials.host,
     token,
   );
-  console.log(`code published with codeId: ${result.data.result.codeId}`);
+  console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
+  console.log("");
 }

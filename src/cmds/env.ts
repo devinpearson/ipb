@@ -23,7 +23,8 @@ export async function envCommand(options: Options) {
   console.log(" ");
   const result = await fetchEnv(options.cardKey, credentials.host, token);
   // console.log(result);
-  console.log(`saving to file: ${options.filename}`);
+  console.log(`💾 saving to file: ${options.filename}`);
   fs.writeFileSync(options.filename, JSON.stringify(result, null, 4));
-  console.log("envs saved to file");
+  console.log("🎉 envs saved to file");
+  console.log("");
 }

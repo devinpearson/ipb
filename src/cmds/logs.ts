@@ -30,10 +30,11 @@ export async function logsCommand(options: Options) {
     credentials.host,
     token,
   );
-  console.log(`saving to file: ${options.filename}`);
-  console.log("logs saved to file");
+  console.log(`💾 saving to file: ${options.filename}`);
   fs.writeFileSync(
     options.filename,
     JSON.stringify(result.data.result.executionItems, null, 4),
   );
+  console.log("🎉 " + chalk.greenBright("logs saved to file"));
+  console.log("");
 }

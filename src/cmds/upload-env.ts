@@ -27,5 +27,6 @@ export async function uploadEnvCommand(options: Options) {
   const variables = fs.readFileSync(options.filename, "utf8");
   raw.variables = JSON.parse(variables);
   const result = await uploadEnv(options.cardKey, raw, credentials.host, token);
-  console.log(`env uploaded`);
+  console.log(`🎉 env uploaded`);
+  console.log("");
 }

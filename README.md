@@ -1,10 +1,10 @@
 # Investec Programmable Banking CLI
+
 Allows you to deploy your code directly to your card. It also includes a emulator to test your code locally.
 
 ## 🌟 Community-Powered Repository 🌟
 
 This repository is crafted with ❤️ by our talented community members. It's a space for everyone to use, contribute to, and share. While it aligns with the spirit of our community, please note that this repo is not directly endorsed or supported by Investec. Always exercise caution and discretion when using or contributing to community-driven projects.
-
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![NPM Version](https://img.shields.io/npm/v/investec-ipb)
@@ -93,7 +93,7 @@ ipb deploy -f <filename> -e <environment> -c <card-id>
 
 ### Fetching Execution Logs
 
-To fetch your execution logs and saving them to a file. This output is json format, example naming such as `executions.json` or `logs.json`, 
+To fetch your execution logs and saving them to a file. This output is json format, example naming such as `executions.json` or `logs.json`,
 This function will overwrite the file if it already exists.
 run the following command to save the logs to the filename specified:
 
@@ -107,6 +107,8 @@ ipb logs -f <filename> -c <card-id>
 
 You can run local simulation of your code and specify the transactions details as arguments.
 The amount is is in cents and the currency is the ISO 4217 currency code.
+
+The local emulator will run the code against the local files and not the card. It does not require an Investec account or any API keys. It runs locally without hitting the Investec API.
 
 To run a transaction against your local files, run the following command:
 
@@ -190,6 +192,7 @@ Options:
 - -h, --help display help for command
 
 Commands:
+
 - cards Gets a list of your cards
 - config [options] set auth credentials
 - deploy [options] deploy code to card

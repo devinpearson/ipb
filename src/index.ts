@@ -20,7 +20,7 @@ import {
 import { homedir } from "os";
 import { Command } from "commander";
 import chalk from "chalk";
-const version = "0.5.1";
+const version = "0.6.0";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -28,8 +28,8 @@ export const credentialLocation = {
 };
 export function printTitleBox() {
   console.log("");
-  console.log("Investec Programmable Banking CLI");
-  console.log(`v${version}`);
+  console.log("🦓 Investec Programmable Banking CLI");
+  console.log("🔮 " + chalk.blueBright(`v${version}`));
   console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
   console.log("");
 }
@@ -47,20 +47,22 @@ if (fs.existsSync(credentialLocation.filename)) {
   } catch (err) {
     if (err instanceof Error) {
       console.error(
-        chalk.red(`Invalid credentials file format: ${err.message}`),
+        chalk.red(`🙀 Invalid credentials file format: ${err.message}`),
+        console.log(""),
       );
     } else {
-      console.error(chalk.red("Invalid credentials file format"));
+      console.error(chalk.red("🙀 Invalid credentials file format"));
+      console.log("");
     }
   }
 }
 
 export const credentials = {
-  host: process.env.host || "https://openapi.investec.com",
-  clientId: process.env.clientId || cred.clientId,
-  secret: process.env.secret || cred.clientSecret,
-  apikey: process.env.apikey || cred.apiKey,
-  cardkey: process.env.cardkey || cred.cardKey,
+  host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
+  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
+  secret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
+  apikey: process.env.INVESTEC_API_KEY || cred.apiKey,
+  cardkey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
 };
 async function main() {
   program
@@ -175,9 +177,13 @@ async function main() {
     await program.parseAsync(process.argv);
   } catch (err) {
     if (err instanceof Error) {
-      console.log(chalk.red(err.message));
+      console.log("🙀 Error encountered: " + chalk.red(err.message));
+      console.log("");
     } else {
-      console.log(chalk.red("An unknown error occurred"));
+      console.log(
+        "🙀 Error encountered: " + chalk.red("An unknown error occurred"),
+      );
+      console.log("");
     }
   }
 }

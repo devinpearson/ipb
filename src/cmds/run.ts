@@ -76,6 +76,7 @@ export async function runCommand(options: Options) {
       console.log("\n", chalk.yellow(log.level), chalk.white(log.content));
     });
   });
+  console.log("");
 }
 
 function convertToJson(arr: string[]) {

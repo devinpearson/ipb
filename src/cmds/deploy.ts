@@ -58,6 +58,7 @@ export async function deployCommand(options: Options) {
   if (result.data.result.codeId) {
     console.log("🎉 code deployed");
   }
+  console.log("");
 }
 
 function convertToJson(arr: string[]) {

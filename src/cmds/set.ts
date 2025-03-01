@@ -32,5 +32,6 @@ export async function configCommand(options: Options) {
     cred.cardKey = options.cardKey;
   }
   await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
-  console.log("Auth saved");
+  console.log("🔑 credentials saved");
+  console.log("");
 }

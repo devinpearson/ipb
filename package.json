@@ -1,6 +1,6 @@
 {
   "name": "investec-ipb",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
@@ -25,7 +25,7 @@
   ],
   "author": "Devin Pearson",
   "license": "MIT",
-  "description": "An emulator for the Programmable Card Code Lamda function",
+  "description": "A cli application to manage programmable banking cards",
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^13.1.0",

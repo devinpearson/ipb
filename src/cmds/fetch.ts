@@ -23,7 +23,8 @@ export async function fetchCommand(options: Options) {
   console.log(" ");
   const result = await fetchCode(options.cardKey, credentials.host, token);
   // console.log(result);
-  console.log(`saving to file: ${options.filename}`);
-  console.log("code saved to file");
+  console.log(`💾 saving to file: ${options.filename}`);
   await fs.writeFileSync(options.filename, result.code);
+  console.log("🎉 code saved to file");
+  console.log("");
 }

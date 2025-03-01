@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { fetchCards, getAccessToken } from "../api.js";
 import { credentials, printTitleBox } from "../index.js";
 export async function cardsCommand() {
@@ -19,11 +20,13 @@ export async function cardsCommand() {
   for (let i = 0; i < result.length; i++) {
     if (result[i]) {
       console.log(
-        `${result[i]?.CardKey ?? "N/A"} \t ${
-          result[i]?.CardNumber ?? "N/A"
-        } \t ${result[i]?.IsProgrammable ?? "N/A"}`,
+        chalk.greenBright(`${result[i]?.CardKey ?? "N/A"}`) +
+          ` \t ` +
+          chalk.blueBright(`${result[i]?.CardNumber ?? "N/A"}`) +
+          chalk.redBright(` \t ${result[i]?.IsProgrammable ?? "N/A"}`),
       );
     }
   }
+  console.log("");
   // console.table(result);
 }
