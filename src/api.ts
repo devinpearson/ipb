@@ -41,6 +41,7 @@ export async function getAccessToken(
 async function fetchGet(endpoint: string, token: string) {
   const response = await fetch(endpoint, {
     method: "GET",
+    signal: AbortSignal.timeout(30000),
     headers: {
       Authorization: "Bearer " + token,
       "content-type": "application/json",
@@ -59,6 +60,7 @@ async function fetchGet(endpoint: string, token: string) {
 async function fetchPost(endpoint: string, token: string, body: object) {
   const response = await fetch(endpoint, {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: {
       Authorization: "Bearer " + token,
       "content-type": "application/json",
