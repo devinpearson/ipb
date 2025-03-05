@@ -60,9 +60,9 @@ if (fs.existsSync(credentialLocation.filename)) {
 export const credentials = {
   host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  secret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apikey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardkey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
+  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
+  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
+  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
 };
 async function main() {
   program
@@ -73,6 +73,13 @@ async function main() {
   program
     .command("cards")
     .description("Gets a list of your cards")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(cardsCommand);
 
   program
@@ -96,6 +103,13 @@ async function main() {
     .option("-f,--filename <filename>", "the filename")
     .option("-e,--env <env>", "env to run", "development")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(deployCommand);
 
   program
@@ -103,6 +117,13 @@ async function main() {
     .description("fetches logs from the api")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(logsCommand);
 
   program
@@ -123,6 +144,13 @@ async function main() {
     .description("fetches the saved code")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(fetchCommand);
 
   program
@@ -130,6 +158,13 @@ async function main() {
     .description("uploads to saved code")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(uploadCommand);
 
   program
@@ -137,6 +172,13 @@ async function main() {
     .description("downloads to env to a local file")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(envCommand);
 
   program
@@ -144,6 +186,13 @@ async function main() {
     .description("uploads env to the card")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(uploadEnvCommand);
 
   program
@@ -151,6 +200,13 @@ async function main() {
     .description("downloads to published code to a local file")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(publishedCommand);
 
   program
@@ -159,18 +215,39 @@ async function main() {
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
     .option("-i,--code-id <codeId>", "the code id of the save code")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(publishCommand);
 
   program
     .command("enable")
     .description("enables code to be used on card")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(enableCommand);
 
   program
     .command("disable")
     .description("disables code to be used on card")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
     .action(disableCommand);
 
   try {

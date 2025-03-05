@@ -5,23 +5,39 @@ import { credentials, printTitleBox } from "../index.js";
 interface Options {
   cardKey: number;
   filename: string;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
 }
 export async function logsCommand(options: Options) {
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("cardkey is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
   if (options.filename === undefined || options.filename === "") {
     throw new Error("filename is required");
   }
   printTitleBox();
+  if (options.apiKey) {
+    credentials.apiKey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.clientSecret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
+    credentials.clientSecret,
+    credentials.apiKey,
   );
   console.log("📊 fetching execution items");
   console.log(" ");

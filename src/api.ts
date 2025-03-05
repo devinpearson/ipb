@@ -1,5 +1,5 @@
-import path from "path";
 import fetch from "node-fetch";
+import chalk from "chalk";
 
 interface AuthResponse {
   access_token: string;
@@ -35,12 +35,25 @@ export async function getAccessToken(
     throw new Error(response.statusText);
   }
   const result = (await response.json()) as AuthResponse;
+
+  if (!result.scope.includes("cards")) {
+    throw new Error("You require the cards scope to use this tool");
+  }
+  if (result.scope !== "cards") {
+    console.log(
+      chalk.redBright(
+        "Scope is not only cards, please consider reducing the scopes",
+      ),
+    );
+    console.log("");
+  }
   return result.access_token;
 }
 
 async function fetchGet(endpoint: string, token: string) {
   const response = await fetch(endpoint, {
     method: "GET",
+    signal: AbortSignal.timeout(30000),
     headers: {
       Authorization: "Bearer " + token,
       "content-type": "application/json",
@@ -59,6 +72,7 @@ async function fetchGet(endpoint: string, token: string) {
 async function fetchPost(endpoint: string, token: string, body: object) {
   const response = await fetch(endpoint, {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: {
       Authorization: "Bearer " + token,
       "content-type": "application/json",
