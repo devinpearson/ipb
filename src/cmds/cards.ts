@@ -1,8 +1,26 @@
 import chalk from "chalk";
 import { fetchCards, getAccessToken } from "../api.js";
 import { credentials, printTitleBox } from "../index.js";
-export async function cardsCommand() {
+interface Options {
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
+}
+export async function cardsCommand(options: Options) {
   printTitleBox();
+  if (options.apiKey) {
+    credentials.apikey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.secret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,

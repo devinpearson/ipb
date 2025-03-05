@@ -2,9 +2,25 @@ import { getAccessToken, toggleCode } from "../api.js";
 import { credentials, printTitleBox } from "../index.js";
 interface Options {
   cardKey: number;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
 }
 export async function disableCommand(options: Options) {
   printTitleBox();
+  if (options.apiKey) {
+    credentials.apikey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.secret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
   if (options.cardKey === undefined) {
     if (credentials.cardkey === "") {
       throw new Error("cardkey is required");

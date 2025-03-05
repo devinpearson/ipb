@@ -5,6 +5,10 @@ import { credentials, printTitleBox } from "../index.js";
 interface Options {
   cardKey: number;
   filename: string;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
 }
 export async function logsCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -17,6 +21,18 @@ export async function logsCommand(options: Options) {
     throw new Error("filename is required");
   }
   printTitleBox();
+  if (options.apiKey) {
+    credentials.apikey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.secret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,

@@ -4,6 +4,10 @@ import { credentials, printTitleBox } from "../index.js";
 interface Options {
   cardKey: number;
   filename: string;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
 }
 export async function envCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -13,6 +17,18 @@ export async function envCommand(options: Options) {
     options.cardKey = Number(credentials.cardkey);
   }
   printTitleBox();
+  if (options.apiKey) {
+    credentials.apikey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.secret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
