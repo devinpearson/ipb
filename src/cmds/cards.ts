@@ -24,8 +24,8 @@ export async function cardsCommand(options: Options) {
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
+    credentials.clientSecret,
+    credentials.apiKey,
   );
   console.log("💳 fetching cards");
   const result = await fetchCards(credentials.host, token);

@@ -11,10 +11,10 @@ interface Options {
 }
 export async function envCommand(options: Options) {
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("card-key is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
   printTitleBox();
   if (options.apiKey) {
@@ -32,8 +32,8 @@ export async function envCommand(options: Options) {
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
+    credentials.clientSecret,
+    credentials.apiKey,
   );
   console.log("💎 fetching envs");
   console.log(" ");

@@ -22,16 +22,16 @@ export async function disableCommand(options: Options) {
     credentials.host = options.host;
   }
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("cardkey is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
+    credentials.clientSecret,
+    credentials.apiKey,
   );
   console.log("⚙ disabling code on card...");
   const result = await toggleCode(

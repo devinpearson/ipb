@@ -60,9 +60,9 @@ if (fs.existsSync(credentialLocation.filename)) {
 export const credentials = {
   host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  secret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apikey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardkey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
+  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
+  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
+  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
 };
 async function main() {
   program

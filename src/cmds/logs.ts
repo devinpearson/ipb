@@ -12,10 +12,10 @@ interface Options {
 }
 export async function logsCommand(options: Options) {
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("cardkey is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
   if (options.filename === undefined || options.filename === "") {
     throw new Error("filename is required");
@@ -36,8 +36,8 @@ export async function logsCommand(options: Options) {
   const token = await getAccessToken(
     credentials.host,
     credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
+    credentials.clientSecret,
+    credentials.apiKey,
   );
   console.log("📊 fetching execution items");
   console.log(" ");
