@@ -10,13 +10,13 @@ interface Options {
 export async function cardsCommand(options: Options) {
   printTitleBox();
   if (options.apiKey) {
-    credentials.apikey = options.apiKey;
+    credentials.apiKey = options.apiKey;
   }
   if (options.clientId) {
     credentials.clientId = options.clientId;
   }
   if (options.clientSecret) {
-    credentials.secret = options.clientSecret;
+    credentials.clientSecret = options.clientSecret;
   }
   if (options.host) {
     credentials.host = options.host;
