@@ -80,6 +80,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(cardsCommand);
 
   program
@@ -110,6 +114,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(deployCommand);
 
   program
@@ -124,6 +132,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(logsCommand);
 
   program
@@ -151,6 +163,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(fetchCommand);
 
   program
@@ -165,6 +181,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(uploadCommand);
 
   program
@@ -179,6 +199,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(envCommand);
 
   program
@@ -193,6 +217,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(uploadEnvCommand);
 
   program
@@ -207,6 +235,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(publishedCommand);
 
   program
@@ -222,6 +254,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(publishCommand);
 
   program
@@ -235,6 +271,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(enableCommand);
 
   program
@@ -248,6 +288,10 @@ async function main() {
       "client secret for the Investec API",
     )
     .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(disableCommand);
 
   try {
