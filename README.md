@@ -42,8 +42,7 @@ To configure the CLI, run the following command:
 ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
 ```
 
-If you want to setup specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
-
+If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
 ```shell
 INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id

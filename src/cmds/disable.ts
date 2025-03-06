@@ -6,9 +6,27 @@ interface Options {
   apiKey: string;
   clientId: string;
   clientSecret: string;
+  credentialsFile: string;
 }
 export async function disableCommand(options: Options) {
   printTitleBox();
+  if (options.credentialsFile) {
+    const file = await import("file://" + options.credentialsFile, {
+      with: { type: "json" },
+    });
+    if (file.host) {
+      credentials.host = file.host;
+    }
+    if (file.apiKey) {
+      credentials.apiKey = file.apiKey;
+    }
+    if (file.clientId) {
+      credentials.clientId = file.clientId;
+    }
+    if (file.clientSecret) {
+      credentials.clientSecret = file.clientSecret;
+    }
+  }
   if (options.apiKey) {
     credentials.apiKey = options.apiKey;
   }
