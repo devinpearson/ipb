@@ -271,3 +271,37 @@ export async function fetchExecutions(
   const result = (await fetchGet(endpoint, token)) as ExecutionResult;
   return result;
 }
+interface ReferenceResponse {
+  data: {
+    result: Array<{
+      Code: string;
+      Name: string;
+    }>;
+  };
+}
+export async function fetchCurrencies(host: string, token: string) {
+  if (!host || !token) {
+    throw new Error("Missing required parameters");
+  }
+  const endpoint = createEndpoint(host, `za/v1/cards/currencies`);
+  const result = (await fetchGet(endpoint, token)) as ReferenceResponse;
+  return result.data.result;
+}
+
+export async function fetchCountries(host: string, token: string) {
+  if (!host || !token) {
+    throw new Error("Missing required parameters");
+  }
+  const endpoint = createEndpoint(host, `/za/v1/cards/countries`);
+  const result = (await fetchGet(endpoint, token)) as ReferenceResponse;
+  return result.data.result;
+}
+
+export async function fetchMerchants(host: string, token: string) {
+  if (!host || !token) {
+    throw new Error("Missing required parameters");
+  }
+  const endpoint = createEndpoint(host, `/za/v1/cards/merchants`);
+  const result = (await fetchGet(endpoint, token)) as ReferenceResponse;
+  return result.data.result;
+}

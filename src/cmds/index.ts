@@ -11,10 +11,14 @@ import { uploadCommand } from "./upload.js";
 import { uploadEnvCommand } from "./upload-env.js";
 import { deployCommand } from "./deploy.js";
 import { configCommand } from "./set.js";
+import { currenciesCommand } from "./currencies.js";
+import { countriesCommand } from "./countries.js";
+import { merchantsCommand } from "./merchants.js";
 
 export {
   cardsCommand,
   configCommand,
+  currenciesCommand,
   deployCommand,
   disableCommand,
   enableCommand,
@@ -26,4 +30,6 @@ export {
   publishedCommand,
   uploadCommand,
   uploadEnvCommand,
+  countriesCommand,
+  merchantsCommand,
 };
