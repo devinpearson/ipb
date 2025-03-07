@@ -43,6 +43,7 @@ ipb config --client-id <client-id> --client-secret <client-secret> --card-id <ca
 ```
 
 If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
+
 ```shell
 INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id
@@ -55,6 +56,23 @@ You also have the option to specify the host, client id, client secret, api key 
 
 ```bash
 ipb deploy -f <filename> -e <environment> -c <card-id> --host <host> --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
+```
+
+You can also create your own `.credentials.json` file and store and access it in a location you prefer. This file should be in the following format:
+
+```json
+{
+  "client_id": "your-client-id",
+  "client_secret": "your-client-secret",
+  "api_key": "your-api-key",
+  "card_id": "your-card-id"
+}
+```
+
+To configure the CLI using a credentials file, run the following command:
+
+```bash
+ipb cards --credentials-file <path-to-credentials-file>
 ```
 
 The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
