@@ -25,7 +25,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 
 Before installing, [download and install Node.js](https://nodejs.org/en/download/).
 
-To install the CLI, run the following commands:
+To install or upgrade the CLI, run the following commands:
 
 ```bash
 npm install -g investec-ipb
@@ -87,6 +87,9 @@ There are six main commands that you can use to interact with the card:
 - `logs`
 - `enable`
 - `disable`
+- `countries`
+- `currencies`
+- `merchants`
 
 There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
 
@@ -164,6 +167,30 @@ ipb disable -c <card-id>
 ```
 
 ![toggle command](assets/toggle.gif)
+
+### Countries
+
+Retrieve a list of countries that can be used in the card code.
+
+```bash
+ipb countries
+```
+
+### Currencies
+
+Retrieve a list of currencies that can be used in the card code.
+
+```bash
+ipb currencies
+```
+
+### Merchants
+
+Retrieve a list of merchants that can be used in the card code.
+
+```bash
+ipb merchants
+```
 
 ### Fetch Code
 
