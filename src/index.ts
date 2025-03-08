@@ -16,6 +16,9 @@ import {
   enableCommand,
   disableCommand,
   runCommand,
+  currenciesCommand,
+  countriesCommand,
+  merchantsCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
 import { Command } from "commander";
@@ -26,10 +29,14 @@ export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
   filename: `${homedir()}/.ipb/.credentials.json`,
 };
-export function printTitleBox() {
+export async function printTitleBox() {
+  //   const v = await checkLatestVersion()
   console.log("");
   console.log("🦓 Investec Programmable Banking CLI");
   console.log("🔮 " + chalk.blueBright(`v${version}`));
+  //   if (v !== version) {
+  // console.log("🔥 " + chalk.redBright(`v${v} is available`))
+  //   };
   console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
   console.log("");
 }
@@ -294,6 +301,54 @@ async function main() {
     )
     .action(disableCommand);
 
+  program
+    .command("currencies")
+    .description("Gets a list of supported currencies")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(currenciesCommand);
+
+  program
+    .command("countries")
+    .description("Gets a list of countries")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(countriesCommand);
+
+  program
+    .command("merchants")
+    .description("Gets a list of merchants")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(merchantsCommand);
+
   try {
     await program.parseAsync(process.argv);
   } catch (err) {
@@ -307,6 +362,20 @@ async function main() {
       console.log("");
     }
   }
+}
+
+export async function checkLatestVersion() {
+  const response = await fetch("https://registry.npmjs.org/investec-ipb", {
+    method: "GET",
+    headers: {
+      Accept: "application/vnd.npm.install-v1+json",
+    },
+  });
+
+  const data = (await response.json()) as { "dist-tags": { latest: string } };
+  const latestVersion = data["dist-tags"].latest;
+
+  return latestVersion;
 }
 
 main();
