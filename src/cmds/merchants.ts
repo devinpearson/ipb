@@ -45,11 +45,11 @@ export async function merchantsCommand(options: Options) {
     credentials.clientSecret,
     credentials.apiKey,
   );
-  console.log("💳 fetching countries");
+  console.log("🏪 fetching merchants");
   const result = await fetchMerchants(credentials.host, token);
   console.log("");
   if (!result) {
-    console.log("No countries found");
+    console.log("No merchants found");
     return;
   }
 

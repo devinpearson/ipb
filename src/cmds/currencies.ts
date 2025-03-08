@@ -45,7 +45,7 @@ export async function currenciesCommand(options: Options) {
     credentials.clientSecret,
     credentials.apiKey,
   );
-  console.log("💳 fetching currencies");
+  console.log("💵 fetching currencies");
   const result = await fetchCurrencies(credentials.host, token);
   console.log("");
   if (!result) {

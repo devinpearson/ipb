@@ -45,7 +45,7 @@ export async function countriesCommand(options: Options) {
     credentials.clientSecret,
     credentials.apiKey,
   );
-  console.log("💳 fetching countries");
+  console.log("🇿🇦 fetching countries");
   const result = await fetchCountries(credentials.host, token);
   console.log("");
   if (!result) {

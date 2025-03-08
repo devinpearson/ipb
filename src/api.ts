@@ -283,7 +283,7 @@ export async function fetchCurrencies(host: string, token: string) {
   if (!host || !token) {
     throw new Error("Missing required parameters");
   }
-  const endpoint = createEndpoint(host, `za/v1/cards/currencies`);
+  const endpoint = createEndpoint(host, `/za/v1/cards/currencies`);
   const result = (await fetchGet(endpoint, token)) as ReferenceResponse;
   return result.data.result;
 }
