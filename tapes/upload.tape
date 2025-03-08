@@ -1,4 +1,4 @@
-Output upload.gif
+Output assets/upload.gif
 
 Set Shell "bash"
 Set FontSize 24

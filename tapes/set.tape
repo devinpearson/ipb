@@ -1,4 +1,4 @@
-Output set.gif
+Output assets/set.gif
 
 Set Shell "bash"
 Set FontSize 24

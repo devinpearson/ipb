@@ -1,4 +1,4 @@
-Output fetch.gif
+Output assets/fetch.gif
 
 Set Shell "bash"
 Set FontSize 24

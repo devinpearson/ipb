@@ -1,4 +1,4 @@
-Output publish.gif
+Output assets/publish.gif
 
 Set Shell "bash"
 Set FontSize 24
