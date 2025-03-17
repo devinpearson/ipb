@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import chalk from "chalk";
+import type { Transaction } from "programmable-card-code-emulator";
 
 interface AuthResponse {
   access_token: string;
@@ -270,6 +271,31 @@ export async function fetchExecutions(
   );
   const result = (await fetchGet(endpoint, token)) as ExecutionResult;
   return result;
+}
+export async function executeCode(
+  code: string,
+  transaction: Transaction,
+  cardkey: number,
+  host: string,
+  token: string,
+) {
+  if (!code || !cardkey || !host || !token) {
+    throw new Error("Missing required parameters");
+  }
+  const raw = {
+    simulationcode: code,
+    centsAmount: transaction.centsAmount,
+    currencyCode: transaction.currencyCode,
+    merchantCode: transaction.merchant.category.code,
+    merchantName: transaction.merchant.name,
+    merchantCity: transaction.merchant.city,
+    countryCode: transaction.merchant.country.code,
+  };
+  const endpoint = createEndpoint(
+    host,
+    `/za/v1/cards/${encodeURIComponent(cardkey.toString())}/code/execute`,
+  );
+  return fetchPost(endpoint, token, raw) as Promise<ExecutionResult>;
 }
 interface ReferenceResponse {
   data: {

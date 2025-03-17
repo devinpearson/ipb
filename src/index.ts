@@ -23,7 +23,8 @@ import {
 import { homedir } from "os";
 import { Command } from "commander";
 import chalk from "chalk";
-const version = "0.7.0";
+import { simulateCommand } from "./cmds/simulate.js";
+const version = "0.7.1";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -151,7 +152,7 @@ async function main() {
     .option("-f,--filename <filename>", "the filename")
     .option("-e,--env <env>", "env to run", "development")
     .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-c,--currency <currency>", "currency code", "zar")
+    .option("-u,--currency <currency>", "currency code", "zar")
     .option("-z,--mcc <mcc>", "merchant category code", "0000")
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
@@ -266,7 +267,19 @@ async function main() {
       "Set a custom credentials file",
     )
     .action(publishCommand);
-
+  program
+    .command("simulate")
+    .description("runs the code using the online simulator")
+    .option("-f,--filename <filename>", "the filename")
+    .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("-e,--env <env>", "env to run", "development")
+    .option("-a,--amount <amount>", "amount in cents", "10000")
+    .option("-u,--currency <currency>", "currency code", "zar")
+    .option("-z,--mcc <mcc>", "merchant category code", "0000")
+    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
+    .option("-i,--city <city>", "city name", "Cape Town")
+    .option("-o,--country <country>", "country code", "ZA")
+    .action(simulateCommand);
   program
     .command("enable")
     .description("enables code to be used on card")

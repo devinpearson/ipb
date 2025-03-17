@@ -99,6 +99,7 @@ There are also additional functions that you can use to interact with the card i
 - `upload-env`
 - `published`
 - `publish`
+- `simulate` (online simulator)
 
 ### Card list
 
@@ -238,6 +239,14 @@ To publish code to the card you will need the codeId returned when saving the co
 
 ```bash
 ipb publish -f <filename> --code-id <code-id> -c <card-id>
+```
+
+### Simulate Code
+
+You can use the online simulator to test your code without deploying it to the card. This is very similar to the run command but it uses the online simulator instead of the local emulator. be aware that it will use your online env and not your local env.
+
+```bash
+ipb simulate -f main.js -c <card-key> -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
 
 ### CLI usage
