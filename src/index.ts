@@ -24,6 +24,7 @@ import { homedir } from "os";
 import { Command } from "commander";
 import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
+import { InvestecCardApi } from "investec-card-api";
 const version = "0.7.1";
 const program = new Command();
 export const credentialLocation = {
@@ -64,8 +65,93 @@ if (fs.existsSync(credentialLocation.filename)) {
     }
   }
 }
+export interface Credentials {
+  host: string;
+  clientId: string;
+  clientSecret: string;
+  apiKey: string;
+  cardKey: string;
+}
 
-export const credentials = {
+export interface BasicOptions {
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
+  credentialsFile: string;
+}
+
+export async function initializeApi(
+  credentials: Credentials,
+  options: BasicOptions,
+) {
+  printTitleBox();
+  credentials = await optionCredentials(options, credentials);
+  const api = new InvestecCardApi(
+    credentials.clientId,
+    credentials.clientSecret,
+    credentials.apiKey,
+    credentials.host,
+  );
+  const accessResult = await api.getAccessToken();
+  if (accessResult.scope !== "cards") {
+    console.log(
+      chalk.redBright(
+        "Scope is not only cards, please consider reducing the scopes",
+      ),
+    );
+    console.log("");
+  }
+  return api;
+}
+export async function optionCredentials(
+  options: BasicOptions,
+  credentials: any,
+) {
+  if (options.credentialsFile) {
+    credentials = await loadcredentialsFile(
+      credentials,
+      options.credentialsFile,
+    );
+  }
+  if (options.apiKey) {
+    credentials.apiKey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.clientSecret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
+  return credentials;
+}
+export async function loadcredentialsFile(
+  credentials: Credentials,
+  credentialsFile: string,
+) {
+  if (credentialsFile) {
+    const file = await import("file://" + credentialsFile, {
+      with: { type: "json" },
+    });
+    if (file.host) {
+      credentials.host = file.host;
+    }
+    if (file.apiKey) {
+      credentials.apiKey = file.apiKey;
+    }
+    if (file.clientId) {
+      credentials.clientId = file.clientId;
+    }
+    if (file.clientSecret) {
+      credentials.clientSecret = file.clientSecret;
+    }
+  }
+  return credentials;
+}
+export const credentials: Credentials = {
   host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
   clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
@@ -270,7 +356,7 @@ async function main() {
   program
     .command("simulate")
     .description("runs the code using the online simulator")
-    .option("-f,--filename <filename>", "the filename")
+    .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
     .option("-e,--env <env>", "env to run", "development")
     .option("-a,--amount <amount>", "amount in cents", "10000")

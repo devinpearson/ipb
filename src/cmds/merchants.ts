@@ -1,6 +1,5 @@
 import chalk from "chalk";
-import { fetchMerchants, getAccessToken } from "../api.js";
-import { credentials, printTitleBox } from "../index.js";
+import { credentials, initializeApi } from "../index.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -9,60 +8,26 @@ interface Options {
   credentialsFile: string;
 }
 export async function merchantsCommand(options: Options) {
-  printTitleBox();
-  if (options.credentialsFile) {
-    const file = await import("file://" + options.credentialsFile, {
-      with: { type: "json" },
-    });
-    if (file.host) {
-      credentials.host = file.host;
-    }
-    if (file.apiKey) {
-      credentials.apiKey = file.apiKey;
-    }
-    if (file.clientId) {
-      credentials.clientId = file.clientId;
-    }
-    if (file.clientSecret) {
-      credentials.clientSecret = file.clientSecret;
-    }
-  }
-  if (options.apiKey) {
-    credentials.apiKey = options.apiKey;
-  }
-  if (options.clientId) {
-    credentials.clientId = options.clientId;
-  }
-  if (options.clientSecret) {
-    credentials.clientSecret = options.clientSecret;
-  }
-  if (options.host) {
-    credentials.host = options.host;
-  }
-  const token = await getAccessToken(
-    credentials.host,
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.apiKey,
-  );
+  const api = await initializeApi(credentials, options);
+
   console.log("🏪 fetching merchants");
-  const result = await fetchMerchants(credentials.host, token);
+  const result = await api.getMerchants();
+  const merchants = result.data.result;
   console.log("");
-  if (!result) {
+  if (!merchants) {
     console.log("No merchants found");
     return;
   }
 
   console.log("Code \t Name");
-  for (let i = 0; i < result.length; i++) {
-    if (result[i]) {
+  for (let i = 0; i < merchants.length; i++) {
+    if (merchants[i]) {
       console.log(
-        chalk.greenBright(`${result[i]?.Code ?? "N/A"}`) +
+        chalk.greenBright(`${merchants[i]?.Code ?? "N/A"}`) +
           ` \t ` +
-          chalk.blueBright(`${result[i]?.Name ?? "N/A"}`),
+          chalk.blueBright(`${merchants[i]?.Name ?? "N/A"}`),
       );
     }
   }
   console.log("");
-  // console.table(result);
 }

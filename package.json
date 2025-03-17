@@ -13,7 +13,8 @@
     "check-format": "prettier --check .",
     "ci": "npm run build && npm run check-format && npm run check-exports && npm run test",
     "dev": "vitest",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "tapes": "./scripts/tapes.sh"
   },
   "keywords": [
     "investec",
@@ -30,6 +31,7 @@
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "dotenv": "^16.3.1",
+    "investec-card-api": "^0.2.0",
     "node-fetch": "^3.3.2",
     "programmable-card-code-emulator": "^1.4.2"
   },

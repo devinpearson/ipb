@@ -1,10 +1,7 @@
 import chalk from "chalk";
 import fs from "fs";
-import {
-  createTransaction,
-} from "programmable-card-code-emulator";
-import { credentials, printTitleBox } from "../index.js";
-import { executeCode, getAccessToken } from "../api.js";
+import { createTransaction } from "programmable-card-code-emulator";
+import { credentials, initializeApi } from "../index.js";
 interface Options {
   cardKey: number;
   filename: string;
@@ -21,48 +18,14 @@ interface Options {
   credentialsFile: string;
 }
 export async function simulateCommand(options: Options) {
-  printTitleBox();
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
       throw new Error("card-key is required");
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  if (options.credentialsFile) {
-    const file = await import("file://" + options.credentialsFile, {
-      with: { type: "json" },
-    });
-    if (file.host) {
-      credentials.host = file.host;
-    }
-    if (file.apiKey) {
-      credentials.apiKey = file.apiKey;
-    }
-    if (file.clientId) {
-      credentials.clientId = file.clientId;
-    }
-    if (file.clientSecret) {
-      credentials.clientSecret = file.clientSecret;
-    }
-  }
-  if (options.apiKey) {
-    credentials.apiKey = options.apiKey;
-  }
-  if (options.clientId) {
-    credentials.clientId = options.clientId;
-  }
-  if (options.clientSecret) {
-    credentials.clientSecret = options.clientSecret;
-  }
-  if (options.host) {
-    credentials.host = options.host;
-  }
-  const token = await getAccessToken(
-    credentials.host,
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.apiKey,
-  );
+  const api = await initializeApi(credentials, options);
+
   console.log("🚀 uploading code & running simulation");
   const code = fs.readFileSync(options.filename).toString();
   const transaction = createTransaction(
@@ -74,13 +37,7 @@ export async function simulateCommand(options: Options) {
     options.country,
   );
 
-  const result = await executeCode(
-    code,
-    transaction,
-    options.cardKey,
-    credentials.host,
-    token,
-  );
+  const result = await api.executeCode(code, transaction, options.cardKey);
   const executionItems = result.data.result;
   console.log("");
   if (!fs.existsSync(options.filename)) {
