@@ -246,7 +246,7 @@ ipb publish -f <filename> --code-id <code-id> -c <card-id>
 You can use the online simulator to test your code without deploying it to the card. This is very similar to the run command but it uses the online simulator instead of the local emulator. be aware that it will use your online env and not your local env.
 
 ```bash
-ipb simulate -f main.js -c <card-key> -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
 
 ### CLI usage
@@ -262,7 +262,7 @@ Options:
 
 Commands:
 
-- cards Gets a list of your cards
+- cards [options] Gets a list of your cards
 - config [options] set auth credentials
 - deploy [options] deploy code to card
 - logs [options] fetches logs from the api
@@ -273,8 +273,12 @@ Commands:
 - upload-env [options] uploads env to the card
 - published [options] downloads to published code to a local file
 - publish [options] publishes code to the card
-- enable enables code to be used on card
-- disable disables code to be used on card
+- simulate [options] runs the code using the online simulator
+- enable [options] enables code to be used on card
+- disable [options] disables code to be used on card
+- currencies [options] Gets a list of supported currencies
+- countries [options] Gets a list of countries
+- merchants [options] Gets a list of merchants
 - help [command] display help for command
 
 ## Development
