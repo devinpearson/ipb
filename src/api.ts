@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 import chalk from "chalk";
-import type { Transaction } from "programmable-card-code-emulator";
+import type { ExecutionItem, Transaction } from "programmable-card-code-emulator";
 
 interface AuthResponse {
   access_token: string;
@@ -255,7 +255,7 @@ export async function toggleCode(
 }
 
 interface ExecutionResult {
-  data: { result: { executionItems: []; error: null } };
+  data: { result: { executionItems: ExecutionItem[]; error: null } };
 }
 export async function fetchExecutions(
   cardkey: number,
@@ -272,6 +272,9 @@ export async function fetchExecutions(
   const result = (await fetchGet(endpoint, token)) as ExecutionResult;
   return result;
 }
+interface ExecuteResult {
+    data: { result: ExecutionItem[] };
+  }
 export async function executeCode(
   code: string,
   transaction: Transaction,
@@ -295,7 +298,8 @@ export async function executeCode(
     host,
     `/za/v1/cards/${encodeURIComponent(cardkey.toString())}/code/execute`,
   );
-  return fetchPost(endpoint, token, raw) as Promise<ExecutionResult>;
+  const result = (await fetchPost(endpoint, token, raw)) as ExecuteResult;
+  return result;
 }
 interface ReferenceResponse {
   data: {

@@ -2,7 +2,6 @@ import chalk from "chalk";
 import fs from "fs";
 import {
   createTransaction,
-  type ExecutionItem,
 } from "programmable-card-code-emulator";
 import { credentials, printTitleBox } from "../index.js";
 import { executeCode, getAccessToken } from "../api.js";
@@ -82,7 +81,7 @@ export async function simulateCommand(options: Options) {
     credentials.host,
     token,
   );
-  const executionItems = result.data.result as unknown as ExecutionItem[];
+  const executionItems = result.data.result;
   console.log("");
   if (!fs.existsSync(options.filename)) {
     throw new Error("File does not exist");
