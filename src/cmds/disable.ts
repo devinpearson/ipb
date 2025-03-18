@@ -21,7 +21,7 @@ export async function disableCommand(options: Options) {
 
   console.log("🍄 disabling code on card...");
   const result = await api.toggleCode(options.cardKey, false);
-  if (!result) {
+  if (!result.data.result.Enabled) {
     console.log("❌ code disabled");
   } else {
     console.log("✅ code disable failed");
