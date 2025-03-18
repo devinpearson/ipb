@@ -20,13 +20,17 @@ export async function uploadCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("🚀 uploading code");
-  const raw = { code: "" };
-  const code = fs.readFileSync(options.filename).toString();
-  raw.code = code;
-  const result = await api.uploadCode(options.cardKey, raw);
-  console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
-  console.log("");
+    console.log("🚀 uploading code");
+    const raw = { code: "" };
+    const code = fs.readFileSync(options.filename).toString();
+    raw.code = code;
+    const result = await api.uploadCode(options.cardKey, raw);
+    console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to upload to saved code:"), apiError);
+  }
 }

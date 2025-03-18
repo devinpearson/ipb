@@ -20,13 +20,20 @@ export async function uploadEnvCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("🚀 uploading env");
-  const raw = { variables: {} };
-  const variables = fs.readFileSync(options.filename, "utf8");
-  raw.variables = JSON.parse(variables);
-  const result = await api.uploadEnv(options.cardKey, raw);
-  console.log(`🎉 env uploaded`);
-  console.log("");
+    console.log("🚀 uploading env");
+    const raw = { variables: {} };
+    const variables = fs.readFileSync(options.filename, "utf8");
+    raw.variables = JSON.parse(variables);
+    const result = await api.uploadEnv(options.cardKey, raw);
+    console.log(`🎉 env uploaded`);
+    console.log("");
+  } catch (apiError) {
+    console.error(
+      chalk.redBright("Failed to upload environment variables:"),
+      apiError,
+    );
+  }
 }

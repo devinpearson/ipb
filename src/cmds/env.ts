@@ -17,15 +17,23 @@ export async function envCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("💎 fetching envs");
-  console.log(" ");
-  const result = await api.getEnv(options.cardKey);
-  const envs = result.data.result.variables;
+    console.log("💎 fetching envs");
 
-  console.log(`💾 saving to file: ${options.filename}`);
-  fs.writeFileSync(options.filename, JSON.stringify(envs, null, 4));
-  console.log("🎉 envs saved to file");
-  console.log("");
+    console.log(" ");
+    const result = await api.getEnv(options.cardKey);
+    const envs = result.data.result.variables;
+
+    console.log(`💾 saving to file: ${options.filename}`);
+    fs.writeFileSync(options.filename, JSON.stringify(envs, null, 4));
+    console.log("🎉 envs saved to file");
+    console.log("");
+  } catch (apiError) {
+    console.error(
+      chalk.redBright("Failed to fetch environment variables:"),
+      apiError,
+    );
+  }
 }

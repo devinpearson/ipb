@@ -15,14 +15,18 @@ export async function enableCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("🍄 enabling code on card...");
-  const result = await api.toggleCode(options.cardKey, true);
-  if (result.data.result.Enabled) {
-    console.log("✅ code enabled");
-  } else {
-    console.log("❌ code enable failed");
+    console.log("🍄 enabling code on card...");
+    const result = await api.toggleCode(options.cardKey, true);
+    if (result.data.result.Enabled) {
+      console.log("✅ code enabled");
+    } else {
+      console.log("❌ code enable failed");
+    }
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to enable card code:"), apiError);
   }
-  console.log("");
 }

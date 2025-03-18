@@ -17,15 +17,20 @@ export async function fetchCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("fetching code...");
-  console.log(" ");
-  const result = await api.getCode(options.cardKey);
-  const code = result.data.result.code;
+    console.log("fetching code...");
 
-  console.log(`💾 saving to file: ${options.filename}`);
-  await fs.writeFileSync(options.filename, code);
-  console.log("🎉 code saved to file");
-  console.log("");
+    console.log(" ");
+    const result = await api.getCode(options.cardKey);
+    const code = result.data.result.code;
+
+    console.log(`💾 saving to file: ${options.filename}`);
+    await fs.writeFileSync(options.filename, code);
+    console.log("🎉 code saved to file");
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to fetch saved code:"), apiError);
+  }
 }

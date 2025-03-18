@@ -20,16 +20,21 @@ export async function logsCommand(options: Options) {
   if (options.filename === undefined || options.filename === "") {
     throw new Error("filename is required");
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("📊 fetching execution items");
-  console.log(" ");
-  const result = await api.getExecutions(options.cardKey);
-  console.log(`💾 saving to file: ${options.filename}`);
-  fs.writeFileSync(
-    options.filename,
-    JSON.stringify(result.data.result.executionItems, null, 4),
-  );
-  console.log("🎉 " + chalk.greenBright("logs saved to file"));
-  console.log("");
+    console.log("📊 fetching execution items");
+
+    console.log(" ");
+    const result = await api.getExecutions(options.cardKey);
+    console.log(`💾 saving to file: ${options.filename}`);
+    fs.writeFileSync(
+      options.filename,
+      JSON.stringify(result.data.result.executionItems, null, 4),
+    );
+    console.log("🎉 " + chalk.greenBright("logs saved to file"));
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to fetch execution logs:"), apiError);
+  }
 }

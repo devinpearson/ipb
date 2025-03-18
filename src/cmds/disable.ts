@@ -16,15 +16,18 @@ export async function disableCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const api = await initializeApi(credentials, options);
-
-  console.log("🍄 disabling code on card...");
-  const result = await api.toggleCode(options.cardKey, false);
-  if (!result.data.result.Enabled) {
-    console.log("❌ code disabled");
-  } else {
-    console.log("✅ code disable failed");
+    console.log("🍄 disabling code on card...");
+    const result = await api.toggleCode(options.cardKey, false);
+    if (!result.data.result.Enabled) {
+      console.log("❌ code disabled");
+    } else {
+      console.log("✅ code disable failed");
+    }
+    console.log("");
+  } catch (error) {
+    console.error(chalk.redBright("Failed to disable:"), error);
   }
-  console.log("");
 }

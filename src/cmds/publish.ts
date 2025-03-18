@@ -21,15 +21,19 @@ export async function publishCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  console.log("🚀 publishing code...");
-  const code = fs.readFileSync(options.filename).toString();
-  const result = await api.uploadPublishedCode(
-    options.cardKey,
-    options.codeId,
-    code,
-  );
-  console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
-  console.log("");
+    console.log("🚀 publishing code...");
+    const code = fs.readFileSync(options.filename).toString();
+    const result = await api.uploadPublishedCode(
+      options.cardKey,
+      options.codeId,
+      code,
+    );
+    console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to publish code:"), apiError);
+  }
 }
