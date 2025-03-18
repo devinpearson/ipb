@@ -16,20 +16,29 @@ import {
   enableCommand,
   disableCommand,
   runCommand,
+  currenciesCommand,
+  countriesCommand,
+  merchantsCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
 import { Command } from "commander";
 import chalk from "chalk";
-const version = "0.6.1";
+import { simulateCommand } from "./cmds/simulate.js";
+import { InvestecCardApi } from "investec-card-api";
+const version = "0.7.4";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
   filename: `${homedir()}/.ipb/.credentials.json`,
 };
-export function printTitleBox() {
+export async function printTitleBox() {
+  //   const v = await checkLatestVersion()
   console.log("");
   console.log("🦓 Investec Programmable Banking CLI");
   console.log("🔮 " + chalk.blueBright(`v${version}`));
+  //   if (v !== version) {
+  // console.log("🔥 " + chalk.redBright(`v${v} is available`))
+  //   };
   console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
   console.log("");
 }
@@ -56,13 +65,98 @@ if (fs.existsSync(credentialLocation.filename)) {
     }
   }
 }
+export interface Credentials {
+  host: string;
+  clientId: string;
+  clientSecret: string;
+  apiKey: string;
+  cardKey: string;
+}
 
-export const credentials = {
+export interface BasicOptions {
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
+  credentialsFile: string;
+}
+
+export async function initializeApi(
+  credentials: Credentials,
+  options: BasicOptions,
+) {
+  printTitleBox();
+  credentials = await optionCredentials(options, credentials);
+  const api = new InvestecCardApi(
+    credentials.clientId,
+    credentials.clientSecret,
+    credentials.apiKey,
+    credentials.host,
+  );
+  const accessResult = await api.getAccessToken();
+  if (accessResult.scope !== "cards") {
+    console.log(
+      chalk.redBright(
+        "Scope is not only cards, please consider reducing the scopes",
+      ),
+    );
+    console.log("");
+  }
+  return api;
+}
+export async function optionCredentials(
+  options: BasicOptions,
+  credentials: any,
+) {
+  if (options.credentialsFile) {
+    credentials = await loadcredentialsFile(
+      credentials,
+      options.credentialsFile,
+    );
+  }
+  if (options.apiKey) {
+    credentials.apiKey = options.apiKey;
+  }
+  if (options.clientId) {
+    credentials.clientId = options.clientId;
+  }
+  if (options.clientSecret) {
+    credentials.clientSecret = options.clientSecret;
+  }
+  if (options.host) {
+    credentials.host = options.host;
+  }
+  return credentials;
+}
+export async function loadcredentialsFile(
+  credentials: Credentials,
+  credentialsFile: string,
+) {
+  if (credentialsFile) {
+    const file = await import("file://" + credentialsFile, {
+      with: { type: "json" },
+    });
+    if (file.host) {
+      credentials.host = file.host;
+    }
+    if (file.apiKey) {
+      credentials.apiKey = file.apiKey;
+    }
+    if (file.clientId) {
+      credentials.clientId = file.clientId;
+    }
+    if (file.clientSecret) {
+      credentials.clientSecret = file.clientSecret;
+    }
+  }
+  return credentials;
+}
+export const credentials: Credentials = {
   host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  secret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apikey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardkey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
+  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
+  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
+  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
 };
 async function main() {
   program
@@ -73,6 +167,17 @@ async function main() {
   program
     .command("cards")
     .description("Gets a list of your cards")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(cardsCommand);
 
   program
@@ -96,6 +201,17 @@ async function main() {
     .option("-f,--filename <filename>", "the filename")
     .option("-e,--env <env>", "env to run", "development")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(deployCommand);
 
   program
@@ -103,6 +219,17 @@ async function main() {
     .description("fetches logs from the api")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(logsCommand);
 
   program
@@ -111,7 +238,7 @@ async function main() {
     .option("-f,--filename <filename>", "the filename")
     .option("-e,--env <env>", "env to run", "development")
     .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-c,--currency <currency>", "currency code", "zar")
+    .option("-u,--currency <currency>", "currency code", "zar")
     .option("-z,--mcc <mcc>", "merchant category code", "0000")
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
@@ -123,6 +250,17 @@ async function main() {
     .description("fetches the saved code")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(fetchCommand);
 
   program
@@ -130,6 +268,17 @@ async function main() {
     .description("uploads to saved code")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(uploadCommand);
 
   program
@@ -137,6 +286,17 @@ async function main() {
     .description("downloads to env to a local file")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(envCommand);
 
   program
@@ -144,6 +304,17 @@ async function main() {
     .description("uploads env to the card")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(uploadEnvCommand);
 
   program
@@ -151,6 +322,17 @@ async function main() {
     .description("downloads to published code to a local file")
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(publishedCommand);
 
   program
@@ -159,19 +341,112 @@ async function main() {
     .requiredOption("-f,--filename <filename>", "the filename")
     .option("-c,--card-key <cardKey>", "the cardkey")
     .option("-i,--code-id <codeId>", "the code id of the save code")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(publishCommand);
-
+  program
+    .command("simulate")
+    .description("runs the code using the online simulator")
+    .requiredOption("-f,--filename <filename>", "the filename")
+    .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("-e,--env <env>", "env to run", "development")
+    .option("-a,--amount <amount>", "amount in cents", "10000")
+    .option("-u,--currency <currency>", "currency code", "zar")
+    .option("-z,--mcc <mcc>", "merchant category code", "0000")
+    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
+    .option("-i,--city <city>", "city name", "Cape Town")
+    .option("-o,--country <country>", "country code", "ZA")
+    .action(simulateCommand);
   program
     .command("enable")
     .description("enables code to be used on card")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(enableCommand);
 
   program
     .command("disable")
     .description("disables code to be used on card")
     .option("-c,--card-key <cardKey>", "the cardkey")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
     .action(disableCommand);
+
+  program
+    .command("currencies")
+    .description("Gets a list of supported currencies")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(currenciesCommand);
+
+  program
+    .command("countries")
+    .description("Gets a list of countries")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(countriesCommand);
+
+  program
+    .command("merchants")
+    .description("Gets a list of merchants")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .action(merchantsCommand);
 
   try {
     await program.parseAsync(process.argv);
@@ -186,6 +461,20 @@ async function main() {
       console.log("");
     }
   }
+}
+
+export async function checkLatestVersion() {
+  const response = await fetch("https://registry.npmjs.org/investec-ipb", {
+    method: "GET",
+    headers: {
+      Accept: "application/vnd.npm.install-v1+json",
+    },
+  });
+
+  const data = (await response.json()) as { "dist-tags": { latest: string } };
+  const latestVersion = data["dist-tags"].latest;
+
+  return latestVersion;
 }
 
 main();

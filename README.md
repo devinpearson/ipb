@@ -25,7 +25,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 
 Before installing, [download and install Node.js](https://nodejs.org/en/download/).
 
-To install the CLI, run the following commands:
+To install or upgrade the CLI, run the following commands:
 
 ```bash
 npm install -g investec-ipb
@@ -42,6 +42,39 @@ To configure the CLI, run the following command:
 ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
 ```
 
+If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
+
+```shell
+INVESTEC_HOST=https://openapi.investec.com
+INVESTEC_CLIENT_ID=your-client-id
+INVESTEC_CLIENT_SECRET=your-client-secret
+INVESTEC_API_KEY=your-api-key
+INVESTEC_CARD_KEY=your-card-key
+```
+
+You also have the option to specify the host, client id, client secret, api key and card id when calling each command. These will override the configuration set in the `.env` file and your credential file.
+
+```bash
+ipb deploy -f <filename> -e <environment> -c <card-id> --host <host> --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
+```
+
+You can also create your own `.credentials.json` file and store and access it in a location you prefer. This file should be in the following format:
+
+```json
+{
+  "client_id": "your-client-id",
+  "client_secret": "your-client-secret",
+  "api_key": "your-api-key",
+  "card_id": "your-card-id"
+}
+```
+
+To configure the CLI using a credentials file, run the following command:
+
+```bash
+ipb cards --credentials-file <path-to-credentials-file>
+```
+
 The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
 
 ## Usage
@@ -54,6 +87,9 @@ There are six main commands that you can use to interact with the card:
 - `logs`
 - `enable`
 - `disable`
+- `countries`
+- `currencies`
+- `merchants`
 
 There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
 
@@ -63,6 +99,7 @@ There are also additional functions that you can use to interact with the card i
 - `upload-env`
 - `published`
 - `publish`
+- `simulate` (online simulator)
 
 ### Card list
 
@@ -132,6 +169,30 @@ ipb disable -c <card-id>
 
 ![toggle command](assets/toggle.gif)
 
+### Countries
+
+Retrieve a list of countries that can be used in the card code.
+
+```bash
+ipb countries
+```
+
+### Currencies
+
+Retrieve a list of currencies that can be used in the card code.
+
+```bash
+ipb currencies
+```
+
+### Merchants
+
+Retrieve a list of merchants that can be used in the card code.
+
+```bash
+ipb merchants
+```
+
 ### Fetch Code
 
 To fetch the code saved on the card, run the following command:
@@ -180,6 +241,14 @@ To publish code to the card you will need the codeId returned when saving the co
 ipb publish -f <filename> --code-id <code-id> -c <card-id>
 ```
 
+### Simulate Code
+
+You can use the online simulator to test your code without deploying it to the card. This is very similar to the run command but it uses the online simulator instead of the local emulator. be aware that it will use your online env and not your local env.
+
+```bash
+ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
+```
+
 ### CLI usage
 
 Usage: ipb [options] [command]
@@ -193,7 +262,7 @@ Options:
 
 Commands:
 
-- cards Gets a list of your cards
+- cards [options] Gets a list of your cards
 - config [options] set auth credentials
 - deploy [options] deploy code to card
 - logs [options] fetches logs from the api
@@ -204,8 +273,12 @@ Commands:
 - upload-env [options] uploads env to the card
 - published [options] downloads to published code to a local file
 - publish [options] publishes code to the card
-- enable enables code to be used on card
-- disable disables code to be used on card
+- simulate [options] runs the code using the online simulator
+- enable [options] enables code to be used on card
+- disable [options] disables code to be used on card
+- currencies [options] Gets a list of supported currencies
+- countries [options] Gets a list of countries
+- merchants [options] Gets a list of merchants
 - help [command] display help for command
 
 ## Development

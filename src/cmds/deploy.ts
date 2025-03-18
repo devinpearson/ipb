@@ -1,30 +1,26 @@
 import fs from "fs";
-import {
-  getAccessToken,
-  uploadCode,
-  uploadEnv,
-  uploadPublishedCode,
-} from "../api.js";
-import { credentials, printTitleBox } from "../index.js";
+import { credentials, initializeApi } from "../index.js";
+import chalk from "chalk";
 interface Options {
   cardKey: number;
   filename: string;
   env: string;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
+  credentialsFile: string;
 }
 export async function deployCommand(options: Options) {
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("card-key is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
-  printTitleBox();
-  const token = await getAccessToken(
-    credentials.host,
-    credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
-  );
+
+  const api = await initializeApi(credentials, options);
+
   if (options.env) {
     if (!fs.existsSync(`.env.${options.env}`)) {
       throw new Error("Env does not exist");
@@ -34,26 +30,19 @@ export async function deployCommand(options: Options) {
     let lines = data.split("\n");
 
     rawVar.variables = convertToJson(lines);
-    await uploadEnv(options.cardKey, rawVar, credentials.host, token);
+    await api.uploadEnv(options.cardKey, rawVar);
     console.log("📦 env deployed");
   }
   console.log("🚀 deploying code");
   const raw = { code: "" };
   const code = fs.readFileSync(options.filename).toString();
   raw.code = code;
-  const saveResult = await uploadCode(
-    options.cardKey,
-    raw,
-    credentials.host,
-    token,
-  );
+  const saveResult = await api.uploadCode(options.cardKey, raw);
   // console.log(saveResult);
-  const result = await uploadPublishedCode(
+  const result = await api.uploadPublishedCode(
     options.cardKey,
     saveResult.data.result.codeId,
     code,
-    credentials.host,
-    token,
   );
   if (result.data.result.codeId) {
     console.log("🎉 code deployed");

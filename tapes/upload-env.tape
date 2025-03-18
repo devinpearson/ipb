@@ -1,4 +1,4 @@
-Output upload-env.gif
+Output assets/upload-env.gif
 
 Set Shell "bash"
 Set FontSize 24

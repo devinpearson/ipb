@@ -1,37 +1,39 @@
 import fs from "fs";
-import { getAccessToken, uploadPublishedCode } from "../api.js";
-import { credentials, printTitleBox } from "../index.js";
+import { credentials, initializeApi } from "../index.js";
+import chalk from "chalk";
 interface Options {
   cardKey: number;
   filename: string;
   codeId: string;
+  host: string;
+  apiKey: string;
+  clientId: string;
+  clientSecret: string;
+  credentialsFile: string;
 }
 export async function publishCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
     throw new Error("File does not exist");
   }
   if (options.cardKey === undefined) {
-    if (credentials.cardkey === "") {
+    if (credentials.cardKey === "") {
       throw new Error("card-key is required");
     }
-    options.cardKey = Number(credentials.cardkey);
+    options.cardKey = Number(credentials.cardKey);
   }
-  printTitleBox();
-  const token = await getAccessToken(
-    credentials.host,
-    credentials.clientId,
-    credentials.secret,
-    credentials.apikey,
-  );
-  console.log("🚀 publishing code...");
-  const code = fs.readFileSync(options.filename).toString();
-  const result = await uploadPublishedCode(
-    options.cardKey,
-    options.codeId,
-    code,
-    credentials.host,
-    token,
-  );
-  console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
-  console.log("");
+  try {
+    const api = await initializeApi(credentials, options);
+
+    console.log("🚀 publishing code...");
+    const code = fs.readFileSync(options.filename).toString();
+    const result = await api.uploadPublishedCode(
+      options.cardKey,
+      options.codeId,
+      code,
+    );
+    console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
+    console.log("");
+  } catch (apiError) {
+    console.error(chalk.redBright("Failed to publish code:"), apiError);
+  }
 }
