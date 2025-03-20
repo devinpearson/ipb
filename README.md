@@ -299,7 +299,9 @@ To run the CLI during development, run the following command:
 ```bash
 node . [command]
 ```
-
+## Wiki
+ link to [Wiki](../../wiki)
+ 
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or open an issue for any suggestions or improvements.
