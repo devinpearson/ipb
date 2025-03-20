@@ -2,8 +2,8 @@
 .env
 data
 /bin
-.env.*
+/.env.*
 .DS_Store
 executions.json
-main.js
+/main.js
 env.json

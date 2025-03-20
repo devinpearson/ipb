@@ -19,13 +19,14 @@ import {
   currenciesCommand,
   countriesCommand,
   merchantsCommand,
+  newCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
-const version = "0.7.4";
+const version = "0.7.5";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -447,6 +448,12 @@ async function main() {
       "Set a custom credentials file",
     )
     .action(merchantsCommand);
+    program
+    .command("new")
+    .description("Sets up scaffoldings for a new project")
+    .argument('<string>', 'name of the new project')
+    .addOption(new Option("--template <template>", "name of the template to use").default("default").choices(["default", "petro"]))
+    .action(newCommand);
 
   try {
     await program.parseAsync(process.argv);
