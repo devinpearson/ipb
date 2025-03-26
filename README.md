@@ -155,6 +155,16 @@ ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "
 
 ![run command](assets/run.gif)
 
+### New Project
+
+To scaffold a new project, run the following command:
+
+template is optional and can be set to `default` or `petro` to create a project using one of the templates
+
+```bash
+ipb new <project-name> --template <template-name>
+```
+
 ### Enable and Disable Code
 
 To enable or disable code on your card, run the following commands:
