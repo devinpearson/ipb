@@ -25,7 +25,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
-const version = "0.7.4";
+const version = "0.7.6";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
