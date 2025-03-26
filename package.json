@@ -1,13 +1,15 @@
 {
   "name": "investec-ipb",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
   },
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc && npm run copy-files",
+    "clean": "rimraf ./bin",
+    "copy-files": "cp -r ./templates/ ./bin/templates/",
     "test": "vitest",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "check-format": "prettier --check .",
@@ -40,6 +42,7 @@
     "@commander-js/extra-typings": "^13.1.0",
     "@types/node": "^22.12.0",
     "prettier": "3.0.3",
+    "rimraf": "^6.0.1",
     "vitest": "^2.1.8"
   },
   "files": [

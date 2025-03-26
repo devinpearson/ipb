@@ -14,6 +14,7 @@ import { configCommand } from "./set.js";
 import { currenciesCommand } from "./currencies.js";
 import { countriesCommand } from "./countries.js";
 import { merchantsCommand } from "./merchants.js";
+import { newCommand } from "./new.js";
 
 export {
   cardsCommand,
@@ -32,4 +33,5 @@ export {
   uploadEnvCommand,
   countriesCommand,
   merchantsCommand,
+  newCommand,
 };
