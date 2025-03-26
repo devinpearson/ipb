@@ -6,6 +6,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function currenciesCommand(options: Options) {
   try {
@@ -30,7 +31,14 @@ export async function currenciesCommand(options: Options) {
       }
     }
     console.log("");
-  } catch (error) {
-    console.error(chalk.redBright("Failed to fetch currencies:"), error);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to fetch currencies:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

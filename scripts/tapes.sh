@@ -7,3 +7,4 @@ vhs tapes/deploy.tape
 vhs tapes/logs.tape
 vhs tapes/run.tape
 vhs tapes/toggle.tape
+vhs tapes/new.tape

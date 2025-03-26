@@ -9,6 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: string;
 }
 export async function publishedCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -27,7 +28,14 @@ export async function publishedCommand(options: Options) {
     await fs.writeFileSync(options.filename, code);
     console.log("🎉 code saved to file");
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to publish saved code:"), apiError);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to publish saved code:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

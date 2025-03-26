@@ -7,6 +7,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function enableCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -26,7 +27,14 @@ export async function enableCommand(options: Options) {
       console.log("❌ code enable failed");
     }
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to enable card code:"), apiError);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to enable card code:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

@@ -16,6 +16,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function simulateCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -76,7 +77,14 @@ export async function simulateCommand(options: Options) {
       });
     });
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to simulate code online:"), apiError);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to simulate code online:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

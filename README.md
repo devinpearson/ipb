@@ -165,6 +165,8 @@ template is optional and can be set to `default` or `petro` to create a project 
 ipb new <project-name> --template <template-name>
 ```
 
+![new command](assets/new.gif)
+
 ### Enable and Disable Code
 
 To enable or disable code on your card, run the following commands:
@@ -289,6 +291,7 @@ Commands:
 - currencies [options] Gets a list of supported currencies
 - countries [options] Gets a list of countries
 - merchants [options] Gets a list of merchants
+- new [options] <string> Sets up scaffoldings for a new project
 - help [command] display help for command
 
 ## Development

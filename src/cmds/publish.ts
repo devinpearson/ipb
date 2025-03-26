@@ -10,6 +10,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: string;
 }
 export async function publishCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
@@ -33,7 +34,11 @@ export async function publishCommand(options: Options) {
     );
     console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to publish code:"), apiError);
+  } catch (error: any) {
+    console.error(chalk.redBright("Failed to publish code:"), error.message);
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

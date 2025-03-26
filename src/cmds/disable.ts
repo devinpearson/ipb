@@ -7,6 +7,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 
 export async function disableCommand(options: Options) {
@@ -27,7 +28,11 @@ export async function disableCommand(options: Options) {
       console.log("✅ code disable failed");
     }
     console.log("");
-  } catch (error) {
-    console.error(chalk.redBright("Failed to disable:"), error);
+  } catch (error: any) {
+    console.error(chalk.redBright("Failed to disable:"), error.message);
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

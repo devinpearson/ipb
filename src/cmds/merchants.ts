@@ -6,6 +6,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: string;
 }
 export async function merchantsCommand(options: Options) {
   try {
@@ -31,7 +32,11 @@ export async function merchantsCommand(options: Options) {
       }
     }
     console.log("");
-  } catch (error) {
-    console.error(chalk.redBright("Failed to fetch merchants:"), error);
+  } catch (error: any) {
+    console.error(chalk.redBright("Failed to fetch merchants:"), error.message);
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

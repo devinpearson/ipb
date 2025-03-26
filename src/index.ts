@@ -179,6 +179,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(cardsCommand);
 
   program
@@ -194,6 +195,7 @@ async function main() {
       "Sets your client secret for the Investec API",
     )
     .option("--card-key <cardKey>", "Sets your card key for the Investec API")
+    .option("-v,--verbose", "additional debugging information")
     .action(configCommand);
 
   program
@@ -213,6 +215,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(deployCommand);
 
   program
@@ -231,6 +234,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(logsCommand);
 
   program
@@ -244,6 +248,7 @@ async function main() {
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
     .option("-o,--country <country>", "country code", "ZA")
+    .option("-v,--verbose", "additional debugging information")
     .action(runCommand);
 
   program
@@ -262,6 +267,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(fetchCommand);
 
   program
@@ -280,6 +286,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(uploadCommand);
 
   program
@@ -298,6 +305,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(envCommand);
 
   program
@@ -316,6 +324,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(uploadEnvCommand);
 
   program
@@ -334,6 +343,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(publishedCommand);
 
   program
@@ -353,6 +363,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(publishCommand);
   program
     .command("simulate")
@@ -366,6 +377,7 @@ async function main() {
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
     .option("-o,--country <country>", "country code", "ZA")
+    .option("-v,--verbose", "additional debugging information")
     .action(simulateCommand);
   program
     .command("enable")
@@ -382,6 +394,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(enableCommand);
 
   program
@@ -399,6 +412,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(disableCommand);
 
   program
@@ -415,6 +429,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(currenciesCommand);
 
   program
@@ -431,6 +446,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(countriesCommand);
 
   program
@@ -447,13 +463,19 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(merchantsCommand);
 
   program
     .command("new")
     .description("Sets up scaffoldings for a new project")
-    .argument('<string>', 'name of the new project')
-    .addOption(new Option("--template <template>", "name of the template to use").default("default").choices(["default", "petro"]))
+    .argument("<string>", "name of the new project")
+    .option("-v,--verbose", "additional debugging information")
+    .addOption(
+      new Option("--template <template>", "name of the template to use")
+        .default("default")
+        .choices(["default", "petro"]),
+    )
     .action(newCommand);
 
   try {
