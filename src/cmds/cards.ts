@@ -21,13 +21,13 @@ export async function cardsCommand(options: Options) {
       console.log("No cards found");
       return;
     }
-    console.log("Card Key \t Card Number \t\t Code Enabled");
+    console.log("Card Key \tCard Number \t\tCode Enabled");
     for (let i = 0; i < cards.length; i++) {
       if (cards[i]) {
         console.log(
-          chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t`) +
-            chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t`) +
-            chalk.redBright(` \t ${cards[i]?.IsProgrammable ?? "N/A"}`),
+          chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t\t`) +
+            chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t\t`) +
+            chalk.redBright(`${cards[i]?.IsProgrammable ?? "N/A"}`),
         );
       }
     }
