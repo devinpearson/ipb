@@ -1,4 +1,5 @@
 import fs from "fs";
+import dotenv from 'dotenv'; 
 import { credentials, initializeApi } from "../index.js";
 import chalk from "chalk";
 interface Options {
@@ -12,6 +13,7 @@ interface Options {
   credentialsFile: string;
 }
 export async function deployCommand(options: Options) {
+    let envObject = {}
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
       throw new Error("card-key is required");
@@ -25,12 +27,9 @@ export async function deployCommand(options: Options) {
     if (!fs.existsSync(`.env.${options.env}`)) {
       throw new Error("Env does not exist");
     }
-    const rawVar = { variables: {} };
-    const data = fs.readFileSync(`.env.${options.env}`, "utf8");
-    let lines = data.split("\n");
+    dotenv.config({ processEnv: envObject, path: `.env.${options.env}` });
 
-    rawVar.variables = convertToJson(lines);
-    await api.uploadEnv(options.cardKey, rawVar);
+    await api.uploadEnv(options.cardKey, { variables: envObject });
     console.log("📦 env deployed");
   }
   console.log("🚀 deploying code");
