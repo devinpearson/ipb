@@ -13,7 +13,7 @@ interface Options {
   credentialsFile: string;
 }
 export async function deployCommand(options: Options) {
-    const envObject = {}
+    let envObject = {}
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
       throw new Error("card-key is required");
