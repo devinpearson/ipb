@@ -10,13 +10,16 @@ interface Options {
 export async function newCommand(name: string, options: Options) {
     printTitleBox();
     const uri = path.join(import.meta.dirname, '/../templates/', options.template);
-    console.log('📂 Finding template at ' + chalk.green(uri));
+    console.log('📂 Finding template at ' + chalk.green(options.template));
     //console.log(uri);
   try {
     if (!fs.existsSync(uri)) {
         throw new Error("💣 Template does not exist");
     }
     // console.log(import.meta.dirname);
+    if (fs.existsSync(name)) {
+        throw new Error("💣 Project already exists")
+    };
     fs.cpSync(uri, name, { recursive: true })
     console.log(`🚀 Created new project from template ${options.template}`);
     console.log("");
