@@ -448,7 +448,8 @@ async function main() {
       "Set a custom credentials file",
     )
     .action(merchantsCommand);
-    program
+
+  program
     .command("new")
     .description("Sets up scaffoldings for a new project")
     .argument('<string>', 'name of the new project')
