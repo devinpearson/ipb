@@ -24,6 +24,9 @@ export async function simulateCommand(options: Options) {
     }
     options.cardKey = Number(credentials.cardKey);
   }
+  if (!fs.existsSync(options.filename)) {
+    throw new Error("File does not exist");
+  }
   try {
     const api = await initializeApi(credentials, options);
 
@@ -41,9 +44,6 @@ export async function simulateCommand(options: Options) {
     const result = await api.executeCode(code, transaction, options.cardKey);
     const executionItems = result.data.result;
     console.log("");
-    if (!fs.existsSync(options.filename)) {
-      throw new Error("File does not exist");
-    }
     console.log(
       chalk.white(`Simulated code:`),
       chalk.blueBright(options.filename),
