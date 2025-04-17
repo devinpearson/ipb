@@ -9,6 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function uploadEnvCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
@@ -30,10 +31,14 @@ export async function uploadEnvCommand(options: Options) {
     const result = await api.uploadEnv(options.cardKey, raw);
     console.log(`🎉 env uploaded`);
     console.log("");
-  } catch (apiError) {
+  } catch (error: any) {
     console.error(
-      chalk.redBright("Failed to upload environment variables:"),
-      apiError,
+      chalk.redBright("Failed to upload environment variables: "),
+      error.message,
     );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

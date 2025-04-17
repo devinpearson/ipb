@@ -12,6 +12,7 @@ interface Options {
   merchant: string;
   city: string;
   country: string;
+  // verbose: boolean;
 }
 export async function runCommand(options: Options) {
   printTitleBox();

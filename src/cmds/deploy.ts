@@ -1,5 +1,5 @@
 import fs from "fs";
-import dotenv from 'dotenv'; 
+import dotenv from "dotenv";
 import { credentials, initializeApi } from "../index.js";
 import chalk from "chalk";
 interface Options {
@@ -11,9 +11,10 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  //verbose: boolean;
 }
 export async function deployCommand(options: Options) {
-    let envObject = {}
+  let envObject = {};
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
       throw new Error("card-key is required");
@@ -27,7 +28,7 @@ export async function deployCommand(options: Options) {
     if (!fs.existsSync(`.env.${options.env}`)) {
       throw new Error("Env does not exist");
     }
-    dotenv.config({ processEnv: envObject, path: `.env.${options.env}` });
+    envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
 
     await api.uploadEnv(options.cardKey, { variables: envObject });
     console.log("📦 env deployed");
@@ -47,24 +48,4 @@ export async function deployCommand(options: Options) {
     console.log("🎉 code deployed");
   }
   console.log("");
-}
-
-function convertToJson(arr: string[]) {
-  let output: { [key: string]: string } = {};
-  for (let i = 0; i < arr.length; i++) {
-    let line = arr[i];
-
-    if (line !== "\r") {
-      let txt = line?.trim();
-
-      if (line) {
-        let key = line.split("=")[0]?.trim();
-        let value = line.split("=")[1]?.trim();
-        if (key && value) {
-          output[key] = value;
-        }
-      }
-    }
-  }
-  return output;
 }

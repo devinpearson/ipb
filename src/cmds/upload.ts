@@ -9,6 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function uploadCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
@@ -30,7 +31,14 @@ export async function uploadCommand(options: Options) {
     const result = await api.uploadCode(options.cardKey, raw);
     console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to upload to saved code:"), apiError);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to upload to saved code:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

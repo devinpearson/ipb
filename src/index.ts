@@ -26,6 +26,8 @@ import { Command, Option } from "commander";
 import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
+import { CardApi } from "./mock-card.js";
+
 const version = "0.7.8";
 const program = new Command();
 export const credentialLocation = {
@@ -88,12 +90,23 @@ export async function initializeApi(
 ) {
   printTitleBox();
   credentials = await optionCredentials(options, credentials);
-  const api = new InvestecCardApi(
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.apiKey,
-    credentials.host,
-  );
+  let api;
+  if (process.env.DEBUG == "true") {
+    // console.log(chalk.yellow('Using mock API for debugging'));
+    api = new CardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  } else {
+    api = new InvestecCardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
   const accessResult = await api.getAccessToken();
   if (accessResult.scope !== "cards") {
     console.log(
@@ -179,6 +192,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(cardsCommand);
 
   program
@@ -194,6 +208,7 @@ async function main() {
       "Sets your client secret for the Investec API",
     )
     .option("--card-key <cardKey>", "Sets your card key for the Investec API")
+    .option("-v,--verbose", "additional debugging information")
     .action(configCommand);
 
   program
@@ -213,6 +228,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(deployCommand);
 
   program
@@ -231,6 +247,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(logsCommand);
 
   program
@@ -244,6 +261,7 @@ async function main() {
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
     .option("-o,--country <country>", "country code", "ZA")
+    .option("-v,--verbose", "additional debugging information")
     .action(runCommand);
 
   program
@@ -262,6 +280,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(fetchCommand);
 
   program
@@ -280,6 +299,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(uploadCommand);
 
   program
@@ -298,6 +318,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(envCommand);
 
   program
@@ -316,6 +337,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(uploadEnvCommand);
 
   program
@@ -334,6 +356,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(publishedCommand);
 
   program
@@ -353,6 +376,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(publishCommand);
   program
     .command("simulate")
@@ -366,6 +390,7 @@ async function main() {
     .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
     .option("-i,--city <city>", "city name", "Cape Town")
     .option("-o,--country <country>", "country code", "ZA")
+    .option("-v,--verbose", "additional debugging information")
     .action(simulateCommand);
   program
     .command("enable")
@@ -382,6 +407,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(enableCommand);
 
   program
@@ -399,6 +425,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(disableCommand);
 
   program
@@ -415,6 +442,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(currenciesCommand);
 
   program
@@ -431,6 +459,7 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(countriesCommand);
 
   program
@@ -447,13 +476,20 @@ async function main() {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-v,--verbose", "additional debugging information")
     .action(merchantsCommand);
 
   program
     .command("new")
     .description("Sets up scaffoldings for a new project")
-    .argument('<string>', 'name of the new project')
-    .addOption(new Option("--template <template>", "name of the template to use").default("default").choices(["default", "petro"]))
+    .argument("<string>", "name of the new project")
+    .option("-v,--verbose", "additional debugging information")
+    .option("--force", "force overwrite existing files")
+    .addOption(
+      new Option("--template <template>", "name of the template to use")
+        .default("default")
+        .choices(["default", "petro"]),
+    )
     .action(newCommand);
 
   try {

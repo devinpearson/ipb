@@ -9,6 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function envCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -30,10 +31,14 @@ export async function envCommand(options: Options) {
     fs.writeFileSync(options.filename, JSON.stringify(envs, null, 4));
     console.log("🎉 envs saved to file");
     console.log("");
-  } catch (apiError) {
+  } catch (error: any) {
     console.error(
-      chalk.redBright("Failed to fetch environment variables:"),
-      apiError,
+      chalk.redBright("Failed to fetch environment variables: "),
+      error.message,
     );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

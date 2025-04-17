@@ -9,6 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 export async function logsCommand(options: Options) {
   if (options.cardKey === undefined) {
@@ -24,17 +25,24 @@ export async function logsCommand(options: Options) {
     const api = await initializeApi(credentials, options);
 
     console.log("📊 fetching execution items");
-
     console.log(" ");
     const result = await api.getExecutions(options.cardKey);
     console.log(`💾 saving to file: ${options.filename}`);
+    console.log("");
     fs.writeFileSync(
       options.filename,
       JSON.stringify(result.data.result.executionItems, null, 4),
     );
     console.log("🎉 " + chalk.greenBright("logs saved to file"));
     console.log("");
-  } catch (apiError) {
-    console.error(chalk.redBright("Failed to fetch execution logs:"), apiError);
+  } catch (error: any) {
+    console.error(
+      chalk.redBright("Failed to fetch execution logs:"),
+      error.message,
+    );
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

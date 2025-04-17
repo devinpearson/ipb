@@ -7,6 +7,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  verbose: boolean;
 }
 
 export async function disableCommand(options: Options) {
@@ -22,12 +23,16 @@ export async function disableCommand(options: Options) {
     console.log("🍄 disabling code on card...");
     const result = await api.toggleCode(options.cardKey, false);
     if (!result.data.result.Enabled) {
-      console.log("❌ code disabled successfully");
+      console.log("✅ code disabled successfully");
     } else {
-      console.log("✅ code disable failed");
+      console.log("❌ code disable failed");
     }
     console.log("");
-  } catch (error) {
-    console.error(chalk.redBright("Failed to disable:"), error);
+  } catch (error: any) {
+    console.error(chalk.redBright("Failed to disable:"), error.message);
+    console.log("");
+    if (options.verbose) {
+      console.error(error);
+    }
   }
 }

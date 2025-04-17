@@ -27,7 +27,7 @@ Before installing, [download and install Node.js](https://nodejs.org/en/download
 
 To install or upgrade the CLI, run the following commands:
 
-```bash
+```sh
 npm install -g investec-ipb
 ```
 
@@ -38,13 +38,13 @@ More information on how to access your keys can be found on the [Investec Develo
 
 To configure the CLI, run the following command:
 
-```bash
+```sh
 ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
 ```
 
 If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
 
-```shell
+```sh
 INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id
 INVESTEC_CLIENT_SECRET=your-client-secret
@@ -54,7 +54,7 @@ INVESTEC_CARD_KEY=your-card-key
 
 You also have the option to specify the host, client id, client secret, api key and card id when calling each command. These will override the configuration set in the `.env` file and your credential file.
 
-```bash
+```sh
 ipb deploy -f <filename> -e <environment> -c <card-id> --host <host> --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
 ```
 
@@ -71,7 +71,7 @@ You can also create your own `.credentials.json` file and store and access it in
 
 To configure the CLI using a credentials file, run the following command:
 
-```bash
+```sh
 ipb cards --credentials-file <path-to-credentials-file>
 ```
 
@@ -81,15 +81,16 @@ The card id is optional and can be set when calling each command. If you specify
 
 There are six main commands that you can use to interact with the card:
 
-- `cards`
-- `deploy`
-- `run`
-- `logs`
-- `enable`
-- `disable`
-- `countries`
-- `currencies`
-- `merchants`
+- [`cards`](#cards): get a list of cards
+- [`deploy`](#deploy): deploy code to the card
+- [`logs`](#fetching-execution-logs): fetch execution logs
+- [`run`](#run---local-simulation): run code locally
+- [`new`](#new-project): scaffold a new project
+- [`enable`](#enable-and-disable-code): enable code on the card
+- [`disable`](#enable-and-disable-code): disable code on the card
+- [`countries`](#countries): get a list of countries
+- [`currencies`](#currencies): get a list of currencies
+- [`merchants`](#merchants): get a list of merchants
 
 There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
 
@@ -101,20 +102,21 @@ There are also additional functions that you can use to interact with the card i
 - `publish`
 - `simulate` (online simulator)
 
-### Card list
+### Cards
 
 To get a list of your cards with card keys, card number and whether the card is enabled for card code,
 
 run the following command for card list:
 
-```bash
+```sh
 ipb cards
 ```
 
 ![cards command](assets/cards.gif)
 
-### Code Deployment
+### Deploy
 
+Code Deployment to your card.
 for environment variables, you can set them in a `.env` file in the root of your project.
 You should name your environments such as `.env.prod` or `.env.dev` and then specify the environment when running the command.
 To call on these environments you will specify prod or dev as the environment.
@@ -122,7 +124,7 @@ This makes sure you dont upload the .env file for your current code project.
 
 To deploy code to your card, run the following command:
 
-```bash
+```sh
 ipb deploy -f <filename> -e <environment> -c <card-id>
 ```
 
@@ -134,7 +136,7 @@ To fetch your execution logs and saving them to a file. This output is json form
 This function will overwrite the file if it already exists.
 run the following command to save the logs to the filename specified:
 
-```bash
+```sh
 ipb logs -f <filename> -c <card-id>
 ```
 
@@ -149,7 +151,7 @@ The local emulator will run the code against the local files and not the card. I
 
 To run a transaction against your local files, run the following command:
 
-```bash
+```sh
 ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
 
@@ -161,19 +163,21 @@ To scaffold a new project, run the following command:
 
 template is optional and can be set to `default` or `petro` to create a project using one of the templates
 
-```bash
+```sh
 ipb new <project-name> --template <template-name>
 ```
+
+![new command](assets/new.gif)
 
 ### Enable and Disable Code
 
 To enable or disable code on your card, run the following commands:
 
-```bash
+```sh
 ipb enable -c <card-id>
 ```
 
-```bash
+```sh
 ipb disable -c <card-id>
 ```
 
@@ -183,7 +187,7 @@ ipb disable -c <card-id>
 
 Retrieve a list of countries that can be used in the card code.
 
-```bash
+```sh
 ipb countries
 ```
 
@@ -191,7 +195,7 @@ ipb countries
 
 Retrieve a list of currencies that can be used in the card code.
 
-```bash
+```sh
 ipb currencies
 ```
 
@@ -199,7 +203,7 @@ ipb currencies
 
 Retrieve a list of merchants that can be used in the card code.
 
-```bash
+```sh
 ipb merchants
 ```
 
@@ -207,7 +211,7 @@ ipb merchants
 
 To fetch the code saved on the card, run the following command:
 
-```bash
+```sh
 ipb fetch -f <filename> -c <card-id>
 ```
 
@@ -215,7 +219,7 @@ ipb fetch -f <filename> -c <card-id>
 
 To upload code to the cards saved code, run the following command:
 
-```bash
+```sh
 ipb upload -f <filename> -c <card-id>
 ```
 
@@ -223,7 +227,7 @@ ipb upload -f <filename> -c <card-id>
 
 To fetch the environment variables saved on the card, run the following command:
 
-```bash
+```sh
 ipb env -f <filename> -c <card-id>
 ```
 
@@ -231,7 +235,7 @@ ipb env -f <filename> -c <card-id>
 
 To upload environment variables to the card, run the following command:
 
-```bash
+```sh
 ipb upload-env -f <filename> -c <card-id>
 ```
 
@@ -239,7 +243,7 @@ ipb upload-env -f <filename> -c <card-id>
 
 To fetch the published code saved on the card, run the following command:
 
-```bash
+```sh
 ipb published -f <filename> -c <card-id>
 ```
 
@@ -247,7 +251,7 @@ ipb published -f <filename> -c <card-id>
 
 To publish code to the card you will need the codeId returned when saving the code using the upload command, run the following command:
 
-```bash
+```sh
 ipb publish -f <filename> --code-id <code-id> -c <card-id>
 ```
 
@@ -255,7 +259,7 @@ ipb publish -f <filename> --code-id <code-id> -c <card-id>
 
 You can use the online simulator to test your code without deploying it to the card. This is very similar to the run command but it uses the online simulator instead of the local emulator. be aware that it will use your online env and not your local env.
 
-```bash
+```sh
 ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
 
@@ -289,24 +293,25 @@ Commands:
 - currencies [options] Gets a list of supported currencies
 - countries [options] Gets a list of countries
 - merchants [options] Gets a list of merchants
+- new [options] <string> Sets up scaffoldings for a new project
 - help [command] display help for command
 
 ## Development
 
 For development on this library, clone the repository and run the following commands:
 
-```bash
+```sh
 git clone https://github.com/devinpearson/ipb.git
 cd ipb
 ```
 
-```bash
+```sh
 npm install
 ```
 
 To run the CLI during development, run the following command:
 
-```bash
+```sh
 node . [command]
 ```
 
