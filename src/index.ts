@@ -90,21 +90,21 @@ export async function initializeApi(
   printTitleBox();
   credentials = await optionCredentials(options, credentials);
   let api;
-  if (process.env.DEBUG == 'true') {
+  if (process.env.DEBUG == "true") {
     api = new CardApi(
-          credentials.clientId,
-          credentials.clientSecret,
-          credentials.apiKey,
-          credentials.host,
-        );
-    } else {
-    api = new InvestecCardApi(
-        credentials.clientId,
-        credentials.clientSecret,
-        credentials.apiKey,
-        credentials.host,
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
     );
-}
+  } else {
+    api = new InvestecCardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
   const accessResult = await api.getAccessToken();
   if (accessResult.scope !== "cards") {
     console.log(
