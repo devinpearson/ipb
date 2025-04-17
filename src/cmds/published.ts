@@ -9,7 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
-  verbose: string;
+  verbose: boolean;
 }
 export async function publishedCommand(options: Options) {
   if (options.cardKey === undefined) {

@@ -26,6 +26,8 @@ import { Command, Option } from "commander";
 import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
+import { CardApi } from "./mock-card.js";
+
 const version = "0.7.8";
 const program = new Command();
 export const credentialLocation = {
@@ -88,12 +90,23 @@ export async function initializeApi(
 ) {
   printTitleBox();
   credentials = await optionCredentials(options, credentials);
-  const api = new InvestecCardApi(
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.apiKey,
-    credentials.host,
-  );
+  let api;
+  if (process.env.DEBUG == "true") {
+    // console.log(chalk.yellow('Using mock API for debugging'));
+    api = new CardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  } else {
+    api = new InvestecCardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
   const accessResult = await api.getAccessToken();
   if (accessResult.scope !== "cards") {
     console.log(
@@ -471,6 +484,7 @@ async function main() {
     .description("Sets up scaffoldings for a new project")
     .argument("<string>", "name of the new project")
     .option("-v,--verbose", "additional debugging information")
+    .option("--force", "force overwrite existing files")
     .addOption(
       new Option("--template <template>", "name of the template to use")
         .default("default")
