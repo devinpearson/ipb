@@ -62,12 +62,9 @@ export class CardApi implements ICardApi {
     this.host = host || "https://openapi.investec.com";
     this.token = "";
     this.expiresIn = new Date();
-    return this;
   }
   async getToken(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      resolve("string");
-    });
+    return Promise.resolve("string");
   }
   async getAccessToken(): Promise<AuthResponse> {
     const response = {
@@ -76,9 +73,7 @@ export class CardApi implements ICardApi {
       expires_in: 1799,
       scope: "cards",
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async uploadEnv(cardKey: number, env: object): Promise<EnvResponse> {
     const response = {
@@ -93,9 +88,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async uploadCode(cardKey: number, code: object): Promise<CodeResponse> {
     const response = {
@@ -109,9 +102,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async uploadPublishedCode(
     cardKey: number,
@@ -129,18 +120,19 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getCards(): Promise<CardResponse> {
+    // if (this.simulateError) {
+    //     return Promise.reject(new Error("Simulated API error"));
+    // }
     const response = {
       data: {
         cards: [
           {
             CardKey: 1111111,
             CardNumber: "402167XXXXXX1111",
-            IsProgrammable: false,
+            IsProgrammable: true,
             status: "Active",
             CardTypeCode: "VVG",
             AccountNumber: "10012421111",
@@ -158,9 +150,7 @@ export class CardApi implements ICardApi {
         ],
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getEnv(cardKey: number): Promise<EnvResponse> {
     const response = {
@@ -175,9 +165,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getCode(cardKey: number): Promise<CodeResponse> {
     const response = {
@@ -191,9 +179,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getPublishedCode(cardKey: number): Promise<CodeResponse> {
     const response = {
@@ -207,9 +193,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async toggleCode(cardKey: number, enabled: boolean): Promise<CodeToggle> {
     const response = {
@@ -219,9 +203,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getExecutions(cardKey: number): Promise<ExecutionResult> {
     const response = {
@@ -277,9 +259,7 @@ export class CardApi implements ICardApi {
         },
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async executeCode(
     code: string,
@@ -291,9 +271,7 @@ export class CardApi implements ICardApi {
         result: [],
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getCurrencies(): Promise<ReferenceResponse> {
     const response = {
@@ -310,9 +288,7 @@ export class CardApi implements ICardApi {
         ],
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getCountries(): Promise<ReferenceResponse> {
     const response = {
@@ -329,9 +305,7 @@ export class CardApi implements ICardApi {
         ],
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
   async getMerchants(): Promise<ReferenceResponse> {
     const response = {
@@ -348,8 +322,6 @@ export class CardApi implements ICardApi {
         ],
       },
     };
-    return new Promise((resolve, reject) => {
-      resolve(response);
-    });
+    return Promise.resolve(response);
   }
 }

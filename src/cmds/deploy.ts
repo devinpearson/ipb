@@ -28,7 +28,7 @@ export async function deployCommand(options: Options) {
     if (!fs.existsSync(`.env.${options.env}`)) {
       throw new Error("Env does not exist");
     }
-    dotenv.config({ processEnv: envObject, path: `.env.${options.env}` });
+    envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
 
     await api.uploadEnv(options.cardKey, { variables: envObject });
     console.log("📦 env deployed");
