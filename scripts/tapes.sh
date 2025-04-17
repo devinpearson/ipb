@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-DEBUG=true 
+export DEBUG=true
 vhs tapes/cards.tape
 vhs tapes/deploy.tape
 # vhs tapes/env.tape

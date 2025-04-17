@@ -9,7 +9,7 @@ interface Options {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
-  verbose: string;
+  verbose: boolean;
 }
 export async function uploadEnvCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {

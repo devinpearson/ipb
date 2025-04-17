@@ -68,7 +68,7 @@ export class CardApi implements ICardApi {
   }
   async getAccessToken(): Promise<AuthResponse> {
     const response = {
-      access_token: "X3dxGAWD6rgCZPAtVxx3NQgmKGRN",
+      access_token: "MOCK_ACCESS_TOKEN_FOR_TESTING",
       token_type: "Bearer",
       expires_in: 1799,
       scope: "cards",
@@ -82,8 +82,8 @@ export class CardApi implements ICardApi {
           variables: {
             var1: "string",
           },
-          createdAt: "2025-02-19T08:22:44.179Z",
-          updatedAt: "2025-02-19T08:22:44.179Z",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           error: null,
         },
       },
@@ -199,7 +199,7 @@ export class CardApi implements ICardApi {
     const response = {
       data: {
         result: {
-          Enabled: false,
+          Enabled: enabled,
         },
       },
     };
@@ -268,7 +268,13 @@ export class CardApi implements ICardApi {
   ): Promise<ExecuteResult> {
     const response = {
       data: {
-        result: [],
+        result: [
+            // {
+            //     logType: "info",
+            //     message: "Mock execution completed successfully",
+            //     timestamp: new Date().toISOString()
+            // }
+        ],
       },
     };
     return Promise.resolve(response);

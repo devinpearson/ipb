@@ -92,6 +92,7 @@ export async function initializeApi(
   credentials = await optionCredentials(options, credentials);
   let api;
   if (process.env.DEBUG == "true") {
+    // console.log(chalk.yellow('Using mock API for debugging'));
     api = new CardApi(
       credentials.clientId,
       credentials.clientSecret,
@@ -483,6 +484,7 @@ async function main() {
     .description("Sets up scaffoldings for a new project")
     .argument("<string>", "name of the new project")
     .option("-v,--verbose", "additional debugging information")
+    .option("--force", "force overwrite existing files")
     .addOption(
       new Option("--template <template>", "name of the template to use")
         .default("default")
