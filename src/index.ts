@@ -27,6 +27,7 @@ import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
+
 const version = "0.7.8";
 const program = new Command();
 export const credentialLocation = {
