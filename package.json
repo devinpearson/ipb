@@ -1,6 +1,6 @@
 {
   "name": "investec-ipb",
-  "version": "0.7.8",
+  "version": "0.8.0-rc.0",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
@@ -35,7 +35,8 @@
     "dotenv": "^16.3.1",
     "investec-card-api": "^0.2.0",
     "node-fetch": "^3.3.2",
-    "programmable-card-code-emulator": "^1.4.2"
+    "programmable-card-code-emulator": "^1.4.2",
+    "openai": "^4.87.4"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.2",

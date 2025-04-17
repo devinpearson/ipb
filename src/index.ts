@@ -20,6 +20,7 @@ import {
   countriesCommand,
   merchantsCommand,
   newCommand,
+  generateCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
 import { Command, Option } from "commander";
@@ -491,6 +492,15 @@ async function main() {
         .choices(["default", "petro"]),
     )
     .action(newCommand);
+
+program
+    .command("generate")
+    .description("Generates card code using an LLM")
+    .argument("<string>", "prompt for the LLM")
+    .option("-f,--filename <filename>", "the filename")
+    .option("-v,--verbose", "additional debugging information")
+    .option("--force", "force overwrite existing files")
+    .action(generateCommand);
 
   try {
     await program.parseAsync(process.argv);
