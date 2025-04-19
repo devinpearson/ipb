@@ -51,8 +51,9 @@ interface Options {
   verbose: boolean;
 }
 
-export async function generateCommand(prompt: string, options: Options) {
+export async function aiCommand(prompt: string, options: Options) {
   try {
+    const envFilename = ".env.ai";
     printTitleBox();
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is not set");
@@ -95,9 +96,9 @@ export async function generateCommand(prompt: string, options: Options) {
     if (response?.env_variables) {
       console.log("");
       console.log(
-        `💾 saving env variables to file: ${chalk.greenBright(".env.gen")}`,
+        `💾 saving env variables to file: ${chalk.greenBright(envFilename)}`,
       );
-      const envFile = fs.createWriteStream(".env.gen");
+      const envFile = fs.createWriteStream(envFilename);
       response.env_variables.forEach((envVar) => {
         envFile.write(`${envVar}=${process.env[envVar]}\n`);
       });
@@ -109,7 +110,7 @@ export async function generateCommand(prompt: string, options: Options) {
       console.log("");
       console.log(chalk.blueBright("To test locally run:"));
       console.log(
-        `ipb run -f main.js --env gen --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`,
+        `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`,
       );
     }
     console.log("");

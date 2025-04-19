@@ -15,7 +15,7 @@ import { currenciesCommand } from "./currencies.js";
 import { countriesCommand } from "./countries.js";
 import { merchantsCommand } from "./merchants.js";
 import { newCommand } from "./new.js";
-import { generateCommand } from "./gen.js";
+import { aiCommand } from "./ai.js";
 
 export {
   cardsCommand,
@@ -35,5 +35,5 @@ export {
   countriesCommand,
   merchantsCommand,
   newCommand,
-  generateCommand,
+  aiCommand as generateCommand,
 };

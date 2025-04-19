@@ -29,7 +29,7 @@ import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
 
-const version = "0.7.8";
+const version = "0.8.0-rc.0";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -494,10 +494,10 @@ async function main() {
     .action(newCommand);
 
   program
-    .command("gen")
+    .command("ai")
     .description("Generates card code using an LLM")
     .argument("<string>", "prompt for the LLM")
-    .option("-f,--filename <filename>", "the filename", "./gen.js")
+    .option("-f,--filename <filename>", "the filename", "ai-generated.js")
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
     .action(generateCommand);

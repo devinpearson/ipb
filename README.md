@@ -183,6 +183,24 @@ ipb disable -c <card-id>
 
 ![toggle command](assets/toggle.gif)
 
+### AI Generated Code
+
+You can use the AI generated code to generate code for your card. This is a work in progress and will be improved over time.
+
+You will need a OpenAI API key to use this feature. You can set the API key in your environment variables or in a `.env` file in the root of your project.
+
+To generate code for your card, run the following command:
+
+```sh
+ipb ai <prompt>
+```
+
+This will generate code based on the prompt you provide. The generated code will be saved to a file called `ai-generated.js` in the current directory.
+
+If there is any environment variables that are required, it will be saved to a file called `.env.ai` in the current directory.
+
+You can then run the code using the `run` command or deploy it to your card using the `deploy` command.
+
 ### Countries
 
 Retrieve a list of countries that can be used in the card code.
