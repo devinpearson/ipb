@@ -493,11 +493,11 @@ async function main() {
     )
     .action(newCommand);
 
-program
-    .command("generate")
+  program
+    .command("gen")
     .description("Generates card code using an LLM")
     .argument("<string>", "prompt for the LLM")
-    .option("-f,--filename <filename>", "the filename")
+    .option("-f,--filename <filename>", "the filename", "./gen.js")
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
     .action(generateCommand);

@@ -35,8 +35,9 @@
     "dotenv": "^16.3.1",
     "investec-card-api": "^0.2.0",
     "node-fetch": "^3.3.2",
+    "openai": "^4.87.4",
     "programmable-card-code-emulator": "^1.4.2",
-    "openai": "^4.87.4"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.2",
