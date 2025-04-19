@@ -29,7 +29,7 @@ import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
 
-const version = "0.8.0-rc.0";
+const version = "0.8.0-rc.1";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -52,6 +52,7 @@ let cred = {
   clientSecret: "",
   apiKey: "",
   cardKey: "",
+  openaiKey: "",
 };
 if (fs.existsSync(credentialLocation.filename)) {
   try {
@@ -75,6 +76,7 @@ export interface Credentials {
   clientSecret: string;
   apiKey: string;
   cardKey: string;
+  openaiKey: string;
 }
 
 export interface BasicOptions {
@@ -172,6 +174,7 @@ export const credentials: Credentials = {
   clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
   apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
   cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
+  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey,
 };
 async function main() {
   program
@@ -209,6 +212,10 @@ async function main() {
       "Sets your client secret for the Investec API",
     )
     .option("--card-key <cardKey>", "Sets your card key for the Investec API")
+    .option(
+      "--openai-key <openaiKey>",
+      "Sets your OpenAI key for the AI generation",
+    )
     .option("-v,--verbose", "additional debugging information")
     .action(configCommand);
 
@@ -255,7 +262,7 @@ async function main() {
     .command("run")
     .description("runs the code locally")
     .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
+    .option("-e,--env <env>", "env to run")
     .option("-a,--amount <amount>", "amount in cents", "10000")
     .option("-u,--currency <currency>", "currency code", "zar")
     .option("-z,--mcc <mcc>", "merchant category code", "0000")

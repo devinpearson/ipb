@@ -3,16 +3,14 @@ import chalk from "chalk";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { printTitleBox } from "../index.js";
-
-const openai = new OpenAI();
+import { printTitleBox, credentials } from "../index.js";
 
 // Define the desired output schema using Zod
 const outputSchema = z.object({
   code: z.string().describe("The code to be generated"),
   env_variables: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe("Environment variables"),
   description: z.string().describe("Description of the code and how to use it"),
   example_transaction: z
@@ -55,12 +53,13 @@ export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = ".env.ai";
     printTitleBox();
-    if (!process.env.OPENAI_API_KEY) {
+    if (!credentials.openaiKey) {
       throw new Error("OPENAI_API_KEY is not set");
     }
     if (!fs.existsSync("./instructions.txt")) {
       throw new Error("instructions.txt does not exist");
     }
+
     // tell the user we are loading the instructions
     console.log(chalk.blueBright("Loading instructions from instructions.txt"));
     // read the instructions from the file
@@ -128,6 +127,10 @@ async function generateCode(
   instructions: string,
 ): Promise<Output | null> {
   try {
+    const openai = new OpenAI({
+      apiKey: credentials.openaiKey,
+      // baseURL: "https://api.openai.com/v1",
+    });
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
       temperature: 0.2,
