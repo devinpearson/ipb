@@ -48,14 +48,16 @@ interface Options {
   filename: string;
   verbose: boolean;
 }
-
+// node . 'send a notification after transaction via twilio sms'
+// node . 'limit transactions to only Woolworths, Checkers and Spar'
+// node . 'allow transactions that USD or ZAR'
 export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = ".env.ai";
     printTitleBox();
-    if (!credentials.openaiKey) {
-      throw new Error("OPENAI_API_KEY is not set");
-    }
+    // if (!credentials.openaiKey) {
+    //   throw new Error("OPENAI_API_KEY is not set");
+    // }
     if (!fs.existsSync("./instructions.txt")) {
       throw new Error("instructions.txt does not exist");
     }
@@ -127,10 +129,17 @@ async function generateCode(
   instructions: string,
 ): Promise<Output | null> {
   try {
-    const openai = new OpenAI({
+    let openai = new OpenAI({
       apiKey: credentials.openaiKey,
-      // baseURL: "https://api.openai.com/v1",
     });
+    console.log(credentials.openaiKey);
+    if (credentials.openaiKey === "") {
+      openai = new OpenAI({
+        apiKey: credentials.sandboxKey,
+        baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
+      });
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
       temperature: 0.2,
@@ -151,7 +160,7 @@ async function generateCode(
     }
     throw new Error("Invalid response format from OpenAI");
   } catch (error) {
-    console.error("Error generating recipe:", error);
+    console.error("Error generating code:", error);
     return null;
   }
 }

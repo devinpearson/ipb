@@ -28,6 +28,8 @@ import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
+import { registerCommand } from "./cmds/register.js";
+import { loginCommand } from "./cmds/login.js";
 
 const version = "0.8.0-rc.1";
 const program = new Command();
@@ -53,6 +55,7 @@ let cred = {
   apiKey: "",
   cardKey: "",
   openaiKey: "",
+  sandboxKey: "",
 };
 if (fs.existsSync(credentialLocation.filename)) {
   try {
@@ -77,6 +80,7 @@ export interface Credentials {
   apiKey: string;
   cardKey: string;
   openaiKey: string;
+  sandboxKey: string;
 }
 
 export interface BasicOptions {
@@ -165,6 +169,12 @@ export async function loadcredentialsFile(
     if (file.clientSecret) {
       credentials.clientSecret = file.clientSecret;
     }
+    if (file.openaiKey) {
+      credentials.openaiKey = file.openaiKey;
+    }
+    if (file.sandboxKey) {
+      credentials.sandboxKey = file.sandboxKey;
+    }
   }
   return credentials;
 }
@@ -175,6 +185,7 @@ export const credentials: Credentials = {
   apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
   cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
   openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey,
+  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey,
 };
 async function main() {
   program
@@ -215,6 +226,10 @@ async function main() {
     .option(
       "--openai-key <openaiKey>",
       "Sets your OpenAI key for the AI generation",
+    )
+    .option(
+      "--sandbox-key <sandboxKey>",
+      "Sets your sandbox key for the AI generation",
     )
     .option("-v,--verbose", "additional debugging information")
     .action(configCommand);
@@ -508,6 +523,20 @@ async function main() {
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
     .action(generateCommand);
+
+  program
+    .command("register")
+    .description("registers with the server for LLM generation")
+    .option("-e,--email <email>", "your email")
+    .option("-p,--password <password>", "your password")
+    .action(registerCommand);
+
+  program
+    .command("login")
+    .description("login with the server for LLM generation")
+    .option("-e,--email <email>", "your email")
+    .option("-p,--password <password>", "your password")
+    .action(loginCommand);
 
   try {
     await program.parseAsync(process.argv);
