@@ -13,7 +13,7 @@ export async function registerCommand(options: Options) {
       throw new Error("Email and password are required");
     }
     console.log("💳 registering account");
-    const result = await fetch("https://ipb.sandboxpay.co.za/register", {
+    const result = await fetch("https://ipb.sandboxpay.co.za/auth/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

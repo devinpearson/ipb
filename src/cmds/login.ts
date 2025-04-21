@@ -23,7 +23,7 @@ export async function loginCommand(options: Options) {
       throw new Error("Email and password are required");
     }
     console.log("💳 logging into account");
-    const result = await fetch("https://ipb.sandboxpay.co.za/login", {
+    const result = await fetch("https://ipb.sandboxpay.co.za/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

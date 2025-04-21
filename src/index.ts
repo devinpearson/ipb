@@ -238,7 +238,7 @@ async function main() {
     .command("deploy")
     .description("deploy code to card")
     .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
+    .option("-e,--env <env>", "env to run")
     .option("-c,--card-key <cardKey>", "the cardkey")
     .option("--api-key <apiKey>", "api key for the Investec API")
     .option("--client-id <clientId>", "client Id for the Investec API")
