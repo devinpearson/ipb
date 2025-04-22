@@ -31,7 +31,7 @@ import { CardApi } from "./mock-card.js";
 import { registerCommand } from "./cmds/register.js";
 import { loginCommand } from "./cmds/login.js";
 
-const version = "0.8.0-rc.1";
+const version = "0.8.0-rc.3";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
