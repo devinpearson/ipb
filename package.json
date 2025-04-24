@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run clean && tsc && npm run copy-files",
     "clean": "rimraf ./bin",
-    "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/",
+    "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/ && cp instructions.txt ./bin/instructions.txt",
     "test": "vitest",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "check-format": "prettier --check .",

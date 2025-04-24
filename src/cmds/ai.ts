@@ -5,6 +5,36 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
 
+const instructions = `- You are a coding assistant that creates code snippets for users.
+- The purpose is to create a code snippet that helps the user control their credit card transactions and taking action if the transaction declines or if it is approved. 
+- The code must have three async functions that will be called by an external system. first beforeTransaction(transaction) second afterTransaction(transaction) third afterDecline(transaction). 
+- The beforeTransaction(transaction) function must return a boolean value. If the value is true, the transaction will be processed. If the value is false, the transaction will be declined.
+- You can add local functions to to make the code more reusable and modular.
+- Example Response 
+async function beforeTransaction(transaction) {
+
+}
+
+async function afterTransaction(transaction) {
+
+}
+
+async function afterDecline(transaction) {
+
+}
+
+- The transaction object comprises of the following properties: accountNumber, dateTime, centsAmount, currencyCode, reference and a merchant object with the following properties: name, city, country and category object which consists of key, code and name. all fields are required
+- Console log the transaction object in the beforeTransaction, afterTransaction function and the afterDecline if logging isnt mentioned by user input.
+- Where possible do not use any external libraries and only use native JavaScript that does not need to be imported.
+- anything that is not code in the result shall be commented out
+- code will be run in a node vm environment with node-fetch and momentjs imported
+- When fetch is used console log the response object
+- URLSearchParams and Buffer is not available in the environment
+- build request bodies as plaintext without URLSearchParams or Buffer under any circumstances
+- if a fetch request is being made and there is Authorization, use the following format: 'Basic ' + auth_token, no encoding as the auth token provided is already in base64
+- When comparing strings, use lowerCase() to ensure case insensitivity.
+- The code must be written in JavaScript.
+- Output must be Javascript format only`;
 // Define the desired output schema using Zod
 const outputSchema = z.object({
   code: z.string().describe("The code to be generated"),
@@ -58,14 +88,15 @@ export async function aiCommand(prompt: string, options: Options) {
     // if (!credentials.openaiKey) {
     //   throw new Error("OPENAI_API_KEY is not set");
     // }
-    if (!fs.existsSync("./instructions.txt")) {
-      throw new Error("instructions.txt does not exist");
-    }
+    // if (!fs.existsSync("./instructions.txt")) {
+    //   throw new Error("instructions.txt does not exist");
+    // }
 
     // tell the user we are loading the instructions
     console.log(chalk.blueBright("Loading instructions from instructions.txt"));
     // read the instructions from the file
-    const instructions = fs.readFileSync("./instructions.txt").toString();
+
+    //const instructions = fs.readFileSync("./instructions.txt").toString();
     console.log(
       chalk.blueBright("Calling OpenAI with the prompt and instructions"),
     );
