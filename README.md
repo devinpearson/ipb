@@ -1,47 +1,70 @@
 # Investec Programmable Banking CLI
 
-Allows you to deploy your code directly to your card. It also includes a emulator to test your code locally.
+Allows you to deploy your code directly to your card. It also includes an emulator to test your code locally.
+
+---
 
 ## 🌟 Community-Powered Repository 🌟
 
 This repository is crafted with ❤️ by our talented community members. It's a space for everyone to use, contribute to, and share. While it aligns with the spirit of our community, please note that this repo is not directly endorsed or supported by Investec. Always exercise caution and discretion when using or contributing to community-driven projects.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
 ![NPM Version](https://img.shields.io/npm/v/investec-ipb)
+
+---
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+  - [Cards](#cards)
+  - [Deploy](#deploy)
+  - [Fetching Execution Logs](#fetching-execution-logs)
+  - [Run - Local Simulation](#run---local-simulation)
+  - [New Project](#new-project)
+  - [Enable and Disable Code](#enable-and-disable-code)
+  - [AI Generation](#ai-generation)
+  - [Countries](#countries)
+  - [Currencies](#currencies)
+  - [Merchants](#merchants)
+  - [Fetch Code](#fetch-code)
+  - [Upload Code](#upload-code)
+  - [Fetch Environment Variables](#fetch-environment-variables)
+  - [Upload Environment Variables](#upload-environment-variables)
+  - [Fetch Published Code](#fetch-published-code)
+  - [Publish Code](#publish-code)
+  - [Simulate Code](#simulate-code)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
 - [Acknowledgments](#acknowledgments)
-- [Other Projects](#other-projects)
 - [Related Projects](#related-projects)
+
+---
 
 ## Installation
 
 Before installing, [download and install Node.js](https://nodejs.org/en/download/).
 
-To install or upgrade the CLI, run the following commands:
+To install or upgrade the CLI, run the following command:
 
 ```sh
 npm install -g investec-ipb
 ```
 
-On Windows you may need to set your execution policy to allow running scripts. You can do this by running the following command in PowerShell as an administrator:
+On Windows, you may need to set your execution policy to allow running scripts. You can do this by running the following command in PowerShell as an administrator:
 
 ```sh
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
+---
+
 ## Configuration
 
-You can access your client id, client secret and api key from the Investec Developer Portal.
-More information on how to access your keys can be found on the [Investec Developer Community Wiki](https://investec.gitbook.io/programmable-banking-community-wiki/get-started/api-quick-start-guide/how-to-get-your-api-keys).
+You can access your client ID, client secret, and API key from the Investec Developer Portal. More information on how to access your keys can be found on the [Investec Developer Community Wiki](https://investec.gitbook.io/programmable-banking-community-wiki/get-started/api-quick-start-guide/how-to-get-your-api-keys).
 
 To configure the CLI, run the following command:
 
@@ -49,16 +72,16 @@ To configure the CLI, run the following command:
 ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
 ```
 
-If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
+If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project:
 
-```sh
+```env
 INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id
 INVESTEC_CLIENT_SECRET=your-client-secret
 INVESTEC_API_KEY=your-api-key
 ```
 
-You also have the option to specify the host, client id, client secret, api key and card id when calling each command. These will override the configuration set in the `.env` file and your credential file.
+You also have the option to specify the host, client ID, client secret, API key, and card ID when calling each command. These will override the configuration set in the `.env` file and your credential file:
 
 ```sh
 ipb deploy -f <filename> -e <environment> -c <card-id> --host <host> --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
@@ -81,33 +104,11 @@ To configure the CLI using a credentials file, run the following command:
 ipb cards --credentials-file <path-to-credentials-file>
 ```
 
-The card id is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card id set in the configuration.
+The card ID is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card ID set in the configuration.
+
+---
 
 ## Usage
-
-Main commands that you can use to interact with the card or run code locally:
-
-- [`cards`](#cards): get a list of cards
-- [`deploy`](#deploy): deploy code to the card
-- [`logs`](#fetching-execution-logs): fetch execution logs
-- [`run`](#run---local-simulation): run code locally
-- [`new`](#new-project): scaffold a new project
-- [`enable`](#enable-and-disable-code): enable code on the card
-- [`disable`](#enable-and-disable-code): disable code on the card
-- [`ai`](#ai-generation): generate code using AI
-- [`countries`](#countries): get a list of countries
-- [`currencies`](#currencies): get a list of currencies
-- [`merchants`](#merchants): get a list of merchants
-
-There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
-
-- [`fetch`](#fetch-code): fetch code from the card
-- [`upload`](#upload-code): upload code to the card
-- [`env`](#fetch-environment-variables): fetch environment variables from the card
-- [`upload-env`](#upload-environment-variables): upload environment variables to the card
-- [`published`](#fetch-published-code): fetch published code from the card
-- [`publish`](#publish-code): publish code to the card
-- [`simulate`](#simulate-code): run code using the online simulator
 
 ### Cards
 
@@ -208,17 +209,19 @@ ipb ai <prompt>
 The generated code will be saved to a file called `ai-generated.js` in the current directory. If any environment variables are required, they will be saved to a file called `.env.ai`. You can then run or deploy the generated code.
 
 You can use my OpenAI connection to test out the AI generation by registering with the following command:
+
 ```sh
 ipb register -e <email> -p <password>
 ```
 
-This will create an account on ipb.sanboxpay.co.za. you will need to message in the programmable banking community to get your account activated. channel # 12_sandbox-playground with your email address. calls to the service will be logged and monitored for abuse. You will be able to use the AI generation without needing to set up your own OpenAI API key.
+This will create an account on ipb.sanboxpay.co.za. You will need to message in the programmable banking community to get your account activated. Channel: `#12_sandbox-playground` with your email address. Calls to the service will be logged and monitored for abuse. You will be able to use the AI generation without needing to set up your own OpenAI API key.
 
-You will then be able to login using the following command:
+You will then be able to log in using the following command:
 
 ```sh
 ipb login -e <email> -p <password>
 ```
+
 You can now use the AI generation command to generate code for your card.
 
 ### Countries
@@ -261,6 +264,8 @@ ipb fetch -f <filename> -c <card-id>
 
 This command downloads the code currently saved on the card to a local file for review or backup.
 
+![fetch command](assets/fetch.gif)
+
 ### Upload Code
 
 To upload code to the card's saved code, run the following command:
@@ -270,6 +275,8 @@ ipb upload -f <filename> -c <card-id>
 ```
 
 This command uploads your code to the card, making it available for execution.
+
+![upload command](assets/upload.gif)
 
 ### Fetch Environment Variables
 
@@ -281,6 +288,8 @@ ipb env -f <filename> -c <card-id>
 
 This command downloads the environment variables from the card to a local file for review or modification.
 
+![env command](assets/env.gif)
+
 ### Upload Environment Variables
 
 To upload environment variables to the card, run the following command:
@@ -290,6 +299,8 @@ ipb upload-env -f <filename> -c <card-id>
 ```
 
 This command uploads environment variables to the card, allowing you to configure its runtime environment.
+
+![upload-env command](assets/upload-env.gif)
 
 ### Fetch Published Code
 
@@ -301,6 +312,8 @@ ipb published -f <filename> -c <card-id>
 
 This command downloads the published version of the code from the card to a local file.
 
+![published command](assets/published.gif)
+
 ### Publish Code
 
 To publish code to the card, you will need the `codeId` returned when saving the code using the upload command. Run the following command:
@@ -310,6 +323,8 @@ ipb publish -f <filename> --code-id <code-id> -c <card-id>
 ```
 
 This command publishes the uploaded code, making it the active version on the card.
+
+![publish command](assets/publish.gif)
 
 ### Simulate Code
 
@@ -321,38 +336,9 @@ ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 -
 
 This command is ideal for testing your code in a production-like environment before deploying it to the card.
 
-### CLI usage
+![simulate command](assets/simulate.gif)
 
-Usage: ipb [options] [command]
-
-CLI to manage Investec Programmable Banking
-
-Options:
-
-- -V, --version output the version number
-- -h, --help display help for command
-
-Commands:
-
-- cards [options] Gets a list of your cards
-- config [options] set auth credentials
-- deploy [options] deploy code to card
-- logs [options] fetches logs from the api
-- run [options] runs the code locally
-- fetch [options] fetches the saved code
-- upload [options] uploads to saved code
-- env [options] downloads to env to a local file
-- upload-env [options] uploads env to the card
-- published [options] downloads to published code to a local file
-- publish [options] publishes code to the card
-- simulate [options] runs the code using the online simulator
-- enable [options] enables code to be used on card
-- disable [options] disables code to be used on card
-- currencies [options] Gets a list of supported currencies
-- countries [options] Gets a list of countries
-- merchants [options] Gets a list of merchants
-- new [options] <string> Sets up scaffoldings for a new project
-- help [command] display help for command
+---
 
 ## Development
 
@@ -373,17 +359,25 @@ To run the CLI during development, run the following command:
 node . [command]
 ```
 
+---
+
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or open an issue for any suggestions or improvements.
 
+---
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+---
 
 ## Contact
 
 For inquiries, please open an issue.
+
+---
 
 ## Acknowledgments
 
@@ -391,37 +385,29 @@ For inquiries, please open an issue.
 - [Chalk](https://github.com/chalk/chalk)
 - [VHS](https://github.com/charmbracelet/vhs)
 
-## Other Projects
-
-- [Banking API Simulator](https://github.com/devinpearson/programmable-banking-sim)
-- [Random banking data generator](https://github.com/devinpearson/programmable-banking-faker)
-- [Open Banking Point of Sales device](https://github.com/devinpearson/programmable-banking-pos)
-- [Card Issuer](m/devinpearson/programmable-banking-card-issuer)
-- [A blockly editor for card code](https://github.com/devinpearson/investec-blockly)
-- [A HTTP server for using the card code emulator](https://github.com/devinpearson/investec-card-server)
-- [The card code emulator package](https://github.com/devinpearson/programmable-card-code-emulator)
+---
 
 ## Related Projects
 
 Here are some related projects that complement the Investec Programmable Banking CLI:
 
-1. **[Banking API Simulator](https://github.com/devinpearson/programmable-banking-sim)**
-   - A simulator for testing banking APIs in a controlled environment.
+1. **[Banking API Simulator](https://github.com/devinpearson/programmable-banking-sim)**  
+   A simulator for testing banking APIs in a controlled environment.
 
-2. **[Random Banking Data Generator](https://github.com/devinpearson/programmable-banking-faker)**
-   - A tool for generating random banking data for testing and development purposes.
+2. **[Random Banking Data Generator](https://github.com/devinpearson/programmable-banking-faker)**  
+   A tool for generating random banking data for testing and development purposes.
 
-3. **[Open Banking Point of Sales Device](https://github.com/devinpearson/programmable-banking-pos)**
-   - A project for creating a point-of-sale device using open banking APIs.
+3. **[Open Banking Point of Sales Device](https://github.com/devinpearson/programmable-banking-pos)**  
+   A project for creating a point-of-sale device using open banking APIs.
 
-4. **[Card Issuer](https://github.com/devinpearson/programmable-banking-card-issuer)**
-   - A tool for issuing programmable banking cards.
+4. **[Card Issuer](https://github.com/devinpearson/programmable-banking-card-issuer)**  
+   A tool for issuing programmable banking cards.
 
-5. **[Blockly Editor for Card Code](https://github.com/devinpearson/investec-blockly)**
-   - A visual programming editor for creating card code using Blockly.
+5. **[Blockly Editor for Card Code](https://github.com/devinpearson/investec-blockly)**  
+   A visual programming editor for creating card code using Blockly.
 
-6. **[HTTP Server for Card Code Emulator](https://github.com/devinpearson/investec-card-server)**
-   - A server for running the card code emulator over HTTP.
+6. **[HTTP Server for Card Code Emulator](https://github.com/devinpearson/investec-card-server)**  
+   A server for running the card code emulator over HTTP.
 
-7. **[Card Code Emulator Package](https://github.com/devinpearson/programmable-card-code-emulator)**
-   - A library for emulating programmable card code.
+7. **[Card Code Emulator Package](https://github.com/devinpearson/programmable-card-code-emulator)**  
+   A library for emulating programmable card code.
