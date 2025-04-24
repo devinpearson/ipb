@@ -9,7 +9,7 @@ const instructions = `- You are a coding assistant that creates code snippets fo
 - The purpose is to create a code snippet that helps the user control their credit card transactions and taking action if the transaction declines or if it is approved. 
 - The code must have three async functions that will be called by an external system. first beforeTransaction(transaction) second afterTransaction(transaction) third afterDecline(transaction). 
 - The beforeTransaction(transaction) function must return a boolean value. If the value is true, the transaction will be processed. If the value is false, the transaction will be declined.
-- You can add local functions to to make the code more reusable and modular.
+- You can add local functions to make the code more reusable and modular.
 - Example Response 
 async function beforeTransaction(transaction) {
 
@@ -163,7 +163,6 @@ async function generateCode(
     let openai = new OpenAI({
       apiKey: credentials.openaiKey,
     });
-    console.log(credentials.openaiKey);
     if (credentials.openaiKey === "") {
       openai = new OpenAI({
         apiKey: credentials.sandboxKey,

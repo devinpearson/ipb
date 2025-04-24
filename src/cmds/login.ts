@@ -39,8 +39,6 @@ export async function loginCommand(options: Options) {
     }
     const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
     console.log("Login successful");
-    console.log("Access Token:", loginResponse.access_token);
-    //console.log("Account registered successfully");
     let cred = {
       clientId: "",
       clientSecret: "",
