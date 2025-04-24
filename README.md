@@ -31,6 +31,12 @@ To install or upgrade the CLI, run the following commands:
 npm install -g investec-ipb
 ```
 
+On Windows you may need to set your execution policy to allow running scripts. You can do this by running the following command in PowerShell as an administrator:
+
+```sh
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+```
+
 ## Configuration
 
 You can access your client id, client secret and api key from the Investec Developer Portal.
@@ -39,7 +45,7 @@ More information on how to access your keys can be found on the [Investec Develo
 To configure the CLI, run the following command:
 
 ```sh
-ipb config --client-id <client-id> --client-secret <client-secret> --card-id <card-id>
+ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
 ```
 
 If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project.
@@ -49,7 +55,6 @@ INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id
 INVESTEC_CLIENT_SECRET=your-client-secret
 INVESTEC_API_KEY=your-api-key
-INVESTEC_CARD_KEY=your-card-key
 ```
 
 You also have the option to specify the host, client id, client secret, api key and card id when calling each command. These will override the configuration set in the `.env` file and your credential file.
@@ -79,7 +84,7 @@ The card id is optional and can be set when calling each command. If you specify
 
 ## Usage
 
-There are six main commands that you can use to interact with the card:
+Main commands that you can use to interact with the card or run code locally:
 
 - [`cards`](#cards): get a list of cards
 - [`deploy`](#deploy): deploy code to the card
@@ -88,39 +93,36 @@ There are six main commands that you can use to interact with the card:
 - [`new`](#new-project): scaffold a new project
 - [`enable`](#enable-and-disable-code): enable code on the card
 - [`disable`](#enable-and-disable-code): disable code on the card
+- [`ai`](#ai-generation): generate code using AI
 - [`countries`](#countries): get a list of countries
 - [`currencies`](#currencies): get a list of currencies
 - [`merchants`](#merchants): get a list of merchants
 
 There are also additional functions that you can use to interact with the card if you prefer handling the process yourself.
 
-- `fetch`
-- `upload`
-- `env`
-- `upload-env`
-- `published`
-- `publish`
-- `simulate` (online simulator)
+- [`fetch`](#fetch-code): fetch code from the card
+- [`upload`](#upload-code): upload code to the card
+- [`env`](#fetch-environment-variables): fetch environment variables from the card
+- [`upload-env`](#upload-environment-variables): upload environment variables to the card
+- [`published`](#fetch-published-code): fetch published code from the card
+- [`publish`](#publish-code): publish code to the card
+- [`simulate`](#simulate-code): run code using the online simulator
 
 ### Cards
 
-To get a list of your cards with card keys, card number and whether the card is enabled for card code,
-
-run the following command for card list:
+To get a list of your cards with card keys, card number, and whether the card is enabled for card code, run the following command:
 
 ```sh
 ipb cards
 ```
 
+This command retrieves detailed information about your cards, including their unique identifiers and status. It is useful for managing multiple cards and ensuring the correct card is targeted for operations.
+
 ![cards command](assets/cards.gif)
 
 ### Deploy
 
-Code Deployment to your card.
-for environment variables, you can set them in a `.env` file in the root of your project.
-You should name your environments such as `.env.prod` or `.env.dev` and then specify the environment when running the command.
-To call on these environments you will specify prod or dev as the environment.
-This makes sure you dont upload the .env file for your current code project.
+Deploy your code directly to your card. This command allows you to specify environment variables and target a specific card for deployment. For environment variables, you can set them in a `.env` file in the root of your project. Name your environments such as `.env.prod` or `.env.dev` and specify the environment when running the command.
 
 To deploy code to your card, run the following command:
 
@@ -128,32 +130,35 @@ To deploy code to your card, run the following command:
 ipb deploy -f <filename> -e <environment> -c <card-id>
 ```
 
+This command ensures that your code is uploaded securely to the specified card. It also supports environment-specific configurations to avoid accidental uploads of sensitive data.
+
 ![deploy command](assets/deploy.gif)
 
 ### Fetching Execution Logs
 
-To fetch your execution logs and saving them to a file. This output is json format, example naming such as `executions.json` or `logs.json`,
-This function will overwrite the file if it already exists.
-run the following command to save the logs to the filename specified:
+Fetch execution logs and save them to a file. The output is in JSON format, and the file will be overwritten if it already exists. This command is essential for debugging and monitoring the behavior of your deployed code.
+
+To fetch execution logs, run the following command:
 
 ```sh
 ipb logs -f <filename> -c <card-id>
 ```
 
+This command retrieves logs for the specified card and saves them to the provided filename, such as `executions.json` or `logs.json`. It helps you analyze the execution flow and identify any issues.
+
 ![logs command](assets/logs.gif)
 
 ### Run - Local Simulation
 
-You can run local simulation of your code and specify the transactions details as arguments.
-The amount is is in cents and the currency is the ISO 4217 currency code.
+Simulate your code locally by specifying transaction details as arguments. The amount is in cents, and the currency is the ISO 4217 currency code. This command does not require an Investec account or API keys, as it runs entirely locally.
 
-The local emulator will run the code against the local files and not the card. It does not require an Investec account or any API keys. It runs locally without hitting the Investec API.
-
-To run a transaction against your local files, run the following command:
+To run a transaction against your local files, use the following command:
 
 ```sh
 ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
+
+This command is ideal for testing your code in a controlled environment before deploying it to a card. It provides detailed logs of the transaction and execution process.
 
 ![run command](assets/run.gif)
 
@@ -161,69 +166,89 @@ ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 --merchant "
 
 To scaffold a new project, run the following command:
 
-template is optional and can be set to `default` or `petro` to create a project using one of the templates
-
 ```sh
 ipb new <project-name> --template <template-name>
 ```
+
+The `template` option is optional and can be set to `default` or `petro` to create a project using one of the predefined templates. This command helps you quickly set up a project structure tailored to your needs.
 
 ![new command](assets/new.gif)
 
 ### Enable and Disable Code
 
-To enable or disable code on your card, run the following commands:
+To enable or disable code on your card, use the following commands:
+
+Enable code:
 
 ```sh
 ipb enable -c <card-id>
 ```
 
+Disable code:
+
 ```sh
 ipb disable -c <card-id>
 ```
 
+These commands allow you to control whether the programmable code is active on your card. This is useful for testing or temporarily disabling functionality.
+
 ![toggle command](assets/toggle.gif)
 
-### AI Generated Code
+### AI Generation
 
-You can use the AI generated code to generate code for your card. This is a work in progress and will be improved over time.
+Generate code for your card using AI. This feature requires an OpenAI API key, which can be set in your environment variables or a `.env` file in the root of your project.
 
-You will need a OpenAI API key to use this feature. You can set the API key in your environment variables or in a `.env` file in the root of your project.
-
-To generate code for your card, run the following command:
+To generate code, run the following command:
 
 ```sh
 ipb ai <prompt>
 ```
 
-This will generate code based on the prompt you provide. The generated code will be saved to a file called `ai-generated.js` in the current directory.
+The generated code will be saved to a file called `ai-generated.js` in the current directory. If any environment variables are required, they will be saved to a file called `.env.ai`. You can then run or deploy the generated code.
 
-If there is any environment variables that are required, it will be saved to a file called `.env.ai` in the current directory.
+You can use my OpenAI connection to test out the AI generation by registering with the following command:
+```sh
+ipb register -e <email> -p <password>
+```
 
-You can then run the code using the `run` command or deploy it to your card using the `deploy` command.
+This will create an account on ipb.sanboxpay.co.za. you will need to message in the programmable banking community to get your account activated. channel # 12_sandbox-playground with your email address. calls to the service will be logged and monitored for abuse. You will be able to use the AI generation without needing to set up your own OpenAI API key.
+
+You will then be able to login using the following command:
+
+```sh
+ipb login -e <email> -p <password>
+```
+You can now use the AI generation command to generate code for your card.
 
 ### Countries
 
-Retrieve a list of countries that can be used in the card code.
+Retrieve a list of countries that can be used in the card code:
 
 ```sh
 ipb countries
 ```
 
+This command provides a list of supported countries, which can be useful for setting up transactions or merchant details.
+
 ### Currencies
 
-Retrieve a list of currencies that can be used in the card code.
+Retrieve a list of currencies that can be used in the card code:
 
 ```sh
 ipb currencies
 ```
 
+This command provides a list of supported currencies, including their ISO 4217 codes, for use in transactions.
+
 ### Merchants
 
-Retrieve a list of merchants that can be used in the card code.
+Retrieve a list of merchants that can be used in the card code:
 
 ```sh
 ipb merchants
 ```
+
+This command provides merchant details, such as names and categories, to help you simulate or configure transactions.
 
 ### Fetch Code
 
@@ -233,13 +258,17 @@ To fetch the code saved on the card, run the following command:
 ipb fetch -f <filename> -c <card-id>
 ```
 
+This command downloads the code currently saved on the card to a local file for review or backup.
+
 ### Upload Code
 
-To upload code to the cards saved code, run the following command:
+To upload code to the card's saved code, run the following command:
 
 ```sh
 ipb upload -f <filename> -c <card-id>
 ```
+
+This command uploads your code to the card, making it available for execution.
 
 ### Fetch Environment Variables
 
@@ -249,6 +278,8 @@ To fetch the environment variables saved on the card, run the following command:
 ipb env -f <filename> -c <card-id>
 ```
 
+This command downloads the environment variables from the card to a local file for review or modification.
+
 ### Upload Environment Variables
 
 To upload environment variables to the card, run the following command:
@@ -256,6 +287,8 @@ To upload environment variables to the card, run the following command:
 ```sh
 ipb upload-env -f <filename> -c <card-id>
 ```
+
+This command uploads environment variables to the card, allowing you to configure its runtime environment.
 
 ### Fetch Published Code
 
@@ -265,21 +298,27 @@ To fetch the published code saved on the card, run the following command:
 ipb published -f <filename> -c <card-id>
 ```
 
+This command downloads the published version of the code from the card to a local file.
+
 ### Publish Code
 
-To publish code to the card you will need the codeId returned when saving the code using the upload command, run the following command:
+To publish code to the card, you will need the `codeId` returned when saving the code using the upload command. Run the following command:
 
 ```sh
 ipb publish -f <filename> --code-id <code-id> -c <card-id>
 ```
 
+This command publishes the uploaded code, making it the active version on the card.
+
 ### Simulate Code
 
-You can use the online simulator to test your code without deploying it to the card. This is very similar to the run command but it uses the online simulator instead of the local emulator. be aware that it will use your online env and not your local env.
+Use the online simulator to test your code without deploying it to the card. This is similar to the `run` command but uses the online simulator instead of the local emulator. Be aware that it will use your online environment and not your local environment.
 
 ```sh
 ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 --merchant "Test Merchant" --city "Test City" --country ZA
 ```
+
+This command is ideal for testing your code in a production-like environment before deploying it to the card.
 
 ### CLI usage
 
