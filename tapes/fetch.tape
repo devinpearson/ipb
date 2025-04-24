@@ -1,10 +1,6 @@
 Output assets/fetch.gif
+Source tapes/config.tape
 
-Set Shell "bash"
-Set FontSize 24
-Set Width 1400
-Set Height 600
-
-Type "ipb fetch -f main.js -c 2280877" Sleep 500ms  Enter
+Type "ipb fetch -f main.js -c 1111111" Sleep 500ms  Enter
 
 Sleep 10s

@@ -7,3 +7,5 @@ data
 executions.json
 /main.js
 env.json
+gen.js
+ai-generated.js

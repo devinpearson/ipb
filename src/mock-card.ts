@@ -269,11 +269,11 @@ export class CardApi implements ICardApi {
     const response = {
       data: {
         result: [
-            // {
-            //     logType: "info",
-            //     message: "Mock execution completed successfully",
-            //     timestamp: new Date().toISOString()
-            // }
+          // {
+          //     logType: "info",
+          //     message: "Mock execution completed successfully",
+          //     timestamp: new Date().toISOString()
+          // }
         ],
       },
     };

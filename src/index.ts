@@ -20,6 +20,7 @@ import {
   countriesCommand,
   merchantsCommand,
   newCommand,
+  generateCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
 import { Command, Option } from "commander";
@@ -27,8 +28,10 @@ import chalk from "chalk";
 import { simulateCommand } from "./cmds/simulate.js";
 import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
+import { registerCommand } from "./cmds/register.js";
+import { loginCommand } from "./cmds/login.js";
 
-const version = "0.7.8";
+const version = "0.8.0";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -51,6 +54,8 @@ let cred = {
   clientSecret: "",
   apiKey: "",
   cardKey: "",
+  openaiKey: "",
+  sandboxKey: "",
 };
 if (fs.existsSync(credentialLocation.filename)) {
   try {
@@ -74,6 +79,8 @@ export interface Credentials {
   clientSecret: string;
   apiKey: string;
   cardKey: string;
+  openaiKey: string;
+  sandboxKey: string;
 }
 
 export interface BasicOptions {
@@ -162,6 +169,12 @@ export async function loadcredentialsFile(
     if (file.clientSecret) {
       credentials.clientSecret = file.clientSecret;
     }
+    if (file.openaiKey) {
+      credentials.openaiKey = file.openaiKey;
+    }
+    if (file.sandboxKey) {
+      credentials.sandboxKey = file.sandboxKey;
+    }
   }
   return credentials;
 }
@@ -171,6 +184,8 @@ export const credentials: Credentials = {
   clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
   apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
   cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
+  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey,
+  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey,
 };
 async function main() {
   program
@@ -208,6 +223,14 @@ async function main() {
       "Sets your client secret for the Investec API",
     )
     .option("--card-key <cardKey>", "Sets your card key for the Investec API")
+    .option(
+      "--openai-key <openaiKey>",
+      "Sets your OpenAI key for the AI generation",
+    )
+    .option(
+      "--sandbox-key <sandboxKey>",
+      "Sets your sandbox key for the AI generation",
+    )
     .option("-v,--verbose", "additional debugging information")
     .action(configCommand);
 
@@ -215,7 +238,7 @@ async function main() {
     .command("deploy")
     .description("deploy code to card")
     .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
+    .option("-e,--env <env>", "env to run")
     .option("-c,--card-key <cardKey>", "the cardkey")
     .option("--api-key <apiKey>", "api key for the Investec API")
     .option("--client-id <clientId>", "client Id for the Investec API")
@@ -254,7 +277,7 @@ async function main() {
     .command("run")
     .description("runs the code locally")
     .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
+    .option("-e,--env <env>", "env to run")
     .option("-a,--amount <amount>", "amount in cents", "10000")
     .option("-u,--currency <currency>", "currency code", "zar")
     .option("-z,--mcc <mcc>", "merchant category code", "0000")
@@ -491,6 +514,29 @@ async function main() {
         .choices(["default", "petro"]),
     )
     .action(newCommand);
+
+  program
+    .command("ai")
+    .description("Generates card code using an LLM")
+    .argument("<string>", "prompt for the LLM")
+    .option("-f,--filename <filename>", "the filename", "ai-generated.js")
+    .option("-v,--verbose", "additional debugging information")
+    .option("--force", "force overwrite existing files")
+    .action(generateCommand);
+
+  program
+    .command("register")
+    .description("registers with the server for LLM generation")
+    .option("-e,--email <email>", "your email")
+    .option("-p,--password <password>", "your password")
+    .action(registerCommand);
+
+  program
+    .command("login")
+    .description("login with the server for LLM generation")
+    .option("-e,--email <email>", "your email")
+    .option("-p,--password <password>", "your password")
+    .action(loginCommand);
 
   try {
     await program.parseAsync(process.argv);

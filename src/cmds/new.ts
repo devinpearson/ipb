@@ -29,10 +29,12 @@ export async function newCommand(name: string, options: Options) {
     }
     // Add a force option to the Options interface
     if (fs.existsSync(name) && options.force) {
-      console.log(chalk.yellowBright(`Warning: Overwriting existing project ${name}`));
-          // Remove existing directory
-          fs.rmSync(name, { recursive: true, force: true });
-        } else if (fs.existsSync(name)) {
+      console.log(
+        chalk.yellowBright(`Warning: Overwriting existing project ${name}`),
+      );
+      // Remove existing directory
+      fs.rmSync(name, { recursive: true, force: true });
+    } else if (fs.existsSync(name)) {
       throw new Error("💣 Project already exists");
     }
     fs.cpSync(uri, name, { recursive: true });

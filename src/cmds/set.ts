@@ -5,6 +5,8 @@ interface Options {
   clientSecret: string;
   apiKey: string;
   cardKey: string;
+  openaiKey: string;
+  sandboxKey: string;
   verbose: boolean;
 }
 export async function configCommand(options: Options) {
@@ -14,6 +16,8 @@ export async function configCommand(options: Options) {
       clientSecret: "",
       apiKey: "",
       cardKey: "",
+      openaiKey: "",
+      sandboxKey: "",
     };
     if (fs.existsSync(credentialLocation.filename)) {
       cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
@@ -32,6 +36,12 @@ export async function configCommand(options: Options) {
     }
     if (options.cardKey) {
       cred.cardKey = options.cardKey;
+    }
+    if (options.openaiKey) {
+      cred.openaiKey = options.openaiKey;
+    }
+    if (options.sandboxKey) {
+      cred.sandboxKey = options.sandboxKey;
     }
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
     console.log("🔑 credentials saved");
