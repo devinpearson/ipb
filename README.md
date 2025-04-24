@@ -20,6 +20,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 - [Contact](#contact)
 - [Acknowledgments](#acknowledgments)
 - [Other Projects](#other-projects)
+- [Related Projects](#related-projects)
 
 ## Installation
 
@@ -399,3 +400,28 @@ For inquiries, please open an issue.
 - [A blockly editor for card code](https://github.com/devinpearson/investec-blockly)
 - [A HTTP server for using the card code emulator](https://github.com/devinpearson/investec-card-server)
 - [The card code emulator package](https://github.com/devinpearson/programmable-card-code-emulator)
+
+## Related Projects
+
+Here are some related projects that complement the Investec Programmable Banking CLI:
+
+1. **[Banking API Simulator](https://github.com/devinpearson/programmable-banking-sim)**
+   - A simulator for testing banking APIs in a controlled environment.
+
+2. **[Random Banking Data Generator](https://github.com/devinpearson/programmable-banking-faker)**
+   - A tool for generating random banking data for testing and development purposes.
+
+3. **[Open Banking Point of Sales Device](https://github.com/devinpearson/programmable-banking-pos)**
+   - A project for creating a point-of-sale device using open banking APIs.
+
+4. **[Card Issuer](https://github.com/devinpearson/programmable-banking-card-issuer)**
+   - A tool for issuing programmable banking cards.
+
+5. **[Blockly Editor for Card Code](https://github.com/devinpearson/investec-blockly)**
+   - A visual programming editor for creating card code using Blockly.
+
+6. **[HTTP Server for Card Code Emulator](https://github.com/devinpearson/investec-card-server)**
+   - A server for running the card code emulator over HTTP.
+
+7. **[Card Code Emulator Package](https://github.com/devinpearson/programmable-card-code-emulator)**
+   - A library for emulating programmable card code.
