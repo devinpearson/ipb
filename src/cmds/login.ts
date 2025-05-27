@@ -1,6 +1,12 @@
 import chalk from "chalk";
 import { credentialLocation, printTitleBox } from "../index.js";
 import fs from "fs";
+import fetch from "node-fetch";
+import https from "https";
+
+const agent = new https.Agent({
+  rejectUnauthorized: false,
+});
 
 interface Options {
   email: string;
@@ -24,6 +30,7 @@ export async function loginCommand(options: Options) {
     }
     console.log("💳 logging into account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/login", {
+      agent,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -47,6 +54,11 @@ export async function loginCommand(options: Options) {
       openaiKey: "",
       sandboxKey: "",
     };
+    if (fs.existsSync(credentialLocation.filename)) {
+          cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
+        } else {
+          fs.mkdirSync(credentialLocation.folder);
+        }
     cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
     cred.sandboxKey = loginResponse.access_token;
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));

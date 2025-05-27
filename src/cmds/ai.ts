@@ -4,6 +4,11 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
+import https from "https";
+
+const agent = new https.Agent({
+  rejectUnauthorized: false,
+});
 
 const instructions = `- You are a coding assistant that creates code snippets for users.
 - The purpose is to create a code snippet that helps the user control their credit card transactions and taking action if the transaction declines or if it is approved. 
@@ -163,8 +168,9 @@ async function generateCode(
     let openai = new OpenAI({
       apiKey: credentials.openaiKey,
     });
-    if (credentials.openaiKey === "") {
+    if (credentials.openaiKey === "" || credentials.openaiKey === undefined) {
       openai = new OpenAI({
+        httpAgent: agent,
         apiKey: credentials.sandboxKey,
         baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
       });

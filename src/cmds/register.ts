@@ -1,5 +1,11 @@
 import chalk from "chalk";
 import { printTitleBox } from "../index.js";
+import fetch from "node-fetch";
+import https from "https";
+
+const agent = new https.Agent({
+  rejectUnauthorized: false,
+});
 interface Options {
   email: string;
   password: string;
@@ -14,6 +20,7 @@ export async function registerCommand(options: Options) {
     }
     console.log("💳 registering account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/register", {
+      agent,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
