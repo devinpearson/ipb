@@ -1,6 +1,6 @@
 {
   "name": "investec-ipb",
-  "version": "0.8.1",
+  "version": "0.8.1-rc.3",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
@@ -34,6 +34,7 @@
     "commander": "^13.1.0",
     "dotenv": "^16.3.1",
     "investec-card-api": "^0.2.0",
+    "investec-pb-api": "^0.3.1",
     "node-fetch": "^3.3.2",
     "openai": "^4.96.0",
     "programmable-card-code-emulator": "^1.4.2",

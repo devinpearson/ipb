@@ -55,10 +55,14 @@ export async function loginCommand(options: Options) {
       sandboxKey: "",
     };
     if (fs.existsSync(credentialLocation.filename)) {
-          cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
-        } else {
-          fs.mkdirSync(credentialLocation.folder);
-        }
+      cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
+    } else {
+      if (!fs.existsSync(credentialLocation.folder)) {
+        fs.mkdirSync(credentialLocation.folder, { recursive: true });
+      }
+      
+      await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
+    }
     cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
     cred.sandboxKey = loginResponse.access_token;
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));

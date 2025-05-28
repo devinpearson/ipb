@@ -21,6 +21,7 @@ import {
   merchantsCommand,
   newCommand,
   generateCommand,
+  bankCommand,
 } from "./cmds/index.js";
 import { homedir } from "os";
 import { Command, Option } from "commander";
@@ -30,8 +31,12 @@ import { InvestecCardApi } from "investec-card-api";
 import { CardApi } from "./mock-card.js";
 import { registerCommand } from "./cmds/register.js";
 import { loginCommand } from "./cmds/login.js";
+import { InvestecPbApi } from "investec-pb-api";
+import { accountsCommand } from "./cmds/accounts.js";
+import { balancesCommand } from "./cmds/balances.js";
+import { transactionsCommand } from "./cmds/transactions.js";
 
-const version = "0.8.0";
+const version = "0.8.1-rc.3";
 const program = new Command();
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -125,6 +130,35 @@ export async function initializeApi(
   }
   return api;
 }
+
+export async function initializePbApi(
+  credentials: Credentials,
+  options: BasicOptions,
+) {
+  printTitleBox();
+  credentials = await optionCredentials(options, credentials);
+  let api;
+  // if (process.env.DEBUG == "true") {
+  //   // console.log(chalk.yellow('Using mock API for debugging'));
+  //   api = new CardApi(
+  //     credentials.clientId,
+  //     credentials.clientSecret,
+  //     credentials.apiKey,
+  //     credentials.host,
+  //   );
+  // } else {
+    api = new InvestecPbApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  // }
+  await api.getAccessToken();
+  
+  return api;
+}
+
 export async function optionCredentials(
   options: BasicOptions,
   credentials: any,
@@ -501,6 +535,59 @@ async function main() {
     )
     .option("-v,--verbose", "additional debugging information")
     .action(merchantsCommand);
+  
+  program
+    .command("accounts")
+    .description("Gets a list of your accounts")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(accountsCommand);
+
+  program
+    .command("balances")
+    .description("Gets your account balances")
+    .argument("<string>", "accountId of the account to fetch balances for")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(balancesCommand);
+
+  program
+    .command("transactions")
+    .description("Gets your account transactions")
+    .argument("<string>", "accountId of the account to fetch balances for")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(transactionsCommand);
 
   program
     .command("new")
@@ -523,6 +610,13 @@ async function main() {
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
     .action(generateCommand);
+
+  program
+    .command("bank")
+    .description("Uses the LLM to call your bank")
+    .argument("<string>", "prompt for the LLM")
+    .option("-v,--verbose", "additional debugging information")
+    .action(bankCommand);
 
   program
     .command("register")
