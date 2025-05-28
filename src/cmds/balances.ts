@@ -24,7 +24,7 @@ export async function balancesCommand(accountId: string, options: Options) {
     console.log(`Budget: ${result.data.budgetBalance}`);
     console.log(`Straight: ${result.data.straightBalance}`);
     console.log(`Cash: ${result.data.cashBalance}`);
-  
+
     console.log("");
   } catch (error: any) {
     console.error(chalk.redBright("Failed to fetch balances:"), error.message);

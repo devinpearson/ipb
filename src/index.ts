@@ -135,7 +135,7 @@ export async function initializePbApi(
   credentials: Credentials,
   options: BasicOptions,
 ) {
-  printTitleBox();
+  //printTitleBox();
   credentials = await optionCredentials(options, credentials);
   let api;
   // if (process.env.DEBUG == "true") {
@@ -147,15 +147,15 @@ export async function initializePbApi(
   //     credentials.host,
   //   );
   // } else {
-    api = new InvestecPbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
+  api = new InvestecPbApi(
+    credentials.clientId,
+    credentials.clientSecret,
+    credentials.apiKey,
+    credentials.host,
+  );
   // }
   await api.getAccessToken();
-  
+
   return api;
 }
 
@@ -535,7 +535,7 @@ async function main() {
     )
     .option("-v,--verbose", "additional debugging information")
     .action(merchantsCommand);
-  
+
   program
     .command("accounts")
     .description("Gets a list of your accounts")

@@ -3,13 +3,22 @@ import chalk from "chalk";
 import OpenAI from "openai";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
-import { getAccounts, getAccountsFunctionCall, getWeather, getWeatherFunctionCall } from "../function-calls.js";
+import {
+  getAccountBalances,
+  getAccounts,
+  getAccountsFunctionCall,
+  getAccountTransactionFunctionCall,
+  getAccountTransactions,
+  getBalanceFunctionCall,
+} from "../function-calls.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
 });
 
-const instructions = `- You are a banking bot, enabling the user to access their investec accounts based on user input.`;
+let openai: OpenAI | undefined = undefined;
+
+const instructions = `- You are a banking bot, enabling the user to access their investec accounts based on user input. -if fetching transactions only retrieve from 5 days ago`;
 
 interface Options {
   //   host: string; // will change this to openai compatible host
@@ -21,6 +30,21 @@ interface Options {
 export async function bankCommand(prompt: string, options: Options) {
   try {
     printTitleBox();
+
+    openai = new OpenAI({
+      apiKey: credentials.openaiKey,
+    });
+
+    if (credentials.openaiKey === "" || credentials.openaiKey === undefined) {
+      openai = new OpenAI({
+        httpAgent: agent,
+        apiKey: credentials.sandboxKey,
+        baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
+      });
+    }
+    if (!openai) {
+      throw new Error("OpenAI client is not initialized");
+    }
     // if (!credentials.openaiKey) {
     //   throw new Error("OPENAI_API_KEY is not set");
     // }
@@ -67,21 +91,11 @@ async function generateResponse(
   instructions: string,
 ): Promise<string | null> {
   try {
-    let openai = new OpenAI({
-      apiKey: credentials.openaiKey,
-    });
-
-    if (credentials.openaiKey === "" || credentials.openaiKey === undefined) {
-      openai = new OpenAI({
-        httpAgent: agent,
-        apiKey: credentials.sandboxKey,
-        baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
-      });
-    }
-
     // Use OpenAI chat completions API correctly
     const tools: OpenAI.ChatCompletionTool[] = [
       getAccountsFunctionCall,
+      getBalanceFunctionCall,
+      getAccountTransactionFunctionCall,
     ];
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
@@ -89,60 +103,30 @@ async function generateResponse(
       { role: "user", content: prompt },
     ];
 
+    if (!openai) {
+      throw new Error("OpenAI client is not initialized");
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1",
       temperature: 0.2,
       messages,
       tools,
     });
+    //console.log("OpenAI response received");
+    //console.log(completion.choices)
     // Defensive: check completion.choices[0] and .message
-    const message = completion.choices && completion.choices[0] && completion.choices[0].message ? completion.choices[0].message : undefined;
+    const message =
+      completion.choices &&
+      completion.choices[0] &&
+      completion.choices[0].message
+        ? completion.choices[0].message
+        : undefined;
     if (!message) throw new Error("No message returned from OpenAI");
 
     if (message.tool_calls) {
-      const availableFunctions: Record<string, (...args: any[]) => any> = {
-        get_accounts: getAccounts,
-      };
-      const toolCalls = message.tool_calls;
-
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        const functionToCall = availableFunctions[functionName];
-        if (!functionToCall) continue; // skip unknown tools
-        const functionArgs = JSON.parse(toolCall.function.arguments);
-        // getWeather expects latitude and longitude
-        const functionResponse = await functionToCall();
-        const response2 = await openai.chat.completions.create({
-          model: "gpt-4.1",
-          messages: [
-            ...messages,
-            {
-              role: 'assistant',
-              content: null,
-              tool_calls: [toolCall],
-            },
-            {
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: typeof functionResponse === 'string' ? functionResponse : JSON.stringify(functionResponse),
-            } as OpenAI.ChatCompletionToolMessageParam,
-          ],
-          tools,
-        });
-        
-        if (
-          response2.choices &&
-          response2.choices[0] &&
-          response2.choices[0].message &&
-          response2.choices[0].message.content
-        ) {
-          const content = response2.choices[0].message.content;
-          return content;
-        }
-      }
-    } else if (
-      message.content
-    ) {
+      return await toolCall(message, tools, messages);
+    } else if (message.content) {
       const content = message.content;
       return content;
     }
@@ -151,4 +135,88 @@ async function generateResponse(
     console.error("Error generating code:", error);
     return null;
   }
+}
+
+async function secondCall(
+  functionResponse: string,
+  messages: OpenAI.ChatCompletionMessageParam[],
+  toolCaller: OpenAI.ChatCompletionMessageToolCall,
+  tools: OpenAI.ChatCompletionTool[],
+) {
+  if (!openai) {
+    throw new Error("OpenAI client is not initialized");
+  }
+  // Compose the correct message sequence for tool call follow-up
+  // Only include the original system/user messages, then the assistant message with tool_calls, then the tool message
+  // Ensure the tool_call_id in the tool message matches the tool_call_id in the assistant message's tool_calls array
+  const toolCallId = toolCaller.id;
+  const followupMessages: OpenAI.ChatCompletionMessageParam[] = [
+    messages[0] as OpenAI.ChatCompletionMessageParam, // system
+    messages[1] as OpenAI.ChatCompletionMessageParam, // user
+    {
+      role: "assistant",
+      content: null,
+      tool_calls: [
+        {
+          id: toolCallId,
+          type: toolCaller.type,
+          function: toolCaller.function,
+        },
+      ],
+    } as OpenAI.ChatCompletionMessageParam,
+    {
+      role: "tool",
+      tool_call_id: toolCallId,
+      content:
+        typeof functionResponse === "string"
+          ? functionResponse
+          : JSON.stringify(functionResponse),
+    } as OpenAI.ChatCompletionToolMessageParam,
+  ];
+
+  const response2 = await openai.chat.completions.create({
+    model: "gpt-4.1",
+    messages: followupMessages,
+    tools,
+  });
+  const message =
+    response2.choices && response2.choices[0] && response2.choices[0].message
+      ? response2.choices[0].message
+      : undefined;
+  if (!message) throw new Error("No message returned from OpenAI");
+  if (message.tool_calls) {
+    return await toolCall(message, tools, messages);
+  }
+  if (message.content) {
+    const content = message.content;
+    return content;
+  }
+  return null;
+}
+
+// Fix: toolCall should be async and return Promise<string | null>
+async function toolCall(
+  message: OpenAI.ChatCompletionMessage,
+  tools: OpenAI.ChatCompletionTool[],
+  messages: OpenAI.ChatCompletionMessageParam[],
+): Promise<string | null> {
+  // Defensive: check if message has tool_calls property (should be on ChatCompletionMessage, not ChatCompletionToolMessageParam)
+  const toolCalls = (message as any).tool_calls;
+  if (!toolCalls) {
+    throw new Error("No tool_calls found in message");
+  }
+  const availableFunctions: Record<string, (...args: any[]) => any> = {
+    get_accounts: getAccounts,
+    get_balance: getAccountBalances,
+    get_transactions: getAccountTransactions,
+  };
+  for (const toolCall of toolCalls) {
+    const functionName = toolCall.function.name;
+    const functionToCall = availableFunctions[functionName];
+    if (!functionToCall) continue; // skip unknown tools
+    const functionArgs = JSON.parse(toolCall.function.arguments);
+    const functionResponse = await functionToCall(functionArgs);
+    return await secondCall(functionResponse, messages, toolCall, tools);
+  }
+  throw new Error("Invalid response format from OpenAI");
 }

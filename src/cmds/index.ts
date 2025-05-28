@@ -37,5 +37,5 @@ export {
   merchantsCommand,
   newCommand,
   aiCommand as generateCommand,
-  bankCommand
+  bankCommand,
 };

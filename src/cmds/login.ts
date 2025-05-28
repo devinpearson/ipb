@@ -60,7 +60,7 @@ export async function loginCommand(options: Options) {
       if (!fs.existsSync(credentialLocation.folder)) {
         fs.mkdirSync(credentialLocation.folder, { recursive: true });
       }
-      
+
       await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
     }
     cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
