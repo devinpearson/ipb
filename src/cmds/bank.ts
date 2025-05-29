@@ -3,14 +3,7 @@ import chalk from "chalk";
 import OpenAI from "openai";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
-import {
-  getAccountBalances,
-  getAccounts,
-  getAccountsFunctionCall,
-  getAccountTransactionFunctionCall,
-  getAccountTransactions,
-  getBalanceFunctionCall,
-} from "../function-calls.js";
+import { availableFunctions, tools } from "../function-calls.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -92,11 +85,6 @@ async function generateResponse(
 ): Promise<string | null> {
   try {
     // Use OpenAI chat completions API correctly
-    const tools: OpenAI.ChatCompletionTool[] = [
-      getAccountsFunctionCall,
-      getBalanceFunctionCall,
-      getAccountTransactionFunctionCall,
-    ];
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: "system", content: instructions },
@@ -149,7 +137,6 @@ async function secondCall(
   // Compose the correct message sequence for tool call follow-up
   // Only include the original system/user messages, then the assistant message with tool_calls, then the tool message
   // Ensure the tool_call_id in the tool message matches the tool_call_id in the assistant message's tool_calls array
-  const toolCallId = toolCaller.id;
   const followupMessages: OpenAI.ChatCompletionMessageParam[] = [
     messages[0] as OpenAI.ChatCompletionMessageParam, // system
     messages[1] as OpenAI.ChatCompletionMessageParam, // user
@@ -157,16 +144,12 @@ async function secondCall(
       role: "assistant",
       content: null,
       tool_calls: [
-        {
-          id: toolCallId,
-          type: toolCaller.type,
-          function: toolCaller.function,
-        },
+        toolCaller, // tool call from the assistant message
       ],
     } as OpenAI.ChatCompletionMessageParam,
     {
       role: "tool",
-      tool_call_id: toolCallId,
+      tool_call_id: toolCaller.id,
       content:
         typeof functionResponse === "string"
           ? functionResponse
@@ -205,11 +188,7 @@ async function toolCall(
   if (!toolCalls) {
     throw new Error("No tool_calls found in message");
   }
-  const availableFunctions: Record<string, (...args: any[]) => any> = {
-    get_accounts: getAccounts,
-    get_balance: getAccountBalances,
-    get_transactions: getAccountTransactions,
-  };
+
   for (const toolCall of toolCalls) {
     const functionName = toolCall.function.name;
     const functionToCall = availableFunctions[functionName];

@@ -34,7 +34,7 @@
     "commander": "^13.1.0",
     "dotenv": "^16.3.1",
     "investec-card-api": "^0.2.0",
-    "investec-pb-api": "^0.3.2",
+    "investec-pb-api": "^0.3.6",
     "node-fetch": "^3.3.2",
     "openai": "^4.96.0",
     "programmable-card-code-emulator": "^1.4.2",

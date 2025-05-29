@@ -116,3 +116,15 @@ export async function getAccountTransactions(options: {
   const transactions = result.data.transactions;
   return transactions;
 }
+
+export const tools: OpenAI.ChatCompletionTool[] = [
+  getAccountsFunctionCall,
+  getBalanceFunctionCall,
+  getAccountTransactionFunctionCall,
+];
+
+export const availableFunctions: Record<string, (...args: any[]) => any> = {
+  get_accounts: getAccounts,
+  get_balance: getAccountBalances,
+  get_transactions: getAccountTransactions,
+};

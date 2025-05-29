@@ -35,6 +35,9 @@ import { InvestecPbApi } from "investec-pb-api";
 import { accountsCommand } from "./cmds/accounts.js";
 import { balancesCommand } from "./cmds/balances.js";
 import { transactionsCommand } from "./cmds/transactions.js";
+import { transferCommand } from "./cmds/transfer.js";
+import { beneficiariesCommand } from "./cmds/beneficiaries.js";
+import { payCommand } from "./cmds/pay.js";
 
 const version = "0.8.1-rc.3";
 const program = new Command();
@@ -572,6 +575,48 @@ async function main() {
     .action(balancesCommand);
 
   program
+    .command("transfer")
+    .description("Allows transfer between accounts")
+    .argument("<string>", "accountId of the account to transfer from")
+    .argument("<string>", "beneficiaryAccountId of the account to transfer to")
+    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
+    .argument("<string>", "reference for the transfer")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(transferCommand);
+
+  program
+    .command("pay")
+    .description("Pay a beneficiary from your account")
+    .argument("<string>", "accountId of the account to transfer from")
+    .argument("<string>", "beneficiaryId of the beneficiary to pay")
+    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
+    .argument("<string>", "reference for the payment")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(payCommand);
+
+  program
     .command("transactions")
     .description("Gets your account transactions")
     .argument("<string>", "accountId of the account to fetch balances for")
@@ -588,6 +633,23 @@ async function main() {
     )
     .option("-v,--verbose", "additional debugging information")
     .action(transactionsCommand);
+
+  program
+    .command("beneficiaries")
+    .description("Gets your beneficiaries")
+    .option("--api-key <apiKey>", "api key for the Investec API")
+    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option(
+      "--client-secret <clientSecret>",
+      "client secret for the Investec API",
+    )
+    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
+    .option(
+      "--credentials-file <credentialsFile>",
+      "Set a custom credentials file",
+    )
+    .option("-v,--verbose", "additional debugging information")
+    .action(beneficiariesCommand);
 
   program
     .command("new")
