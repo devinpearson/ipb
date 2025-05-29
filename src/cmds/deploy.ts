@@ -1,18 +1,14 @@
 import fs from "fs";
 import dotenv from "dotenv";
 import { credentials, initializeApi } from "../index.js";
-import { handleCliError } from "./utils.js";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
   env: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  //verbose: boolean;
 }
+
 export async function deployCommand(options: Options) {
   try {
     let envObject = {};

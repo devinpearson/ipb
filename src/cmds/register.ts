@@ -1,7 +1,7 @@
 import { printTitleBox } from "../index.js";
 import fetch from "node-fetch";
 import https from "https";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,

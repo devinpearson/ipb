@@ -5,7 +5,7 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,

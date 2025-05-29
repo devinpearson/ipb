@@ -2,7 +2,8 @@ import chalk from "chalk";
 import fs from "fs";
 import { createTransaction } from "programmable-card-code-emulator";
 import { credentials, initializeApi } from "../index.js";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
+
 interface Options {
   cardKey: number;
   filename: string;

@@ -1,13 +1,8 @@
-import { credentials, initializePbApi, printTable } from "../index.js";
-import { handleCliError } from "./utils.js";
-interface Options {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
+import { credentials, initializePbApi } from "../index.js";
+import { handleCliError, printTable } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+
+interface Options extends CommonOptions {}
 
 export async function accountsCommand(options: Options) {
   try {

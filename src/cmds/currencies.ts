@@ -1,13 +1,7 @@
-import { credentials, initializeApi, printTable } from "../index.js";
-import { handleCliError } from "./utils.js";
-interface Options {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
+import { credentials, initializeApi } from "../index.js";
+import { handleCliError, printTable } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {}
 export async function currenciesCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);

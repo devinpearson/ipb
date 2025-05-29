@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
 import { availableFunctions, tools } from "../function-calls.js";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,

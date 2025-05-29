@@ -1,17 +1,13 @@
 import fs from "fs";
 import { credentials, initializeApi } from "../index.js";
-import { handleCliError } from "./utils.js";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
   codeId: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
+
 export async function publishCommand(options: Options) {
   try {
     if (!fs.existsSync(options.filename)) {

@@ -2,7 +2,7 @@ import { credentialLocation, printTitleBox } from "../index.js";
 import fs from "fs";
 import fetch from "node-fetch";
 import https from "https";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,

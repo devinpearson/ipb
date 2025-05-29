@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { createTransaction, run } from "programmable-card-code-emulator";
 import { printTitleBox } from "../index.js";
-import { handleCliError } from "./utils.js";
+import { handleCliError } from "../utils.js";
 interface Options {
   filename: string;
   env: string;
