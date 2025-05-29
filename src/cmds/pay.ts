@@ -37,10 +37,7 @@ export async function payCommand(
 
     console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to make payment:"),
-      error.message,
-    );
+    console.error(chalk.redBright("Failed to make payment:"), error.message);
     console.log("");
     if (options.verbose) {
       console.error(error);

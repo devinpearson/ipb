@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTable } from "../index.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -28,19 +28,29 @@ export async function transactionsCommand(accountId: string, options: Options) {
       return;
     }
 
-    console.log("UUID\t\t\tAmount\tDate\tDescription");
-    for (let i = 0; i < transactions.length; i++) {
-      if (transactions[i]) {
-        console.log(
-          chalk.greenBright(`${transactions[i]?.uuid ?? "N/A"}\t`) +
-            chalk.redBright(`${transactions[i]?.amount ?? "N/A"}\t`) +
-            chalk.yellowBright(
-              `${transactions[i]?.transactionDate ?? "N/A"}\t`,
-            ) +
-            chalk.blueBright(`${transactions[i]?.description ?? "N/A"}`),
-        );
-      }
-    }
+    const simpleTransactions = transactions.map(
+      ({ uuid, amount, transactionDate, description }) => ({
+        uuid,
+        amount,
+        transactionDate,
+        description,
+      }),
+    );
+    printTable(simpleTransactions);
+
+    // console.log("UUID\t\t\tAmount\tDate\tDescription");
+    // for (let i = 0; i < transactions.length; i++) {
+    //   if (transactions[i]) {
+    //     console.log(
+    //       chalk.greenBright(`${transactions[i]?.uuid ?? "N/A"}\t`) +
+    //         chalk.redBright(`${transactions[i]?.amount ?? "N/A"}\t`) +
+    //         chalk.yellowBright(
+    //           `${transactions[i]?.transactionDate ?? "N/A"}\t`,
+    //         ) +
+    //         chalk.blueBright(`${transactions[i]?.description ?? "N/A"}`),
+    //     );
+    //   }
+    // }
     console.log("");
   } catch (error: any) {
     console.error(chalk.redBright("Failed to fetch accounts:"), error.message);

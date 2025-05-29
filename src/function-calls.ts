@@ -1,6 +1,12 @@
 import OpenAI from "openai";
 import { credentials, initializePbApi } from "./index.js";
-import type { AccountBalance, AccountTransaction } from "investec-pb-api";
+import type {
+  AccountBalance,
+  AccountTransaction,
+  Transfer,
+  TransferMultiple,
+  TransferResponse,
+} from "investec-pb-api";
 
 export const getWeatherFunctionCall: OpenAI.ChatCompletionTool = {
   type: "function",
@@ -79,6 +85,43 @@ export const getAccountTransactionFunctionCall: OpenAI.ChatCompletionTool = {
     },
   },
 };
+
+export const getBeneficiariesFunctionCall: OpenAI.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "get_beneficiaries",
+    description:
+      "Get a list of your external beneficiaries for making payments.",
+  },
+};
+
+export const transferMultipleFunctionCall: OpenAI.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "transfer_multiple",
+    description:
+      "Transfer money between accounts. the beneficiaryAccountId is the account you are transferring to.",
+    parameters: {
+      type: "object",
+      properties: {
+        accountId: { type: "string" },
+        beneficiaryAccountId: { type: "string" },
+        amount: { type: "string" },
+        myReference: { type: "string" },
+        theirReference: { type: "string" },
+      },
+      required: [
+        "accountId",
+        "beneficiaryAccountId",
+        "amount",
+        "myReference",
+        "theirReference",
+      ],
+      additionalProperties: false,
+    },
+  },
+};
+
 // If you want to avoid the error, use 'any[]' as the return type
 export async function getAccounts(): Promise<any[]> {
   const api = await initializePbApi(credentials, {} as Options);
@@ -117,14 +160,47 @@ export async function getAccountTransactions(options: {
   return transactions;
 }
 
+export async function getBeneficiaries(): Promise<any[]> {
+  const api = await initializePbApi(credentials, {} as Options);
+  const result = await api.getBeneficiaries();
+  console.log("💳 fetching beneficiaries");
+  const beneficiaries = result.data;
+  return beneficiaries;
+}
+
+export async function transferMultiple(options: {
+  accountId: string;
+  beneficiaryAccountId: string;
+  amount: string;
+  myReference: string;
+  theirReference: string;
+}): Promise<Transfer[]> {
+  const api = await initializePbApi(credentials, {} as Options);
+  console.log(`💳 transfering for account ${options.accountId}`);
+  const transfer: TransferMultiple = {
+    beneficiaryAccountId: options.beneficiaryAccountId,
+    //amount: options.amount,
+    amount: "10", // hardcoded for testing
+    myReference: options.myReference,
+    theirReference: options.theirReference,
+  };
+  const result = await api.transferMultiple(options.accountId, transfer);
+  const transferResponse = result.data.TransferResponses;
+  return transferResponse;
+}
+
 export const tools: OpenAI.ChatCompletionTool[] = [
   getAccountsFunctionCall,
   getBalanceFunctionCall,
   getAccountTransactionFunctionCall,
+  getBeneficiariesFunctionCall,
+  transferMultipleFunctionCall,
 ];
 
 export const availableFunctions: Record<string, (...args: any[]) => any> = {
   get_accounts: getAccounts,
   get_balance: getAccountBalances,
   get_transactions: getAccountTransactions,
+  get_beneficiaries: getBeneficiaries,
+  transfer_multiple: transferMultiple,
 };

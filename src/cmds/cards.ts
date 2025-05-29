@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTable } from "../index.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -21,16 +21,26 @@ export async function cardsCommand(options: Options) {
       console.log("No cards found");
       return;
     }
-    console.log("Card Key \tCard Number \t\tCode Enabled");
-    for (let i = 0; i < cards.length; i++) {
-      if (cards[i]) {
-        console.log(
-          chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t\t`) +
-            chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t\t`) +
-            chalk.redBright(`${cards[i]?.IsProgrammable ?? "N/A"}`),
-        );
-      }
-    }
+
+    const simpleCards = cards.map(
+      ({ CardKey, CardNumber, IsProgrammable }) => ({
+        CardKey,
+        CardNumber,
+        IsProgrammable,
+      }),
+    );
+    printTable(simpleCards);
+
+    // console.log("Card Key \tCard Number \t\tCode Enabled");
+    // for (let i = 0; i < cards.length; i++) {
+    //   if (cards[i]) {
+    //     console.log(
+    //       chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t\t`) +
+    //         chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t\t`) +
+    //         chalk.redBright(`${cards[i]?.IsProgrammable ?? "N/A"}`),
+    //     );
+    //   }
+    // }
     console.log("");
   } catch (error: any) {
     console.error(chalk.redBright("Failed to fetch cards:"), error.message);
