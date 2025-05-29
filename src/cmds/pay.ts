@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import { credentials, initializePbApi } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -37,10 +37,6 @@ export async function payCommand(
 
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to make payment:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "pay beneficiary");
   }
 }

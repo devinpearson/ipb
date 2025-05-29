@@ -1,6 +1,6 @@
 import fs from "fs";
 import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
+import { handleCliError } from "./utils.js";
 interface Options {
   cardKey: number;
   filename: string;
@@ -32,13 +32,6 @@ export async function envCommand(options: Options) {
     console.log("🎉 envs saved to file");
     console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to fetch environment variables: "),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch environment variables");
   }
 }

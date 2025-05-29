@@ -1,8 +1,8 @@
-import chalk from "chalk";
 import { credentialLocation, printTitleBox } from "../index.js";
 import fs from "fs";
 import fetch from "node-fetch";
 import https from "https";
+import { handleCliError } from "./utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -69,10 +69,6 @@ export async function loginCommand(options: Options) {
     console.log("🔑 access token saved");
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to login:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "login");
   }
 }

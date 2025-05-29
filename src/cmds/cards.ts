@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import { credentials, initializeApi, printTable } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -31,22 +31,8 @@ export async function cardsCommand(options: Options) {
     );
     printTable(simpleCards);
 
-    // console.log("Card Key \tCard Number \t\tCode Enabled");
-    // for (let i = 0; i < cards.length; i++) {
-    //   if (cards[i]) {
-    //     console.log(
-    //       chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t\t`) +
-    //         chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t\t`) +
-    //         chalk.redBright(`${cards[i]?.IsProgrammable ?? "N/A"}`),
-    //     );
-    //   }
-    // }
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch cards:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch cards");
   }
 }

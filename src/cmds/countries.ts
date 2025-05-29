@@ -1,5 +1,5 @@
-import chalk from "chalk";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTable } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -20,22 +20,12 @@ export async function countriesCommand(options: Options) {
       console.log("No countries found");
       return;
     }
-    console.log("Code \t\t Name");
-    for (let i = 0; i < countries.length; i++) {
-      if (countries[i]) {
-        console.log(
-          chalk.greenBright(`${countries[i]?.Code ?? "N/A"}`) +
-            ` \t ` +
-            chalk.blueBright(`${countries[i]?.Name ?? "N/A"}`),
-        );
-      }
-    }
+
+    const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
+    printTable(simpleCountries);
+
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch countries:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch countries");
   }
 }

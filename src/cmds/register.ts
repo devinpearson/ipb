@@ -1,7 +1,7 @@
-import chalk from "chalk";
 import { printTitleBox } from "../index.js";
 import fetch from "node-fetch";
 import https from "https";
+import { handleCliError } from "./utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -12,7 +12,7 @@ interface Options {
   credentialsFile: string;
 }
 
-export async function registerCommand(options: Options) {
+export async function registerCommand(options: any) {
   try {
     printTitleBox();
     if (!options.email || !options.password) {
@@ -38,7 +38,6 @@ export async function registerCommand(options: Options) {
     console.log("Account registered successfully");
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to register:"), error.message);
-    console.log("");
+    handleCliError(error, { verbose: options.verbose }, "register");
   }
 }

@@ -5,6 +5,7 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
+import { handleCliError } from "./utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -152,11 +153,7 @@ export async function aiCommand(prompt: string, options: Options) {
     }
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch cards:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "AI generation");
   }
 }
 

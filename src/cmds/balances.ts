@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import { credentials, initializePbApi } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -27,10 +27,6 @@ export async function balancesCommand(accountId: string, options: Options) {
 
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch balances:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch balances");
   }
 }

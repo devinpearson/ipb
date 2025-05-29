@@ -1,5 +1,5 @@
-import chalk from "chalk";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTable } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -21,22 +21,11 @@ export async function merchantsCommand(options: Options) {
       return;
     }
 
-    console.log("Code \t Name");
-    for (let i = 0; i < merchants.length; i++) {
-      if (merchants[i]) {
-        console.log(
-          chalk.greenBright(`${merchants[i]?.Code ?? "N/A"}`) +
-            ` \t ` +
-            chalk.blueBright(`${merchants[i]?.Name ?? "N/A"}`),
-        );
-      }
-    }
+    const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
+    printTable(simpleMerchants);
+
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch merchants:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch merchants");
   }
 }

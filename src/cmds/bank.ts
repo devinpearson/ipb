@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
 import { availableFunctions, tools } from "../function-calls.js";
+import { handleCliError } from "./utils.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -71,11 +72,7 @@ export async function bankCommand(prompt: string, options: Options) {
 
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch cards:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "bank command");
   }
 }
 

@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import { credentials, initializePbApi, printTable } from "../index.js";
+import { handleCliError } from "./utils.js";
 interface Options {
   host: string;
   apiKey: string;
@@ -31,24 +31,9 @@ export async function accountsCommand(options: Options) {
       }),
     );
     printTable(simpleAccounts);
-    //console.table(accounts)
-    // console.log("Account Id \t\t\tAccount Number \tReference\t\t\tProduct");
-    // for (let i = 0; i < accounts.length; i++) {
-    //   if (accounts[i]) {
-    //     console.log(
-    //       chalk.greenBright(`${accounts[i]?.accountId ?? "N/A"}\t`) +
-    //         chalk.blueBright(`${accounts[i]?.accountNumber ?? "N/A"}\t`) +
-    //         chalk.redBright(`${accounts[i]?.referenceName ?? "N/A"}\t\t\t`) +
-    //         chalk.yellowBright(`${accounts[i]?.productName ?? "N/A"}`),
-    //     );
-    //   }
-    // }
+
     console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch accounts:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch accounts");
   }
 }
