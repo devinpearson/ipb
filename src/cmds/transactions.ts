@@ -31,6 +31,11 @@ export async function transactionsCommand(accountId: string, options: Options) {
     );
     printTable(simpleTransactions);
   } catch (error: any) {
-    handleCliError(error, options, "fetch transactions");
+    if (error.message && error.message === 'Bad Request' ) {
+      console.log("")
+      console.error(`Account with ID ${accountId} not found.`);
+    } else {
+      handleCliError(error, options, "fetch transactions");
+    }
   }
 }

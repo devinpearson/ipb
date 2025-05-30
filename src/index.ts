@@ -245,7 +245,9 @@ async function main() {
   ).action(merchantsCommand);
   addApiCredentialOptions(
     program.command("accounts").description("Gets a list of your accounts"),
-  ).action(accountsCommand);
+  )
+    .option("--json", "output raw JSON")
+    .action(accountsCommand);
   addApiCredentialOptions(
     program.command("balances").description("Gets your account balances"),
   )
