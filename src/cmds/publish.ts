@@ -29,7 +29,6 @@ export async function publishCommand(options: Options) {
       code,
     );
     console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "publish code");
   }

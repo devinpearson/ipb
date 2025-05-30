@@ -26,7 +26,6 @@ export async function uploadCommand(options: Options) {
     raw.code = code;
     const result = await api.uploadCode(options.cardKey, raw);
     console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "upload code");
   }

@@ -26,7 +26,6 @@ export async function envCommand(options: Options) {
     console.log(`💾 saving to file: ${options.filename}`);
     fs.writeFileSync(options.filename, JSON.stringify(envs, null, 4));
     console.log("🎉 envs saved to file");
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch environment variables");
   }

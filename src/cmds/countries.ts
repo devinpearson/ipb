@@ -17,8 +17,6 @@ export async function countriesCommand(options: Options) {
 
     const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
     printTable(simpleCountries);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch countries");
   }

@@ -20,8 +20,6 @@ export async function currenciesCommand(options: Options) {
       Name,
     }));
     printTable(simpleCurrencies);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch currencies");
   }

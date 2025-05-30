@@ -26,7 +26,6 @@ export async function uploadEnvCommand(options: Options) {
     raw.variables = JSON.parse(variables);
     const result = await api.uploadEnv(options.cardKey, raw);
     console.log(`🎉 env uploaded`);
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "upload environment variables");
   }

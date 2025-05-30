@@ -69,8 +69,6 @@ export async function bankCommand(prompt: string, options: Options) {
       //console.log(chalk.blueBright("Description:"));
       console.log(response);
     }
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "bank command");
   }

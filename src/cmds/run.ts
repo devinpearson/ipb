@@ -82,7 +82,6 @@ export async function runCommand(options: any) {
         console.log("\n", chalk.yellow(log.level), chalk.white(log.content));
       });
     });
-    console.log("");
   } catch (error: any) {
     handleCliError(error, { verbose: options.verbose }, "run code");
   }

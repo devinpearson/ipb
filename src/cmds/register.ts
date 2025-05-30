@@ -36,7 +36,6 @@ export async function registerCommand(options: any) {
     }
 
     console.log("Account registered successfully");
-    console.log("");
   } catch (error: any) {
     handleCliError(error, { verbose: options.verbose }, "register");
   }

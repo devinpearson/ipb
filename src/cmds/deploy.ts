@@ -44,7 +44,6 @@ export async function deployCommand(options: Options) {
     if (result.data.result.codeId) {
       console.log("🎉 code deployed");
     }
-    console.log("");
   } catch (error: any) {
     handleCliError(error, { verbose: (options as any).verbose }, "deploy code");
   }

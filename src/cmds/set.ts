@@ -47,7 +47,6 @@ export async function configCommand(options: Options) {
     }
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
     console.log("🔑 credentials saved");
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "set config");
   }

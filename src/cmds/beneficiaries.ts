@@ -24,8 +24,6 @@ export async function beneficiariesCommand(options: Options) {
       }),
     );
     printTable(simpleBeneficiaries);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch beneficiaries");
   }

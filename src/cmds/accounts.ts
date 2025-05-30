@@ -26,8 +26,6 @@ export async function accountsCommand(options: Options) {
       }),
     );
     printTable(simpleAccounts);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch accounts");
   }

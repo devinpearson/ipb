@@ -22,7 +22,6 @@ export async function enableCommand(options: Options) {
     } else {
       console.log("❌ code enable failed");
     }
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "enable card code");
   }

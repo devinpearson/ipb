@@ -151,7 +151,6 @@ export async function aiCommand(prompt: string, options: Options) {
         `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`,
       );
     }
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "AI generation");
   }

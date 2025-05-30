@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import type { Credentials } from "./cmds/types.js";
 
 export function handleCliError(
   error: any,
@@ -58,4 +59,34 @@ export function printTable(data: TableData): void {
       .join(" | ");
     console.log(dataRow);
   });
+}
+
+export async function loadCredentialsFile(
+  credentials: Credentials,
+  credentialsFile: string,
+) {
+  if (credentialsFile) {
+    const file = await import("file://" + credentialsFile, {
+      with: { type: "json" },
+    });
+    if (file.host) {
+      credentials.host = file.host;
+    }
+    if (file.apiKey) {
+      credentials.apiKey = file.apiKey;
+    }
+    if (file.clientId) {
+      credentials.clientId = file.clientId;
+    }
+    if (file.clientSecret) {
+      credentials.clientSecret = file.clientSecret;
+    }
+    if (file.openaiKey) {
+      credentials.openaiKey = file.openaiKey;
+    }
+    if (file.sandboxKey) {
+      credentials.sandboxKey = file.sandboxKey;
+    }
+  }
+  return credentials;
 }

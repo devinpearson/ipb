@@ -67,7 +67,6 @@ export async function loginCommand(options: Options) {
     cred.sandboxKey = loginResponse.access_token;
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
     console.log("🔑 access token saved");
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "login");
   }

@@ -12,7 +12,7 @@ export async function logsCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
-        throw new Error("cardkey is required");
+        throw new Error("card-key is required");
       }
       options.cardKey = Number(credentials.cardKey);
     }
@@ -31,7 +31,6 @@ export async function logsCommand(options: Options) {
       JSON.stringify(result.data.result.executionItems, null, 4),
     );
     console.log("🎉 " + chalk.greenBright("logs saved to file"));
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch execution logs");
   }

@@ -18,8 +18,6 @@ export async function merchantsCommand(options: Options) {
 
     const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
     printTable(simpleMerchants);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch merchants");
   }

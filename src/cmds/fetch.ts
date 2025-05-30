@@ -26,7 +26,6 @@ export async function fetchCommand(options: Options) {
     console.log(`💾 saving to file: ${options.filename}`);
     await fs.writeFileSync(options.filename, code);
     console.log("🎉 code saved to file");
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch saved code");
   }

@@ -8,7 +8,7 @@ interface Options extends CommonOptions {
 export async function disableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
-      throw new Error("cardkey is required");
+      throw new Error("card-key is required");
     }
     options.cardKey = Number(credentials.cardKey);
   }
@@ -22,7 +22,6 @@ export async function disableCommand(options: Options) {
     } else {
       console.log("❌ code disable failed");
     }
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "disable card code");
   }

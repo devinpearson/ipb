@@ -14,7 +14,6 @@ export async function transactionsCommand(accountId: string, options: Options) {
       null,
       null,
     );
-    // console.log(result.data)
     const transactions = result.data.transactions;
     console.log("");
     if (!transactions) {
@@ -31,8 +30,6 @@ export async function transactionsCommand(accountId: string, options: Options) {
       }),
     );
     printTable(simpleTransactions);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch transactions");
   }

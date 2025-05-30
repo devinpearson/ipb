@@ -27,9 +27,6 @@ export async function transferCommand(
         `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`,
       );
     }
-    //console.log(result.data.TransferResponses);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "transfer");
   }

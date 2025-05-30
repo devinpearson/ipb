@@ -20,8 +20,6 @@ export async function balancesCommand(accountId: string, options: Options) {
     console.log(`Budget: ${result.data.budgetBalance}`);
     console.log(`Straight: ${result.data.straightBalance}`);
     console.log(`Cash: ${result.data.cashBalance}`);
-
-    console.log("");
   } catch (error: any) {
     handleCliError(error, options, "fetch balances");
   }
