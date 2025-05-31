@@ -10,6 +10,10 @@ interface Options extends CommonOptions {
   env: string;
 }
 
+/**
+ * Deploy code and environment variables to the card.
+ * @param options CLI options
+ */
 export async function deployCommand(options: Options) {
   try {
     let envObject = {};

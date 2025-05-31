@@ -4,6 +4,10 @@ import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
 
+/**
+ * Pay a beneficiary from your account.
+ * @param options CLI options
+ */
 export async function payCommand(
   accountId: string,
   beneficiaryId: string,

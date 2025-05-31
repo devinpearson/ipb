@@ -21,6 +21,11 @@ interface Options {
   verbose: boolean;
 }
 
+/**
+ * Use the LLM to call your bank and generate a response.
+ * @param prompt The prompt for the LLM
+ * @param options CLI options
+ */
 export async function bankCommand(prompt: string, options: Options) {
   try {
     printTitleBox();

@@ -7,6 +7,10 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Upload code to the card.
+ * @param options CLI options
+ */
 export async function uploadCommand(options: Options) {
   try {
     if (!fs.existsSync(options.filename)) {

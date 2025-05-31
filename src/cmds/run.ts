@@ -15,6 +15,10 @@ interface Options {
   country: string;
   // verbose: boolean;
 }
+/**
+ * Run programmable banking code locally.
+ * @param options CLI options
+ */
 export async function runCommand(options: any) {
   printTitleBox();
   try {

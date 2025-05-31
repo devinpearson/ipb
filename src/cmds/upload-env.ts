@@ -8,6 +8,10 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Upload environment variables to the card.
+ * @param options CLI options
+ */
 export async function uploadEnvCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
     throw new Error("File does not exist");

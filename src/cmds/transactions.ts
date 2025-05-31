@@ -3,6 +3,11 @@ import { handleCliError, printTable } from "@utils";
 import type { CommonOptions } from "@types";
 interface Options extends CommonOptions {}
 
+/**
+ * Fetch and display Investec transactions for a given account.
+ * @param accountId The account ID to fetch transactions for
+ * @param options CLI options
+ */
 export async function transactionsCommand(accountId: string, options: Options) {
   try {
     const api = await initializePbApi(credentials, options);
@@ -22,7 +27,17 @@ export async function transactionsCommand(accountId: string, options: Options) {
     }
 
     const simpleTransactions = transactions.map(
-      ({ uuid, amount, transactionDate, description }) => ({
+      ({
+        uuid,
+        amount,
+        transactionDate,
+        description,
+      }: {
+        uuid: string;
+        amount: number;
+        transactionDate: string;
+        description: string;
+      }) => ({
         uuid,
         amount,
         transactionDate,

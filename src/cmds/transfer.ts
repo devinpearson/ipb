@@ -4,6 +4,10 @@ import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
 
+/**
+ * Transfer funds between accounts.
+ * @param options CLI options
+ */
 export async function transferCommand(
   accountId: string,
   beneficiaryAccountId: string,

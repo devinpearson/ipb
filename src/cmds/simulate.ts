@@ -20,6 +20,11 @@ interface Options {
   credentialsFile: string;
   verbose: boolean;
 }
+
+/**
+ * Simulate programmable banking code using the online simulator.
+ * @param options CLI options
+ */
 export async function simulateCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {
@@ -72,9 +77,9 @@ export async function simulateCommand(options: Options) {
     );
     // Read the template env.json file and replace the values with the process.env values
 
-    executionItems.forEach((item) => {
+    executionItems.forEach((item: any) => {
       console.log("\n💻 ", chalk.green(item.type));
-      item.logs.forEach((log) => {
+      item.logs.forEach((log: any) => {
         console.log("\n", chalk.yellow(log.level), chalk.white(log.content));
       });
     });

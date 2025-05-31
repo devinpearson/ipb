@@ -13,6 +13,10 @@ interface Options {
   credentialsFile: string;
 }
 
+/**
+ * Register a new user for LLM generation.
+ * @param options CLI options
+ */
 export async function registerCommand(options: any) {
   try {
     printTitleBox();

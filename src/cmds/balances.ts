@@ -5,6 +5,11 @@ interface Options extends CommonOptions {
   accountId: string;
 }
 
+/**
+ * Fetch and display Investec balances for a given account.
+ * @param accountId The account ID to fetch balances for
+ * @param options CLI options
+ */
 export async function balancesCommand(accountId: string, options: Options) {
   try {
     const api = await initializePbApi(credentials, options);

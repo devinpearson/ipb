@@ -3,6 +3,11 @@ import { handleCliError, printTable } from "@utils";
 import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
+
+/**
+ * Fetch and display Investec currencies.
+ * @param options CLI options
+ */
 export async function currenciesCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);
@@ -16,10 +21,9 @@ export async function currenciesCommand(options: Options) {
       return;
     }
 
-    const simpleCurrencies = currencies.map(({ Code, Name }) => ({
-      Code,
-      Name,
-    }));
+    const simpleCurrencies = currencies.map(
+      ({ Code, Name }: { Code: string; Name: string }) => ({ Code, Name }),
+    );
     printTable(simpleCurrencies);
   } catch (error: any) {
     handleCliError(error, options, "fetch currencies");

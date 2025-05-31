@@ -8,6 +8,10 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetch and save code from the card to a local file.
+ * @param options CLI options
+ */
 export async function fetchCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {

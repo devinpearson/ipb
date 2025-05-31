@@ -9,6 +9,10 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetch and display execution logs from the API.
+ * @param options CLI options
+ */
 export async function logsCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {

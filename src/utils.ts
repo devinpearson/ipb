@@ -1,6 +1,22 @@
 import chalk from "chalk";
 import type { Credentials } from "./cmds/types.js";
 
+/**
+ * Print a styled CLI title box for the Investec Programmable Banking CLI.
+ */
+export function printTitleBox() {
+  console.log("");
+  console.log("🦓 Investec Programmable Banking CLI");
+  console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  console.log("");
+}
+
+/**
+ * Handle and display CLI errors in a consistent format.
+ * @param error The error object to handle
+ * @param options CLI options (may include verbose)
+ * @param context A string describing the context of the error
+ */
 export function handleCliError(
   error: any,
   options: { verbose?: boolean },
@@ -13,6 +29,10 @@ export function handleCliError(
   }
 }
 
+/**
+ * Check the latest version of the CLI on npm.
+ * @returns The latest version string
+ */
 export async function checkLatestVersion() {
   const response = await fetch("https://registry.npmjs.org/investec-ipb", {
     method: "GET",
@@ -27,12 +47,22 @@ export async function checkLatestVersion() {
   return latestVersion;
 }
 
+/**
+ * Represents a row in a table for CLI output.
+ */
 export interface TableRow {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+/**
+ * Represents table data for CLI output.
+ */
 export type TableData = TableRow[];
 
+/**
+ * Print a table to the CLI given an array of objects.
+ * @param data The table data to print
+ */
 export function printTable(data: TableData): void {
   if (!data || data.length === 0) {
     console.log("No data to display.");
@@ -61,6 +91,12 @@ export function printTable(data: TableData): void {
   });
 }
 
+/**
+ * Load credentials from a JSON file and merge into the provided credentials object.
+ * @param credentials The credentials object to update
+ * @param credentialsFile The path to the credentials file
+ * @returns The updated credentials object
+ */
 export async function loadCredentialsFile(
   credentials: Credentials,
   credentialsFile: string,
@@ -89,11 +125,4 @@ export async function loadCredentialsFile(
     }
   }
   return credentials;
-}
-
-export function printTitleBox() {
-  console.log("");
-  console.log("🦓 Investec Programmable Banking CLI");
-  console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  console.log("");
 }

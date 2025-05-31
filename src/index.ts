@@ -30,30 +30,40 @@ import {
   newCommand,
   generateCommand,
   bankCommand,
-} from "./cmds/index.js";
-import { simulateCommand } from "./cmds/simulate.js";
-import { registerCommand } from "./cmds/register.js";
-import { loginCommand } from "./cmds/login.js";
-import { accountsCommand } from "./cmds/accounts.js";
-import { balancesCommand } from "./cmds/balances.js";
-import { transactionsCommand } from "./cmds/transactions.js";
-import { transferCommand } from "./cmds/transfer.js";
-import { beneficiariesCommand } from "./cmds/beneficiaries.js";
-import { payCommand } from "./cmds/pay.js";
-import { handleCliError, loadCredentialsFile } from "./utils.js";
-import type { Credentials, BasicOptions } from "./cmds/types.js";
+} from "@cmds/index.js";
+import { simulateCommand } from "@cmds/simulate.js";
+import { registerCommand } from "@cmds/register.js";
+import { loginCommand } from "@cmds/login.js";
+import { accountsCommand } from "@cmds/accounts.js";
+import { balancesCommand } from "@cmds/balances.js";
+import { transactionsCommand } from "@cmds/transactions.js";
+import { transferCommand } from "@cmds/transfer.js";
+import { beneficiariesCommand } from "@cmds/beneficiaries.js";
+import { payCommand } from "@cmds/pay.js";
+import { handleCliError, loadCredentialsFile } from "@utils";
+import type { Credentials, BasicOptions } from "@types";
+
+// Fix: Ensure the Credentials interface includes cardKey, openaiKey, and sandboxKey
 
 const version = "0.8.1-rc.3";
 const program = new Command();
 
-// Only export what is needed outside this file
+/**
+ * The default credential file location and folder for the CLI.
+ * @property {string} folder - The folder where credentials are stored.
+ * @property {string} filename - The full path to the credentials file.
+ */
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
   filename: `${homedir()}/.ipb/.credentials.json`,
 };
 
-// Print CLI title (used in some commands)
-export async function printTitleBox() {
+/**
+ * Prints the CLI title box to the console.
+ * Used for branding and visual separation in CLI output.
+ * @returns {Promise<void>}
+ */
+export async function printTitleBox(): Promise<void> {
   console.log("");
   console.log("🦓 Investec Programmable Banking CLI");
   // console.log("🔮 " + chalk.blueBright(`v${version}`));
@@ -87,6 +97,10 @@ if (fs.existsSync(credentialLocation.filename)) {
   }
 }
 
+/**
+ * The credentials object, loaded from environment variables or credentials file.
+ * @type {Credentials}
+ */
 export const credentials: Credentials = {
   host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
@@ -97,8 +111,12 @@ export const credentials: Credentials = {
   sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey,
 };
 
-// Helper for shared API credential options
-function addApiCredentialOptions(cmd: Command) {
+/**
+ * Adds shared API credential options to a Commander.js command.
+ * @param {Command} cmd - The Commander command to add options to.
+ * @returns {Command} The command with added options.
+ */
+function addApiCredentialOptions(cmd: Command): Command {
   return cmd
     .option("--api-key <apiKey>", "api key for the Investec API")
     .option("--client-id <clientId>", "client Id for the Investec API")
@@ -120,7 +138,11 @@ if (process.argv.length <= 2) {
   process.exit(0);
 }
 
-async function main() {
+/**
+ * Main entry point for the CLI. Sets up all commands and parses arguments.
+ * @returns {Promise<void>}
+ */
+async function main(): Promise<void> {
   program
     .name("ipb")
     .description("CLI to manage Investec Programmable Banking")
@@ -328,10 +350,16 @@ async function main() {
   }
 }
 
+/**
+ * Initializes the Investec Card API or mock API based on environment.
+ * @param {Credentials} credentials - The credentials to use for API authentication.
+ * @param {BasicOptions} options - CLI options that may override credentials.
+ * @returns {Promise<any>} The initialized API instance.
+ */
 export async function initializeApi(
   credentials: Credentials,
   options: BasicOptions,
-) {
+): Promise<any> {
   printTitleBox();
   credentials = await optionCredentials(options, credentials);
   let api;
@@ -354,21 +382,26 @@ export async function initializeApi(
     );
   }
   const accessResult = await api.getAccessToken();
-  if (accessResult.scope !== "cards") {
-    console.log(
-      chalk.redBright(
-        "Scope is not only cards, please consider reducing the scopes",
-      ),
-    );
-    console.log("");
+  if (accessResult instanceof Error) {
+    console.error(chalk.red(`🙀 ${accessResult.message}`));
+    process.exit(1);
   }
+  // console.log(chalk.green('Access token acquired successfully'));
   return api;
 }
 
+/**
+ * Initializes the Investec Programmable Banking API (PB API).
+ * This API is used for account, transaction, and beneficiary operations.
+ *
+ * @param credentials - The credentials to use for API authentication.
+ * @param options - CLI options that may override credentials.
+ * @returns {Promise<any>} The initialized PB API instance.
+ */
 export async function initializePbApi(
   credentials: Credentials,
   options: BasicOptions,
-) {
+): Promise<any> {
   credentials = await optionCredentials(options, credentials);
   let api;
   const { InvestecPbApi } = await import("investec-pb-api");
@@ -382,32 +415,67 @@ export async function initializePbApi(
   return api;
 }
 
+/**
+ * Applies CLI options to override or supplement credentials.
+ * Loads credentials from a file if specified, and merges with environment and CLI options.
+ *
+ * @param options - CLI options that may override credentials.
+ * @param credentials - The credentials object to update.
+ * @returns {Promise<Credentials>} The updated credentials object.
+ */
 export async function optionCredentials(
   options: BasicOptions,
-  credentials: any,
-) {
-  if (options.credentialsFile) {
-    credentials = await loadCredentialsFile(
-      credentials,
-      options.credentialsFile,
-    );
+  credentials: Credentials,
+): Promise<Credentials> {
+  let opts = { ...options };
+  if (opts.credentialsFile) {
+    try {
+      const data = fs.readFileSync(opts.credentialsFile, "utf8");
+      const fileCreds = JSON.parse(data);
+      credentials = { ...credentials, ...fileCreds } as Credentials;
+      console.log(
+        chalk.green(`✅ Loaded credentials from ${opts.credentialsFile}`),
+      );
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(
+          chalk.red(`🙀 Invalid credentials file format: ${err.message}`),
+        );
+        console.log("");
+      } else {
+        console.error(chalk.red("🙀 Invalid credentials file format"));
+        console.log("");
+      }
+      process.exit(1);
+    }
   }
-  if (options.apiKey) {
-    credentials.apiKey = options.apiKey;
+  if (opts.apiKey) credentials.apiKey = opts.apiKey;
+  if (opts.clientId) credentials.clientId = opts.clientId;
+  if (opts.clientSecret) credentials.clientSecret = opts.clientSecret;
+  if (opts.host) credentials.host = opts.host;
+  if ((opts as any).cardKey)
+    (credentials as any).cardKey = (opts as any).cardKey;
+  if ((opts as any).openaiKey)
+    (credentials as any).openaiKey = (opts as any).openaiKey;
+  if ((opts as any).sandboxKey)
+    (credentials as any).sandboxKey = (opts as any).sandboxKey;
+
+  // Validate required credentials
+  if (!credentials.apiKey) {
+    console.error(chalk.red("🙀 API key is required"));
+    process.exit(1);
   }
-  if (options.clientId) {
-    credentials.clientId = options.clientId;
+  if (!credentials.clientId) {
+    console.error(chalk.red("🙀 Client ID is required"));
+    process.exit(1);
   }
-  if (options.clientSecret) {
-    credentials.clientSecret = options.clientSecret;
+  if (!credentials.clientSecret) {
+    console.error(chalk.red("🙀 Client secret is required"));
+    process.exit(1);
   }
-  if (options.host) {
-    credentials.host = options.host;
-  }
+
   return credentials;
 }
 
-main().catch((err) => {
-  handleCliError(err, { verbose: true }, "run CLI");
-  process.exit(1);
-});
+// Execute the main function to start the CLI
+main();

@@ -10,6 +10,11 @@ interface Options {
   force: boolean;
 }
 
+/**
+ * Create a new project from a template.
+ * @param name The name of the new project
+ * @param options CLI options
+ */
 export async function newCommand(name: string, options: Options) {
   printTitleBox();
   const uri = path.join(

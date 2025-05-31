@@ -5,6 +5,11 @@ interface Options extends CommonOptions {
   cardKey: number;
 }
 
+/**
+ * Disable programmable code on the card.
+ * @param options CLI options
+ */
+
 export async function disableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {

@@ -23,6 +23,10 @@ interface LoginResponse {
   created_at: number;
 }
 
+/**
+ * Log in with the server for LLM generation.
+ * @param options CLI options
+ */
 export async function loginCommand(options: Options) {
   try {
     printTitleBox();

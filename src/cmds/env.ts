@@ -8,6 +8,10 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetch and save environment variables from the card to a local file.
+ * @param options CLI options
+ */
 export async function envCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {

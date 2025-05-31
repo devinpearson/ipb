@@ -4,6 +4,10 @@ import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
 
+/**
+ * Fetch and display Investec beneficiaries.
+ * @param options CLI options
+ */
 export async function beneficiariesCommand(options: Options) {
   try {
     const api = await initializePbApi(credentials, options);
@@ -17,7 +21,17 @@ export async function beneficiariesCommand(options: Options) {
       return;
     }
     const simpleBeneficiaries = beneficiaries.map(
-      ({ beneficiaryId, accountNumber, beneficiaryName, lastPaymentDate }) => ({
+      ({
+        beneficiaryId,
+        accountNumber,
+        beneficiaryName,
+        lastPaymentDate,
+      }: {
+        beneficiaryId: string;
+        accountNumber: string;
+        beneficiaryName: string;
+        lastPaymentDate: string;
+      }) => ({
         beneficiaryId,
         accountNumber,
         beneficiaryName,

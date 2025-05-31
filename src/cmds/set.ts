@@ -11,6 +11,11 @@ interface Options {
   sandboxKey: string;
   verbose: boolean;
 }
+
+/**
+ * Set configuration options for the CLI.
+ * @param options CLI options
+ */
 export async function configCommand(options: Options) {
   try {
     let cred = {

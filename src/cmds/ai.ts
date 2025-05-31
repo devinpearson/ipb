@@ -88,6 +88,11 @@ interface Options {
 // node . 'send a notification after transaction via twilio sms'
 // node . 'limit transactions to only Woolworths, Checkers and Spar'
 // node . 'allow transactions that USD or ZAR'
+/**
+ * Generate programmable banking code using OpenAI.
+ * @param prompt The prompt for the LLM
+ * @param options CLI options
+ */
 export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = ".env.ai";

@@ -9,6 +9,10 @@ interface Options extends CommonOptions {
   codeId: string;
 }
 
+/**
+ * Publish code to the card.
+ * @param options CLI options
+ */
 export async function publishCommand(options: Options) {
   try {
     if (!fs.existsSync(options.filename)) {

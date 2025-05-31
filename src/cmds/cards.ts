@@ -4,6 +4,10 @@ import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
 
+/**
+ * Fetch and display Investec cards.
+ * @param options CLI options
+ */
 export async function cardsCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);
@@ -18,7 +22,15 @@ export async function cardsCommand(options: Options) {
     }
 
     const simpleCards = cards.map(
-      ({ CardKey, CardNumber, IsProgrammable }) => ({
+      ({
+        CardKey,
+        CardNumber,
+        IsProgrammable,
+      }: {
+        CardKey: string;
+        CardNumber: string;
+        IsProgrammable: boolean;
+      }) => ({
         CardKey,
         CardNumber,
         IsProgrammable,

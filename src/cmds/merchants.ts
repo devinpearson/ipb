@@ -4,6 +4,10 @@ import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
 
+/**
+ * Fetch and display Investec merchants.
+ * @param options CLI options
+ */
 export async function merchantsCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);
@@ -17,7 +21,9 @@ export async function merchantsCommand(options: Options) {
       return;
     }
 
-    const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
+    const simpleMerchants = merchants.map(
+      ({ Code, Name }: { Code: string; Name: string }) => ({ Code, Name }),
+    );
     printTable(simpleMerchants);
   } catch (error: any) {
     handleCliError(error, options, "fetch merchants");

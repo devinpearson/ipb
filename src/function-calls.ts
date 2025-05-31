@@ -204,3 +204,4 @@ export const availableFunctions: Record<string, (...args: any[]) => any> = {
   get_beneficiaries: getBeneficiaries,
   transfer_multiple: transferMultiple,
 };
+// No destructuring in .map, so no TS7031 error to fix here.

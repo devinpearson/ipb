@@ -3,6 +3,11 @@ import { handleCliError, printTable } from "@utils";
 import type { CommonOptions } from "@types";
 
 interface Options extends CommonOptions {}
+
+/**
+ * Fetch and display Investec countries.
+ * @param options CLI options
+ */
 export async function countriesCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);
@@ -16,7 +21,9 @@ export async function countriesCommand(options: Options) {
       return;
     }
 
-    const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
+    const simpleCountries = countries.map(
+      ({ Code, Name }: { Code: string; Name: string }) => ({ Code, Name }),
+    );
     printTable(simpleCountries);
   } catch (error: any) {
     handleCliError(error, options, "fetch countries");

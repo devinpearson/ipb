@@ -24,7 +24,17 @@ export async function accountsCommand(options: Options) {
       console.log(JSON.stringify(accounts, null, 2));
     } else {
       const simpleAccounts = accounts.map(
-        ({ accountId, accountNumber, referenceName, productName }) => ({
+        ({
+          accountId,
+          accountNumber,
+          referenceName,
+          productName,
+        }: {
+          accountId: string;
+          accountNumber: string;
+          referenceName: string;
+          productName: string;
+        }) => ({
           accountId,
           accountNumber,
           referenceName,
