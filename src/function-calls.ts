@@ -179,12 +179,12 @@ export async function transferMultiple(options: {
   console.log(`💳 transfering for account ${options.accountId}`);
   const transfer: TransferMultiple = {
     beneficiaryAccountId: options.beneficiaryAccountId,
-    //amount: options.amount,
     amount: "10", // hardcoded for testing
     myReference: options.myReference,
     theirReference: options.theirReference,
   };
-  const result = await api.transferMultiple(options.accountId, transfer);
+  // Fix: always pass as array to match type signature
+  const result = await api.transferMultiple(options.accountId, [transfer]);
   const transferResponse = result.data.TransferResponses;
   return transferResponse;
 }

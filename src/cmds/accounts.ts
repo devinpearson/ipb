@@ -3,7 +3,7 @@ import { handleCliError, printTable } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 
 interface Options extends CommonOptions {
-  json?: boolean, 
+  json?: boolean;
 }
 
 /**

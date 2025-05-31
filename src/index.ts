@@ -371,13 +371,23 @@ export async function initializePbApi(
 ) {
   credentials = await optionCredentials(options, credentials);
   let api;
-  const { InvestecPbApi } = await import("investec-pb-api");
-  api = new InvestecPbApi(
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.apiKey,
-    credentials.host,
-  );
+  if (process.env.DEBUG == "true") {
+    const { PbApi } = await import("./mock-pb.js");
+    api = new PbApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  } else {
+    const { InvestecPbApi } = await import("investec-pb-api");
+    api = new InvestecPbApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
   await api.getAccessToken();
   return api;
 }

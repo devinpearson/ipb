@@ -11,9 +11,10 @@
     "clean": "rimraf ./bin",
     "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/ && cp instructions.txt ./bin/instructions.txt",
     "test": "vitest",
+    "lint": "tsc",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "check-format": "prettier --check .",
-    "ci": "npm run build && npm run check-format && npm run check-exports && npm run test",
+    "ci": "npm run build && npm run check-format && npm run lint && npm run test && npm audit",
     "dev": "vitest",
     "format": "prettier --write .",
     "tapes": "./scripts/tapes.sh"

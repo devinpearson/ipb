@@ -21,8 +21,8 @@ export async function balancesCommand(accountId: string, options: Options) {
     console.log(`Straight: ${result.data.straightBalance}`);
     console.log(`Cash: ${result.data.cashBalance}`);
   } catch (error: any) {
-    if (error.message && error.message === 'Bad Request' ) {
-      console.log("")
+    if (error.message && error.message === "Bad Request") {
+      console.log("");
       console.error(`Account with ID ${accountId} not found.`);
     } else {
       handleCliError(error, options, "fetch balances");
