@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 import { describe, it, expect, vi } from "vitest";
-import { cardsCommand } from "../../src/cmds/cards";
+import { cardsCommand } from "../../src/cmds/cards.js";
 import chalk from "chalk";
-import { initializeApi } from "../../src/index.ts";
+import { initializeApi } from "../../src/index.js";
 
-vi.mock("../../src/index.ts", () => ({
+vi.mock("../../src/index.js", () => ({
   initializeApi: vi.fn(),
   credentials: {},
 }));
@@ -13,7 +13,9 @@ const mockApi = {
   getCards: vi.fn(),
 };
 
-(initializeApi as vi.Mock).mockResolvedValue(mockApi);
+(initializeApi as unknown as { mockResolvedValue: Function }).mockResolvedValue(
+  mockApi,
+);
 
 describe("cardsCommand", () => {
   it("should fetch and display cards correctly", async () => {

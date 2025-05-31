@@ -90,3 +90,10 @@ export async function loadCredentialsFile(
   }
   return credentials;
 }
+
+export function printTitleBox() {
+  console.log("");
+  console.log("🦓 Investec Programmable Banking CLI");
+  console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  console.log("");
+}

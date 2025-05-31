@@ -1,6 +1,6 @@
 import fs from "fs";
-import { credentialLocation } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentialLocation } from "@src/index.js";
+import { handleCliError } from "@utils";
 
 interface Options {
   clientId: string;

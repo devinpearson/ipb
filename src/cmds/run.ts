@@ -2,8 +2,8 @@ import chalk from "chalk";
 import fs from "fs";
 import path from "path";
 import { createTransaction, run } from "programmable-card-code-emulator";
-import { printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { printTitleBox } from "@utils";
+import { handleCliError } from "@utils";
 interface Options {
   filename: string;
   env: string;

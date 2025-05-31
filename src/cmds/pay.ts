@@ -1,6 +1,7 @@
-import { credentials, initializePbApi } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, initializePbApi } from "@src/index.js";
+import { handleCliError } from "@utils";
+import type { CommonOptions } from "@types";
+
 interface Options extends CommonOptions {}
 
 export async function payCommand(

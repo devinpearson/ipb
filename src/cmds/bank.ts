@@ -1,10 +1,10 @@
 import fs from "fs";
 import chalk from "chalk";
 import OpenAI from "openai";
-import { printTitleBox, credentials } from "../index.js";
+import { printTitleBox, credentials } from "@src/index.js";
 import https from "https";
-import { availableFunctions, tools } from "../function-calls.js";
-import { handleCliError } from "../utils.js";
+import { availableFunctions, tools } from "@src/function-calls.js";
+import { handleCliError } from "@utils";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,

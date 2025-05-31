@@ -1,6 +1,7 @@
-import { credentials, initializeApi } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, initializeApi } from "@src/index.js";
+import { handleCliError, printTable } from "@utils";
+import type { CommonOptions } from "@types";
+
 interface Options extends CommonOptions {}
 export async function currenciesCommand(options: Options) {
   try {

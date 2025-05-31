@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { deployCommand } from "../../src/cmds/deploy";
+import { deployCommand } from "../../src/cmds/deploy.js";
 import chalk from "chalk";
-import { initializeApi } from "../../src/index";
+import { initializeApi } from "../../src/index.js";
 import fs from "fs";
 
-vi.mock("../../src/index", () => ({
+vi.mock("../../src/index.js", () => ({
   initializeApi: vi.fn(),
   credentials: {},
 }));
@@ -17,7 +17,9 @@ const mockApi = {
   deployCode: vi.fn(),
 };
 
-initializeApi.mockResolvedValue(mockApi);
+(initializeApi as unknown as { mockResolvedValue: Function }).mockResolvedValue(
+  mockApi,
+);
 
 describe("deployCommand", () => {
   it("should deploy code successfully", async () => {

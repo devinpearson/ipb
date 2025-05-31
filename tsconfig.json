@@ -18,7 +18,7 @@
     /* If transpiling with TypeScript: */
     "module": "NodeNext",
     "outDir": "bin",
-    "rootDir": "src",
+    "rootDir": ".",
     "sourceMap": true,
 
     /* AND if you're building for a library: */
@@ -26,9 +26,18 @@
 
     /* AND if you're building for a library in a monorepo: */
     "declarationMap": true,
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@cmds/*": ["src/cmds/*"],
+      "@utils": ["src/utils.ts"],
+      "@types": ["src/cmds/types.ts"]
+    }
   },
-  "include": ["./src/**/*"],
+  "include": ["src", "test"],
   "exclude": [
     "./bin/**/*" // This is what fixed it!
   ]

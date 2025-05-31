@@ -1,6 +1,6 @@
-import { credentials, initializePbApi } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, initializePbApi } from "@src/index.js";
+import { handleCliError, printTable } from "@utils";
+import type { CommonOptions } from "@types";
 interface Options extends CommonOptions {}
 
 export async function transactionsCommand(accountId: string, options: Options) {
@@ -31,8 +31,8 @@ export async function transactionsCommand(accountId: string, options: Options) {
     );
     printTable(simpleTransactions);
   } catch (error: any) {
-    if (error.message && error.message === 'Bad Request' ) {
-      console.log("")
+    if (error.message && error.message === "Bad Request") {
+      console.log("");
       console.error(`Account with ID ${accountId} not found.`);
     } else {
       handleCliError(error, options, "fetch transactions");

@@ -1,8 +1,9 @@
 import chalk from "chalk";
 import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, initializeApi } from "@src/index.js";
+import { handleCliError } from "@utils";
+import type { CommonOptions } from "@types";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
