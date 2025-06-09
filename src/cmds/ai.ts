@@ -9,7 +9,7 @@ import { handleCliError } from "../utils.js";
 import { input } from "@inquirer/prompts";
 
 const agent = new https.Agent({
-  rejectUnauthorized: false,
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
 });
 
 const instructions = `- You are a coding assistant that creates code snippets for users.

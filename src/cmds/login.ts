@@ -6,7 +6,7 @@ import { handleCliError } from "../utils.js";
 import { input, password } from "@inquirer/prompts";
 
 const agent = new https.Agent({
-  rejectUnauthorized: false,
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
 });
 
 interface Options {
