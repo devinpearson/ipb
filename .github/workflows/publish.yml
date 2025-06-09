@@ -17,6 +17,8 @@ jobs:
           registry-url: "https://registry.npmjs.org/"
       - run: npm ci
       - run: npm run build --if-present
+      - name: Verify package contents
+        run: npm pack --dry-run
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

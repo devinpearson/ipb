@@ -167,7 +167,7 @@ export class PbApi implements IPbApi {
   }
   async payMultiple(
     accountId: string,
-    payments: any[],
+    payments: any[] | any,
   ): Promise<TransferResponse> {
     // Mock payMultiple for CLI compatibility
     return Promise.resolve({
@@ -186,7 +186,7 @@ export class PbApi implements IPbApi {
 
   async transferMultiple(
     accountId: string,
-    transfers: any[],
+    transfers: any[] | any,
   ): Promise<TransferResponse> {
     // Mock transferMultiple for CLI compatibility
     return Promise.resolve({

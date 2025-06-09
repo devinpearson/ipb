@@ -13,9 +13,9 @@ interface Options {
   merchant: string;
   city: string;
   country: string;
-  // verbose: boolean;
+  verbose: boolean;
 }
-export async function runCommand(options: any) {
+export async function runCommand(options: Options) {
   printTitleBox();
   try {
     if (!fs.existsSync(options.filename)) {

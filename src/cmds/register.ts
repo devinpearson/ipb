@@ -3,17 +3,17 @@ import fetch from "node-fetch";
 import https from "https";
 import { handleCliError } from "../utils.js";
 import { input, password } from "@inquirer/prompts";
+import type { CommonOptions } from "./types.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
 });
-interface Options {
+interface Options extends CommonOptions {
   email: string;
   password: string;
-  credentialsFile: string;
 }
 
-export async function registerCommand(options: any) {
+export async function registerCommand(options: Options) {
   try {
     printTitleBox();
     // Prompt for email and password if not provided

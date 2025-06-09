@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { credentials, initializePbApi } from "./index.js";
+import type { BasicOptions } from "./cmds/types.js";
 import type {
   AccountBalance,
   AccountTransaction,
@@ -35,12 +36,7 @@ export async function getWeather(latitude: number, longitude: number) {
   return (data as any).current.temperature_2m;
 }
 
-interface Options {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
+interface Options extends BasicOptions {
   verbose: boolean;
 }
 

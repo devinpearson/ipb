@@ -14,17 +14,26 @@ export function handleCliError(
 }
 
 export async function checkLatestVersion() {
-  const response = await fetch("https://registry.npmjs.org/investec-ipb", {
-    method: "GET",
-    headers: {
-      Accept: "application/vnd.npm.install-v1+json",
-    },
-  });
+  try {
+    const response = await fetch("https://registry.npmjs.org/investec-ipb", {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.npm.install-v1+json",
+      },
+    });
 
-  const data = (await response.json()) as { "dist-tags": { latest: string } };
-  const latestVersion = data["dist-tags"].latest;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch version: ${response.statusText}`);
+    }
 
-  return latestVersion;
+    const data = (await response.json()) as { "dist-tags": { latest: string } };
+    const latestVersion = data["dist-tags"].latest;
+
+    return latestVersion;
+  } catch (error) {
+    console.warn("Failed to check latest version:", error);
+    return null;
+  }
 }
 
 export interface TableRow {
@@ -66,26 +75,30 @@ export async function loadCredentialsFile(
   credentialsFile: string,
 ) {
   if (credentialsFile) {
-    const file = await import("file://" + credentialsFile, {
-      with: { type: "json" },
-    });
-    if (file.host) {
-      credentials.host = file.host;
-    }
-    if (file.apiKey) {
-      credentials.apiKey = file.apiKey;
-    }
-    if (file.clientId) {
-      credentials.clientId = file.clientId;
-    }
-    if (file.clientSecret) {
-      credentials.clientSecret = file.clientSecret;
-    }
-    if (file.openaiKey) {
-      credentials.openaiKey = file.openaiKey;
-    }
-    if (file.sandboxKey) {
-      credentials.sandboxKey = file.sandboxKey;
+    try {
+      const file = await import("file://" + credentialsFile, {
+        with: { type: "json" },
+      });
+
+      // Only copy known credential properties
+      const credentialKeys: (keyof Credentials)[] = [
+        "host",
+        "apiKey",
+        "clientId",
+        "clientSecret",
+        "openaiKey",
+        "sandboxKey",
+        "cardKey",
+      ];
+
+      credentialKeys.forEach((key) => {
+        if (file[key] !== undefined) {
+          credentials[key] = file[key];
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to load credentials file: ${message}`);
     }
   }
   return credentials;

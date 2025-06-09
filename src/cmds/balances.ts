@@ -1,9 +1,7 @@
 import { credentials, initializePbApi } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-interface Options extends CommonOptions {
-  accountId: string;
-}
+interface Options extends CommonOptions {}
 
 export async function balancesCommand(accountId: string, options: Options) {
   try {

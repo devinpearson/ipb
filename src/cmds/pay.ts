@@ -23,12 +23,32 @@ export async function payCommand(
     if (!amount) {
       const amt = await input({ message: "Enter amount (in rands):" });
       amount = parseFloat(amt);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Amount must be a positive number");
+      }
     }
     if (!reference) {
       reference = await input({ message: "Enter reference for the payment:" });
     }
 
     const api = await initializePbApi(credentials, options);
+
+    +(
+      // Show transaction summary and require confirmation
+      console.log(`\nTransaction Summary:`)
+    );
+    console.log(`Account: ${accountId}`);
+    console.log(`Beneficiary: ${beneficiaryId}`);
+    console.log(`Amount: R${amount.toFixed(2)}`);
+    console.log(`Reference: ${reference}\n`);
+
+    const confirmPayment = await input({
+      message: "Type 'CONFIRM' to proceed with this payment:",
+    });
+    if (confirmPayment !== "CONFIRM") {
+      console.log("Payment cancelled.");
+      return;
+    }
 
     console.log("💳 paying");
     const result = await api.payMultiple(accountId, [

@@ -25,6 +25,9 @@ export async function transferCommand(
     if (!amount) {
       const amt = await input({ message: "Enter amount (in rands):" });
       amount = parseFloat(amt);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Please enter a valid positive amount");
+      }
     }
     if (!reference) {
       reference = await input({ message: "Enter reference for the transfer:" });
