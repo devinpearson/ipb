@@ -13,3 +13,9 @@ vhs tapes/simulate.tape
 vhs tapes/toggle.tape
 vhs tapes/upload-env.tape
 vhs tapes/upload.tape
+vhs tapes/accounts.tape
+vhs tapes/beneficiaries.tape
+vhs tapes/balances.tape
+vhs tapes/transactions.tape
+vhs tapes/pay.tape
+vhs tapes/transfer.tape

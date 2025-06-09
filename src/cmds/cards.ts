@@ -1,13 +1,7 @@
-import chalk from "chalk";
 import { credentials, initializeApi } from "../index.js";
-interface Options {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
+import { handleCliError, printTable } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {}
 
 export async function cardsCommand(options: Options) {
   try {
@@ -21,22 +15,16 @@ export async function cardsCommand(options: Options) {
       console.log("No cards found");
       return;
     }
-    console.log("Card Key \tCard Number \t\tCode Enabled");
-    for (let i = 0; i < cards.length; i++) {
-      if (cards[i]) {
-        console.log(
-          chalk.greenBright(`${cards[i]?.CardKey ?? "N/A"}\t\t`) +
-            chalk.blueBright(`${cards[i]?.CardNumber ?? "N/A"}\t\t`) +
-            chalk.redBright(`${cards[i]?.IsProgrammable ?? "N/A"}`),
-        );
-      }
-    }
-    console.log("");
+
+    const simpleCards = cards.map(
+      ({ CardKey, CardNumber, IsProgrammable }) => ({
+        CardKey,
+        CardNumber,
+        IsProgrammable,
+      }),
+    );
+    printTable(simpleCards);
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch cards:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch cards");
   }
 }

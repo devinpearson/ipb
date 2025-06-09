@@ -2,6 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import path from "path";
 import { printTitleBox } from "../index.js";
+import { handleCliError } from "../utils.js";
 
 interface Options {
   template: string;
@@ -48,13 +49,6 @@ export async function newCommand(name: string, options: Options) {
       `- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`,
     );
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to create from template:"),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "create new project");
   }
 }

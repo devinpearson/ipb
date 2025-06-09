@@ -16,6 +16,7 @@ import { countriesCommand } from "./countries.js";
 import { merchantsCommand } from "./merchants.js";
 import { newCommand } from "./new.js";
 import { aiCommand } from "./ai.js";
+import { bankCommand } from "./bank.js";
 
 export {
   cardsCommand,
@@ -36,4 +37,5 @@ export {
   merchantsCommand,
   newCommand,
   aiCommand as generateCommand,
+  bankCommand,
 };

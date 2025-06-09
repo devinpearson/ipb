@@ -1,16 +1,12 @@
 import fs from "fs";
 import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
+
 export async function uploadEnvCommand(options: Options) {
   if (!fs.existsSync(options.filename)) {
     throw new Error("File does not exist");
@@ -30,15 +26,7 @@ export async function uploadEnvCommand(options: Options) {
     raw.variables = JSON.parse(variables);
     const result = await api.uploadEnv(options.cardKey, raw);
     console.log(`🎉 env uploaded`);
-    console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to upload environment variables: "),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "upload environment variables");
   }
 }

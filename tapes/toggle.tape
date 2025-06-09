@@ -7,4 +7,4 @@ Sleep 5s
 
 Type "ipb disable -c 1111111" Sleep 500ms  Enter
 
-Sleep 7s
+Sleep 5s

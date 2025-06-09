@@ -1,19 +1,43 @@
-import chalk from "chalk";
 import { printTitleBox } from "../index.js";
-interface Options {
+import fetch from "node-fetch";
+import https from "https";
+import { handleCliError } from "../utils.js";
+import { input, password } from "@inquirer/prompts";
+import type { CommonOptions } from "./types.js";
+
+const agent = new https.Agent({
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
+});
+interface Options extends CommonOptions {
   email: string;
   password: string;
-  credentialsFile: string;
 }
 
 export async function registerCommand(options: Options) {
   try {
     printTitleBox();
+    // Prompt for email and password if not provided
+    if (!options.email) {
+      options.email = await input({
+        message: "Enter your email:",
+        validate: (input: string) =>
+          input.includes("@") || "Please enter a valid email.",
+      });
+    }
+    if (!options.password) {
+      options.password = await password({
+        message: "Enter your password:",
+        mask: "*",
+        validate: (input: string) =>
+          input.length >= 6 || "Password must be at least 6 characters.",
+      });
+    }
     if (!options.email || !options.password) {
       throw new Error("Email and password are required");
     }
     console.log("💳 registering account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/register", {
+      agent,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -29,9 +53,7 @@ export async function registerCommand(options: Options) {
     }
 
     console.log("Account registered successfully");
-    console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to register:"), error.message);
-    console.log("");
+    handleCliError(error, { verbose: options.verbose }, "register");
   }
 }

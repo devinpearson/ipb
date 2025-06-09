@@ -4,6 +4,13 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
+import https from "https";
+import { handleCliError } from "../utils.js";
+import { input } from "@inquirer/prompts";
+
+const agent = new https.Agent({
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
+});
 
 const instructions = `- You are a coding assistant that creates code snippets for users.
 - The purpose is to create a code snippet that helps the user control their credit card transactions and taking action if the transaction declines or if it is approved. 
@@ -85,6 +92,10 @@ export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = ".env.ai";
     printTitleBox();
+    // Prompt for prompt if not provided
+    if (!prompt) {
+      prompt = await input({ message: "Enter your AI code prompt:" });
+    }
     // if (!credentials.openaiKey) {
     //   throw new Error("OPENAI_API_KEY is not set");
     // }
@@ -145,13 +156,8 @@ export async function aiCommand(prompt: string, options: Options) {
         `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`,
       );
     }
-    console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch cards:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "AI generation");
   }
 }
 
@@ -163,8 +169,9 @@ async function generateCode(
     let openai = new OpenAI({
       apiKey: credentials.openaiKey,
     });
-    if (credentials.openaiKey === "") {
+    if (credentials.openaiKey === "" || credentials.openaiKey === undefined) {
       openai = new OpenAI({
+        httpAgent: agent,
         apiKey: credentials.sandboxKey,
         baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
       });

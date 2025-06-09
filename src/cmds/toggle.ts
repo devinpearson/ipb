@@ -1,14 +1,10 @@
 import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
+
 export async function enableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
@@ -26,15 +22,7 @@ export async function enableCommand(options: Options) {
     } else {
       console.log("❌ code enable failed");
     }
-    console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to enable card code:"),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "enable card code");
   }
 }

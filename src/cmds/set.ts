@@ -1,5 +1,7 @@
 import fs from "fs";
 import { credentialLocation } from "../index.js";
+import { handleCliError } from "../utils.js";
+
 interface Options {
   clientId: string;
   clientSecret: string;
@@ -45,12 +47,7 @@ export async function configCommand(options: Options) {
     }
     await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
     console.log("🔑 credentials saved");
-    console.log("");
   } catch (error: any) {
-    console.error("Failed to save credentials:", error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "set config");
   }
 }

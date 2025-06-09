@@ -1,16 +1,12 @@
 import fs from "fs";
 import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
+
 export async function fetchCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
@@ -30,15 +26,7 @@ export async function fetchCommand(options: Options) {
     console.log(`💾 saving to file: ${options.filename}`);
     await fs.writeFileSync(options.filename, code);
     console.log("🎉 code saved to file");
-    console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to fetch saved code:"),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch saved code");
   }
 }

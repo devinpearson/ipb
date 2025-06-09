@@ -1,13 +1,8 @@
-import chalk from "chalk";
 import { credentials, initializeApi } from "../index.js";
-interface Options {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
+import { handleCliError, printTable } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {}
+
 export async function merchantsCommand(options: Options) {
   try {
     const api = await initializeApi(credentials, options);
@@ -21,22 +16,9 @@ export async function merchantsCommand(options: Options) {
       return;
     }
 
-    console.log("Code \t Name");
-    for (let i = 0; i < merchants.length; i++) {
-      if (merchants[i]) {
-        console.log(
-          chalk.greenBright(`${merchants[i]?.Code ?? "N/A"}`) +
-            ` \t ` +
-            chalk.blueBright(`${merchants[i]?.Name ?? "N/A"}`),
-        );
-      }
-    }
-    console.log("");
+    const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
+    printTable(simpleMerchants);
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to fetch merchants:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "fetch merchants");
   }
 }

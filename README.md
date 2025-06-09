@@ -35,6 +35,14 @@ This repository is crafted with ❤️ by our talented community members. It's a
   - [Fetch Published Code](#fetch-published-code)
   - [Publish Code](#publish-code)
   - [Simulate Code](#simulate-code)
+  - [Accounts](#accounts)
+  - [Balances](#balances)
+  - [Transfer](#transfer)
+  - [Pay](#pay)
+  - [Transactions](#transactions)
+  - [Beneficiaries](#beneficiaries)
+  - [Config](#config)
+  - [Bank](#bank)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -337,6 +345,86 @@ ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 -
 This command is ideal for testing your code in a production-like environment before deploying it to the card.
 
 ![simulate command](assets/simulate.gif)
+
+### Accounts
+
+Get a list of your accounts:
+
+```sh
+ipb accounts
+```
+
+This command retrieves all your Investec accounts linked to your credentials.
+
+### Balances
+
+Get balances for a specific account:
+
+```sh
+ipb balances <accountId>
+```
+
+This command fetches the balance for the given account ID.
+
+### Transfer
+
+Transfer between your accounts:
+
+```sh
+ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
+```
+
+Transfers the specified amount (in rands, e.g. 100.00) from one account to another with a reference.
+
+### Pay
+
+Pay a beneficiary from your account:
+
+```sh
+ipb pay <accountId> <beneficiaryId> <amount> <reference>
+```
+
+Pays a beneficiary from your account with the specified amount and reference.
+
+### Transactions
+
+Get transactions for a specific account:
+
+```sh
+ipb transactions <accountId>
+```
+
+Fetches the transaction history for the given account ID.
+
+### Beneficiaries
+
+Get your list of beneficiaries:
+
+```sh
+ipb beneficiaries
+```
+
+Lists all beneficiaries linked to your Investec profile.
+
+### Config
+
+Set authentication credentials for the CLI:
+
+```sh
+ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
+```
+
+You can also set card key, OpenAI key, and sandbox key using additional options.
+
+### Bank
+
+Use the LLM to call your bank with a natural language prompt:
+
+```sh
+ipb bank "Show me my last 5 transactions"
+```
+
+This command uses AI to interpret your prompt and interact with your bank data.
 
 ---
 

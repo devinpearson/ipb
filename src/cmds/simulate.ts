@@ -2,6 +2,8 @@ import chalk from "chalk";
 import fs from "fs";
 import { createTransaction } from "programmable-card-code-emulator";
 import { credentials, initializeApi } from "../index.js";
+import { handleCliError } from "../utils.js";
+
 interface Options {
   cardKey: number;
   filename: string;
@@ -19,16 +21,16 @@ interface Options {
   verbose: boolean;
 }
 export async function simulateCommand(options: Options) {
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
-  }
-  if (!fs.existsSync(options.filename)) {
-    throw new Error("File does not exist");
-  }
   try {
+    if (options.cardKey === undefined) {
+      if (credentials.cardKey === "") {
+        throw new Error("card-key is required");
+      }
+      options.cardKey = Number(credentials.cardKey);
+    }
+    if (!fs.existsSync(options.filename)) {
+      throw new Error("File does not exist");
+    }
     const api = await initializeApi(credentials, options);
 
     console.log("🚀 uploading code & running simulation");
@@ -76,15 +78,7 @@ export async function simulateCommand(options: Options) {
         console.log("\n", chalk.yellow(log.level), chalk.white(log.content));
       });
     });
-    console.log("");
   } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to simulate code online:"),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "simulate code");
   }
 }

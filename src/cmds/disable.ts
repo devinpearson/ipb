@@ -1,19 +1,14 @@
 import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
+import { handleCliError } from "../utils.js";
+import type { CommonOptions } from "./types.js";
+interface Options extends CommonOptions {
   cardKey: number;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
 
 export async function disableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
-      throw new Error("cardkey is required");
+      throw new Error("card-key is required");
     }
     options.cardKey = Number(credentials.cardKey);
   }
@@ -27,12 +22,7 @@ export async function disableCommand(options: Options) {
     } else {
       console.log("❌ code disable failed");
     }
-    console.log("");
   } catch (error: any) {
-    console.error(chalk.redBright("Failed to disable:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
+    handleCliError(error, options, "disable card code");
   }
 }
