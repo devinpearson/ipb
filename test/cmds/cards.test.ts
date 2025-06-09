@@ -47,19 +47,10 @@ describe("cardsCommand", () => {
 
     expect(console.log).toHaveBeenCalledWith("💳 fetching cards");
     expect(console.log).toHaveBeenCalledWith("");
-    expect(console.log).toHaveBeenCalledWith(
-      "Card Key \tCard Number \t\tCode Enabled",
-    );
-    expect(console.log).toHaveBeenCalledWith(
-      chalk.greenBright("123\t\t") +
-        chalk.blueBright("4567 8901 2345 6789\t\t") +
-        chalk.redBright("true"),
-    );
-    expect(console.log).toHaveBeenCalledWith(
-      chalk.greenBright("456\t\t") +
-        chalk.blueBright("9876 5432 1098 7654\t\t") +
-        chalk.redBright("false"),
-    );
+    expect(console.log).toHaveBeenCalledWith("CardKey | CardNumber          | IsProgrammable");
+    expect(console.log).toHaveBeenCalledWith("----------------------------------------------");
+    expect(console.log).toHaveBeenCalledWith("123     | 4567 8901 2345 6789 | true          ");
+    expect(console.log).toHaveBeenCalledWith("456     | 9876 5432 1098 7654 | false         ");
     expect(console.log).toHaveBeenCalledWith("");
   });
 
