@@ -3,6 +3,7 @@ import fs from "fs";
 import fetch from "node-fetch";
 import https from "https";
 import { handleCliError } from "../utils.js";
+import { input, password } from "@inquirer/prompts";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -22,9 +23,24 @@ interface LoginResponse {
   created_at: number;
 }
 
-export async function loginCommand(options: Options) {
+export async function loginCommand(options: any) {
   try {
     printTitleBox();
+    if (!options.email) {
+      options.email = await input({
+        message: "Enter your email:",
+        validate: (input: string) =>
+          input.includes("@") || "Please enter a valid email.",
+      });
+    }
+    if (!options.password) {
+      options.password = await password({
+        message: "Enter your password:",
+        mask: "*",
+        validate: (input: string) =>
+          input.length >= 6 || "Password must be at least 6 characters.",
+      });
+    }
     if (!options.email || !options.password) {
       throw new Error("Email and password are required");
     }

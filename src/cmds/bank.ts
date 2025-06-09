@@ -5,6 +5,7 @@ import { printTitleBox, credentials } from "../index.js";
 import https from "https";
 import { availableFunctions, tools } from "../function-calls.js";
 import { handleCliError } from "../utils.js";
+import { input } from "@inquirer/prompts";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -24,6 +25,10 @@ interface Options {
 export async function bankCommand(prompt: string, options: Options) {
   try {
     printTitleBox();
+    // Prompt for prompt if not provided
+    if (!prompt) {
+      prompt = await input({ message: "Enter your banking prompt:" });
+    }
 
     openai = new OpenAI({
       apiKey: credentials.openaiKey,

@@ -1,6 +1,8 @@
 import { credentials, initializePbApi } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import { input, password } from "@inquirer/prompts";
+
 interface Options extends CommonOptions {}
 
 export async function transferCommand(
@@ -11,6 +13,23 @@ export async function transferCommand(
   options: Options,
 ) {
   try {
+    // Prompt for missing arguments interactively
+    if (!accountId) {
+      accountId = await input({ message: "Enter your account ID:" });
+    }
+    if (!beneficiaryAccountId) {
+      beneficiaryAccountId = await input({
+        message: "Enter beneficiary account ID:",
+      });
+    }
+    if (!amount) {
+      const amt = await input({ message: "Enter amount (in rands):" });
+      amount = parseFloat(amt);
+    }
+    if (!reference) {
+      reference = await input({ message: "Enter reference for the transfer:" });
+    }
+
     const api = await initializePbApi(credentials, options);
 
     console.log("💳 transfering");

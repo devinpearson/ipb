@@ -6,6 +6,7 @@ data
 .DS_Store
 executions.json
 /main.js
+published.js
 env.json
 gen.js
 ai-generated.js

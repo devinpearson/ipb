@@ -16,11 +16,20 @@ export async function beneficiariesCommand(options: Options) {
       return;
     }
     const simpleBeneficiaries = beneficiaries.map(
-      ({ beneficiaryId, accountNumber, beneficiaryName, lastPaymentDate }) => ({
+      ({
         beneficiaryId,
         accountNumber,
         beneficiaryName,
         lastPaymentDate,
+        lastPaymentAmount,
+        referenceName,
+      }) => ({
+        beneficiaryId,
+        accountNumber,
+        beneficiaryName,
+        lastPaymentDate,
+        lastPaymentAmount,
+        referenceName,
       }),
     );
     printTable(simpleBeneficiaries);

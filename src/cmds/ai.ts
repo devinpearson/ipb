@@ -6,6 +6,7 @@ import { z } from "zod";
 import { printTitleBox, credentials } from "../index.js";
 import https from "https";
 import { handleCliError } from "../utils.js";
+import { input } from "@inquirer/prompts";
 
 const agent = new https.Agent({
   rejectUnauthorized: false,
@@ -91,6 +92,10 @@ export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = ".env.ai";
     printTitleBox();
+    // Prompt for prompt if not provided
+    if (!prompt) {
+      prompt = await input({ message: "Enter your AI code prompt:" });
+    }
     // if (!credentials.openaiKey) {
     //   throw new Error("OPENAI_API_KEY is not set");
     // }
