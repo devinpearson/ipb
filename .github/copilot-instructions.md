@@ -1,4 +1,4 @@
-This projects is a command line tool for managing and interacting with investec banks api services. It provides various commands to perform operations such as getting a list of bank accounts, balances, and transactions.
+This project is a command line tool for managing and interacting with Investec banks API services. It provides various commands to perform operations such as getting a list of bank accounts, balances, and transactions.
 
 the service also provides a way to write js snippets that are loaded on to your bank card account and executed when you make a payment. This allows you to automate certain actions or perform custom logic when spending money.
 
