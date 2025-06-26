@@ -1,4 +1,4 @@
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 import { input, password } from "@inquirer/prompts";
@@ -30,13 +30,12 @@ export async function payCommand(
     if (!reference) {
       reference = await input({ message: "Enter reference for the payment:" });
     }
-
+    printTitleBox();
     const api = await initializePbApi(credentials, options);
 
-    +(
-      // Show transaction summary and require confirmation
-      console.log(`\nTransaction Summary:`)
-    );
+    // Show transaction summary and require confirmation
+    console.log(`\nTransaction Summary:`);
+    console.log("-------------------------");
     console.log(`Account: ${accountId}`);
     console.log(`Beneficiary: ${beneficiaryId}`);
     console.log(`Amount: R${amount.toFixed(2)}`);

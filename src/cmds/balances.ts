@@ -1,14 +1,18 @@
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {}
 
 export async function balancesCommand(accountId: string, options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 fetching balances...").start();
     const api = await initializePbApi(credentials, options);
 
-    console.log("💳 fetching balances");
     const result = await api.getAccountBalances(accountId);
+    spinner.stop();
     //console.table(accounts)
     console.log(`Account Id ${result.data.accountId}`);
     console.log(`Currency: ${result.data.currency}`);

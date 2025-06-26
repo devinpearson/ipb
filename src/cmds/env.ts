@@ -1,7 +1,9 @@
 import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
@@ -15,14 +17,14 @@ export async function envCommand(options: Options) {
     options.cardKey = Number(credentials.cardKey);
   }
   try {
+    printTitleBox();
     const api = await initializeApi(credentials, options);
 
-    console.log("💎 fetching envs");
+    const spinner = ora("💎 fetching envs...").start();
 
-    console.log(" ");
     const result = await api.getEnv(options.cardKey);
     const envs = result.data.result.variables;
-
+    spinner.stop();
     console.log(`💾 saving to file: ${options.filename}`);
     fs.writeFileSync(options.filename, JSON.stringify(envs, null, 4));
     console.log("🎉 envs saved to file");

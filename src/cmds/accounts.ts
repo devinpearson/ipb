@@ -1,6 +1,7 @@
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError, printTable } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
 
 interface Options extends CommonOptions {
   json?: boolean;
@@ -12,11 +13,14 @@ interface Options extends CommonOptions {
  */
 export async function accountsCommand(options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 fetching accounts...").start();
     const api = await initializePbApi(credentials, options);
     if (options.verbose) console.log("💳 fetching accounts...");
     const result = await api.getAccounts();
     const accounts = result.data.accounts;
     if (!accounts || accounts.length === 0) {
+      spinner.stop();
       console.log("No accounts found");
       return;
     }
@@ -31,6 +35,7 @@ export async function accountsCommand(options: Options) {
           productName,
         }),
       );
+      spinner.stop();
       printTable(simpleAccounts);
       console.log(`\n${accounts.length} account(s) found.`);
     }

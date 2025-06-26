@@ -1,7 +1,9 @@
 import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
@@ -19,15 +21,17 @@ export async function publishCommand(options: Options) {
       }
       options.cardKey = Number(credentials.cardKey);
     }
+    printTitleBox();
+    const spinner = ora("🚀 publishing code...").start();
     const api = await initializeApi(credentials, options);
 
-    console.log("🚀 publishing code...");
     const code = fs.readFileSync(options.filename).toString();
     const result = await api.uploadPublishedCode(
       options.cardKey,
       options.codeId,
       code,
     );
+    spinner.stop();
     console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
   } catch (error: any) {
     handleCliError(error, options, "publish code");

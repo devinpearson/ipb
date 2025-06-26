@@ -1,6 +1,8 @@
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError, printTable } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {}
 
 /**
@@ -21,9 +23,10 @@ type Transaction = {
  */
 export async function transactionsCommand(accountId: string, options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 fetching transactions...").start();
     const api = await initializePbApi(credentials, options);
 
-    console.log("💳 fetching transactions");
     const result = await api.getAccountTransactions(
       accountId,
       null,
@@ -31,7 +34,7 @@ export async function transactionsCommand(accountId: string, options: Options) {
       null,
     );
     const transactions = result.data.transactions;
-    console.log("");
+    spinner.stop();
     if (!transactions) {
       console.log("No transactions found");
       return;

@@ -43,7 +43,7 @@ import { payCommand } from "./cmds/pay.js";
 import { handleCliError, loadCredentialsFile } from "./utils.js";
 import type { Credentials, BasicOptions } from "./cmds/types.js";
 
-const version = "0.8.1-rc.3";
+const version = "0.8.3";
 const program = new Command();
 
 // Only export what is needed outside this file
@@ -54,11 +54,11 @@ export const credentialLocation = {
 
 // Print CLI title (used in some commands)
 export async function printTitleBox() {
-  console.log("");
-  console.log("🦓 Investec Programmable Banking CLI");
-  // console.log("🔮 " + chalk.blueBright(`v${version}`));
-  console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  console.log("");
+  // console.log("");
+  // console.log("🦓 Investec Programmable Banking CLI");
+  // // console.log("🔮 " + chalk.blueBright(`v${version}`));
+  // console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  // console.log("");
 }
 
 // Load credentials from file if present
@@ -332,7 +332,7 @@ export async function initializeApi(
   credentials: Credentials,
   options: BasicOptions,
 ) {
-  printTitleBox();
+  //printTitleBox();
   credentials = await optionCredentials(options, credentials);
   let api;
   if (process.env.DEBUG == "true") {
@@ -354,14 +354,14 @@ export async function initializeApi(
     );
   }
   const accessResult = await api.getAccessToken();
-  if (accessResult.scope !== "cards") {
-    console.log(
-      chalk.redBright(
-        "Scope is not only cards, please consider reducing the scopes",
-      ),
-    );
-    console.log("");
-  }
+  // if (accessResult.scope !== "cards") {
+  //   console.log(
+  //     chalk.redBright(
+  //       "Scope is not only cards, please consider reducing the scopes",
+  //     ),
+  //   );
+  //   console.log("");
+  // }
   return api;
 }
 

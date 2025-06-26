@@ -1,16 +1,19 @@
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError, printTable } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {}
 
 export async function cardsCommand(options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 fetching cards...").start();
     const api = await initializeApi(credentials, options);
 
-    console.log("💳 fetching cards");
     const result = await api.getCards();
     const cards = result.data.cards;
-    console.log("");
+    spinner.stop();
     if (!cards) {
       console.log("No cards found");
       return;

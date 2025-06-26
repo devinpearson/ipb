@@ -1,8 +1,10 @@
 import fs from "fs";
 import dotenv from "dotenv";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
@@ -11,6 +13,8 @@ interface Options extends CommonOptions {
 
 export async function deployCommand(options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 starting deployment...").start();
     let envObject = {};
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
@@ -25,12 +29,15 @@ export async function deployCommand(options: Options) {
       if (!fs.existsSync(`.env.${options.env}`)) {
         throw new Error("Env does not exist");
       }
+      spinner.text = `📦 uploading env from .env.${options.env}`;
       envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
 
       await api.uploadEnv(options.cardKey, { variables: envObject });
-      console.log("📦 env deployed");
+      spinner.text = "📦 env uploaded";
+      //console.log("📦 env deployed");
     }
-    console.log("🚀 deploying code");
+    spinner.text = "🚀 deploying code";
+    //console.log("🚀 deploying code");
     const raw = { code: "" };
     const code = fs.readFileSync(options.filename).toString();
     raw.code = code;
@@ -41,6 +48,7 @@ export async function deployCommand(options: Options) {
       saveResult.data.result.codeId,
       code,
     );
+    spinner.stop();
     if (result.data.result.codeId) {
       console.log("🎉 code deployed");
     }

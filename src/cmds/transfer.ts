@@ -1,7 +1,8 @@
-import { credentials, initializePbApi } from "../index.js";
+import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 import { input, password } from "@inquirer/prompts";
+import ora from "ora";
 
 interface Options extends CommonOptions {}
 
@@ -32,10 +33,10 @@ export async function transferCommand(
     if (!reference) {
       reference = await input({ message: "Enter reference for the transfer:" });
     }
-
+    printTitleBox();
+    const spinner = ora("💳 transfering...").start();
     const api = await initializePbApi(credentials, options);
 
-    console.log("💳 transfering");
     const result = await api.transferMultiple(accountId, [
       {
         beneficiaryAccountId: beneficiaryAccountId,
@@ -44,6 +45,7 @@ export async function transferCommand(
         theirReference: reference,
       },
     ]);
+    spinner.stop();
     for (const transfer of result.data.TransferResponses) {
       console.log(
         `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`,

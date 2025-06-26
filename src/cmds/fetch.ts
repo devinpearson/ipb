@@ -1,7 +1,9 @@
 import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
@@ -15,14 +17,14 @@ export async function fetchCommand(options: Options) {
     options.cardKey = Number(credentials.cardKey);
   }
   try {
+    printTitleBox();
     const api = await initializeApi(credentials, options);
+    const spinner = ora("💳 fetching code...").start();
 
-    console.log("fetching code...");
-
-    console.log(" ");
     const result = await api.getCode(options.cardKey);
     const code = result.data.result.code;
 
+    spinner.stop();
     console.log(`💾 saving to file: ${options.filename}`);
     await fs.writeFileSync(options.filename, code);
     console.log("🎉 code saved to file");

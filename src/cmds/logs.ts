@@ -1,8 +1,10 @@
 import chalk from "chalk";
 import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
   filename: string;
@@ -19,13 +21,13 @@ export async function logsCommand(options: Options) {
     if (options.filename === undefined || options.filename === "") {
       throw new Error("filename is required");
     }
+    printTitleBox();
+    const spinner = ora("📊 fetching execution items...").start();
     const api = await initializeApi(credentials, options);
 
-    console.log("📊 fetching execution items");
-    console.log(" ");
     const result = await api.getExecutions(options.cardKey);
+    spinner.stop();
     console.log(`💾 saving to file: ${options.filename}`);
-    console.log("");
     fs.writeFileSync(
       options.filename,
       JSON.stringify(result.data.result.executionItems, null, 4),

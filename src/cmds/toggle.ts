@@ -1,6 +1,8 @@
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {
   cardKey: number;
 }
@@ -13,10 +15,12 @@ export async function enableCommand(options: Options) {
     options.cardKey = Number(credentials.cardKey);
   }
   try {
+    printTitleBox();
+    const spinner = ora("🍄 enabling code on card...").start();
     const api = await initializeApi(credentials, options);
 
-    console.log("🍄 enabling code on card...");
     const result = await api.toggleCode(options.cardKey, true);
+    spinner.stop();
     if (result.data.result.Enabled) {
       console.log("✅ code enabled");
     } else {

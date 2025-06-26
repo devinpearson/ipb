@@ -1,14 +1,17 @@
-import { credentials, initializeApi } from "../index.js";
+import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError, printTable } from "../utils.js";
 import type { CommonOptions } from "./types.js";
+import ora from "ora";
+
 interface Options extends CommonOptions {}
 export async function currenciesCommand(options: Options) {
   try {
+    printTitleBox();
+    const spinner = ora("💳 fetching currencies...").start();
     const api = await initializeApi(credentials, options);
 
-    console.log("💵 fetching currencies");
     const result = await api.getCurrencies();
-    console.log("");
+    spinner.stop();
     const currencies = result.data.result;
     if (!currencies) {
       console.log("No currencies found");
