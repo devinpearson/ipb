@@ -472,6 +472,9 @@ For inquiries, please open an issue.
 - [Commander](https://www.npmjs.com/package/commander)
 - [Chalk](https://github.com/chalk/chalk)
 - [VHS](https://github.com/charmbracelet/vhs)
+- [Ora](https://github.com/sindresorhus/ora)
+- [Best Practices for CLI Development](https://github.com/lirantal/nodejs-cli-apps-best-practices)
+- [Investec Programmable Banking Community](https://developer.investec.com/za/community)
 
 ---
 
