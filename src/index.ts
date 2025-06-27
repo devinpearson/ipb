@@ -46,6 +46,10 @@ import type { Credentials, BasicOptions } from "./cmds/types.js";
 const version = "0.8.3";
 const program = new Command();
 
+// Improve error output for missing arguments/options
+program.showHelpAfterError();
+program.showSuggestionAfterError();
+
 // Only export what is needed outside this file
 export const credentialLocation = {
   folder: `${homedir()}/.ipb`,
@@ -251,30 +255,30 @@ async function main() {
   addApiCredentialOptions(
     program.command("balances").description("Gets your account balances"),
   )
-    .argument("<string>", "accountId of the account to fetch balances for")
+    .argument("accountId", "accountId of the account to fetch balances for")
     .action(balancesCommand);
   addApiCredentialOptions(
     program.command("transfer").description("Allows transfer between accounts"),
   )
-    .argument("<string>", "accountId of the account to transfer from")
-    .argument("<string>", "beneficiaryAccountId of the account to transfer to")
-    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
-    .argument("<string>", "reference for the transfer")
+    .argument("accountId", "accountId of the account to transfer from")
+    .argument("beneficiaryAccountId", "beneficiaryAccountId of the account to transfer to")
+    .argument("amount", "amount to transfer in rands (e.g. 100.00)")
+    .argument("reference", "reference for the transfer")
     .action(transferCommand);
   addApiCredentialOptions(
     program.command("pay").description("Pay a beneficiary from your account"),
   )
-    .argument("<string>", "accountId of the account to transfer from")
-    .argument("<string>", "beneficiaryId of the beneficiary to pay")
-    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
-    .argument("<string>", "reference for the payment")
+    .argument("accountId", "accountId of the account to transfer from")
+    .argument("beneficiaryId", "beneficiaryId of the beneficiary to pay")
+    .argument("amount", "amount to transfer in rands (e.g. 100.00)")
+    .argument("reference", "reference for the payment")
     .action(payCommand);
   addApiCredentialOptions(
     program
       .command("transactions")
       .description("Gets your account transactions"),
   )
-    .argument("<string>", "accountId of the account to fetch balances for")
+    .argument("accountId", "accountId of the account to fetch balances for")
     .action(transactionsCommand);
   addApiCredentialOptions(
     program.command("beneficiaries").description("Gets your beneficiaries"),
@@ -282,7 +286,7 @@ async function main() {
   program
     .command("new")
     .description("Sets up scaffoldings for a new project")
-    .argument("<string>", "name of the new project")
+    .argument("name", "name of the new project")
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
     .addOption(
@@ -294,7 +298,7 @@ async function main() {
   program
     .command("ai")
     .description("Generates card code using an LLM")
-    .argument("<string>", "prompt for the LLM")
+    .argument("prompt", "prompt for the LLM")
     .option("-f,--filename <filename>", "the filename", "ai-generated.js")
     .option("-v,--verbose", "additional debugging information")
     .option("--force", "force overwrite existing files")
@@ -302,7 +306,7 @@ async function main() {
   program
     .command("bank")
     .description("Uses the LLM to call your bank")
-    .argument("<string>", "prompt for the LLM")
+    .argument("prompt", "prompt for the LLM")
     .option("-v,--verbose", "additional debugging information")
     .action(bankCommand);
   program

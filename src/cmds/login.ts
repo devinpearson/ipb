@@ -4,6 +4,7 @@ import fetch from "node-fetch";
 import https from "https";
 import { handleCliError } from "../utils.js";
 import { input, password } from "@inquirer/prompts";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
@@ -42,7 +43,7 @@ export async function loginCommand(options: any) {
       });
     }
     if (!options.email || !options.password) {
-      throw new Error("Email and password are required");
+      throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, "Email and password are required");
     }
     console.log("💳 logging into account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/login", {

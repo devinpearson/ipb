@@ -36,6 +36,7 @@ export async function beneficiariesCommand(options: Options) {
       }),
     );
     printTable(simpleBeneficiaries);
+    console.log(`\n${beneficiaries.length} beneficiary(ies) found.`);
   } catch (error: any) {
     handleCliError(error, options, "fetch beneficiaries");
   }

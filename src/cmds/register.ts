@@ -4,6 +4,7 @@ import https from "https";
 import { handleCliError } from "../utils.js";
 import { input, password } from "@inquirer/prompts";
 import type { CommonOptions } from "./types.js";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
@@ -33,7 +34,7 @@ export async function registerCommand(options: Options) {
       });
     }
     if (!options.email || !options.password) {
-      throw new Error("Email and password are required");
+      throw new CliError(ERROR_CODES.MISSING_EMAIL_OR_PASSWORD, "Email and password are required");
     }
     console.log("💳 registering account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/register", {

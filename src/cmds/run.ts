@@ -4,6 +4,7 @@ import path from "path";
 import { createTransaction, run } from "programmable-card-code-emulator";
 import { printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
+import { CliError, ERROR_CODES } from "../errors.js";
 interface Options {
   filename: string;
   env: string;
@@ -19,7 +20,7 @@ export async function runCommand(options: Options) {
   printTitleBox();
   try {
     if (!fs.existsSync(options.filename)) {
-      throw new Error("File does not exist");
+      throw new CliError(ERROR_CODES.FILE_NOT_FOUND, "File does not exist");
     }
     console.log(
       chalk.white(`Running code:`),
@@ -56,7 +57,7 @@ export async function runCommand(options: Options) {
     let environmentvariables: { [key: string]: string } = {};
     if (options.env) {
       if (!fs.existsSync(`.env.${options.env}`)) {
-        throw new Error("Env does not exist");
+        throw new CliError(ERROR_CODES.FILE_NOT_FOUND, "Env does not exist");
       }
 
       const data = fs.readFileSync(`.env.${options.env}`, "utf8");

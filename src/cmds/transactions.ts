@@ -49,6 +49,7 @@ export async function transactionsCommand(accountId: string, options: Options) {
       }),
     );
     printTable(simpleTransactions);
+    console.log(`\n${transactions.length} transaction(s) found for account ${accountId}.`);
   } catch (error: any) {
     if (error.message && error.message === "Bad Request") {
       console.log("");

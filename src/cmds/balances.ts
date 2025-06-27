@@ -2,6 +2,7 @@ import { credentials, initializePbApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 import ora from "ora";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {}
 

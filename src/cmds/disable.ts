@@ -2,6 +2,7 @@ import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 import ora from "ora";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {
   cardKey: number;
@@ -10,7 +11,7 @@ interface Options extends CommonOptions {
 export async function disableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
+      throw new CliError(ERROR_CODES.MISSING_CARD_KEY, "card-key is required");
     }
     options.cardKey = Number(credentials.cardKey);
   }

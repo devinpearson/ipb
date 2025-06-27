@@ -27,6 +27,7 @@ export async function cardsCommand(options: Options) {
       }),
     );
     printTable(simpleCards);
+    console.log(`\n${cards.length} card(s) found.`);
   } catch (error: any) {
     handleCliError(error, options, "fetch cards");
   }

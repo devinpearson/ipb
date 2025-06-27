@@ -3,6 +3,7 @@ import fs from "fs";
 import { createTransaction } from "programmable-card-code-emulator";
 import { credentials, initializeApi } from "../index.js";
 import { handleCliError } from "../utils.js";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options {
   cardKey: number;
@@ -24,12 +25,12 @@ export async function simulateCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
-        throw new Error("card-key is required");
+        throw new CliError(ERROR_CODES.MISSING_CARD_KEY, "card-key is required");
       }
       options.cardKey = Number(credentials.cardKey);
     }
     if (!fs.existsSync(options.filename)) {
-      throw new Error("File does not exist");
+      throw new CliError(ERROR_CODES.FILE_NOT_FOUND, "File does not exist");
     }
     const api = await initializeApi(credentials, options);
 

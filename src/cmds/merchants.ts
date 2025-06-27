@@ -21,6 +21,7 @@ export async function merchantsCommand(options: Options) {
 
     const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
     printTable(simpleMerchants);
+    console.log(`\n${merchants.length} merchant(s) found.`);
   } catch (error: any) {
     handleCliError(error, options, "fetch merchants");
   }

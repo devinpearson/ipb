@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options {
   template: string;
@@ -20,13 +21,11 @@ export async function newCommand(name: string, options: Options) {
   console.log("📂 Finding template called " + chalk.green(options.template));
   try {
     if (!fs.existsSync(uri)) {
-      throw new Error("💣 Template does not exist");
+      throw new CliError(ERROR_CODES.TEMPLATE_NOT_FOUND, "💣 Template does not exist");
     }
     // Validate project name
     if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
-      throw new Error(
-        "💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.",
-      );
+      throw new CliError(ERROR_CODES.INVALID_PROJECT_NAME, "💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.");
     }
     // Add a force option to the Options interface
     if (fs.existsSync(name) && options.force) {
@@ -36,7 +35,7 @@ export async function newCommand(name: string, options: Options) {
       // Remove existing directory
       fs.rmSync(name, { recursive: true, force: true });
     } else if (fs.existsSync(name)) {
-      throw new Error("💣 Project already exists");
+      throw new CliError(ERROR_CODES.PROJECT_EXISTS, "💣 Project already exists");
     }
     fs.cpSync(uri, name, { recursive: true });
     console.log(`🚀 Created new project from template ${options.template}`);

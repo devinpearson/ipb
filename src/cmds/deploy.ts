@@ -4,6 +4,7 @@ import { credentials, initializeApi, printTitleBox } from "../index.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
 import ora from "ora";
+import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {
   cardKey: number;
@@ -18,7 +19,7 @@ export async function deployCommand(options: Options) {
     let envObject = {};
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
-        throw new Error("card-key is required");
+        throw new CliError(ERROR_CODES.MISSING_CARD_KEY, "card-key is required");
       }
       options.cardKey = Number(credentials.cardKey);
     }
@@ -27,7 +28,7 @@ export async function deployCommand(options: Options) {
 
     if (options.env) {
       if (!fs.existsSync(`.env.${options.env}`)) {
-        throw new Error("Env does not exist");
+        throw new CliError(ERROR_CODES.MISSING_ENV_FILE, `Env file .env.${options.env} does not exist`);
       }
       spinner.text = `📦 uploading env from .env.${options.env}`;
       envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));

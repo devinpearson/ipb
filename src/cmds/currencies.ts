@@ -23,6 +23,7 @@ export async function currenciesCommand(options: Options) {
       Name,
     }));
     printTable(simpleCurrencies);
+    console.log(`\n${currencies.length} currency(ies) found.`);
   } catch (error: any) {
     handleCliError(error, options, "fetch currencies");
   }
