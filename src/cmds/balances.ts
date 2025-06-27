@@ -1,28 +1,37 @@
-import { credentials, initializePbApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializePbApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
-import { CliError, ERROR_CODES } from "../errors.js";
 
-interface Options extends CommonOptions {}
-
-export async function balancesCommand(accountId: string, options: Options) {
+export async function balancesCommand(
+  accountId: string,
+  options: CommonOptions,
+) {
   try {
     printTitleBox();
-    const spinner = ora("💳 fetching balances...").start();
+    const disableSpinner = options.spinner === true;
+    const spinner = createSpinner(
+      !disableSpinner,
+      "💳 fetching balances...",
+    ).start();
     const api = await initializePbApi(credentials, options);
 
     const result = await api.getAccountBalances(accountId);
     spinner.stop();
     //console.table(accounts)
-    console.log(`Account Id ${result.data.accountId}`);
-    console.log(`Currency: ${result.data.currency}`);
-    console.log("Balances:");
-    console.log(`Current: ${result.data.currentBalance}`);
-    console.log(`Available: ${result.data.availableBalance}`);
-    console.log(`Budget: ${result.data.budgetBalance}`);
-    console.log(`Straight: ${result.data.straightBalance}`);
-    console.log(`Cash: ${result.data.cashBalance}`);
+    if (options.json) {
+      console.log(JSON.stringify(result.data, null, 2));
+      return;
+    } else {
+      console.log(`Account Id ${result.data.accountId}`);
+      console.log(`Currency: ${result.data.currency}`);
+      console.log("Balances:");
+      console.log(`Current: ${result.data.currentBalance}`);
+      console.log(`Available: ${result.data.availableBalance}`);
+      console.log(`Budget: ${result.data.budgetBalance}`);
+      console.log(`Straight: ${result.data.straightBalance}`);
+      console.log(`Cash: ${result.data.cashBalance}`);
+    }
   } catch (error: any) {
     if (error.message && error.message === "Bad Request") {
       console.log("");

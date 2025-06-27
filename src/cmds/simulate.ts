@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import fs from "fs";
 import { createTransaction } from "programmable-card-code-emulator";
-import { credentials, initializeApi } from "../index.js";
+import { credentials } from "../index.js";
+import { initializeApi } from "../utils.js";
 import { handleCliError } from "../utils.js";
 import { CliError, ERROR_CODES } from "../errors.js";
 
@@ -25,7 +26,10 @@ export async function simulateCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
-        throw new CliError(ERROR_CODES.MISSING_CARD_KEY, "card-key is required");
+        throw new CliError(
+          ERROR_CODES.MISSING_CARD_KEY,
+          "card-key is required",
+        );
       }
       options.cardKey = Number(credentials.cardKey);
     }

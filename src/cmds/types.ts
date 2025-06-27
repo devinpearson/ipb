@@ -6,6 +6,8 @@ export interface CommonOptions {
   clientSecret: string;
   credentialsFile: string;
   verbose: boolean;
+  spinner?: boolean; // allow disabling spinner
+  json?: boolean; // output in JSON format
 }
 
 export interface Credentials {

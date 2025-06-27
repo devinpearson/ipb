@@ -1,8 +1,8 @@
 import fs from "fs";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializeApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
 import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {
@@ -22,7 +22,8 @@ export async function uploadEnvCommand(options: Options) {
   }
   try {
     printTitleBox();
-    const spinner = ora("🚀 uploading env...").start();
+    const disableSpinner = options.spinner === true;
+    const spinner = createSpinner(!disableSpinner, "🚀 uploading env...");
     const api = await initializeApi(credentials, options);
 
     const raw = { variables: {} };

@@ -1,8 +1,8 @@
 import fs from "fs";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializeApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
 
 interface Options extends CommonOptions {
   cardKey: number;
@@ -21,7 +21,8 @@ export async function uploadCommand(options: Options) {
       options.cardKey = Number(credentials.cardKey);
     }
     printTitleBox();
-    const spinner = ora("🚀 uploading code...").start();
+    const disableSpinner = options.spinner === true; // default false
+    const spinner = createSpinner(!disableSpinner, "🚀 uploading code...");
     const api = await initializeApi(credentials, options);
     const raw = { code: "" };
     const code = fs.readFileSync(options.filename).toString();

@@ -1,7 +1,7 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializeApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
 import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {
@@ -17,9 +17,13 @@ export async function disableCommand(options: Options) {
   }
   try {
     printTitleBox();
+    const disableSpinner = options.spinner === true; // default false
+    const spinner = createSpinner(
+      !disableSpinner,
+      "🍄 disabling code on card...",
+    ).start();
     const api = await initializeApi(credentials, options);
 
-    const spinner = ora("🍄 disabling code on card...").start();
     const result = await api.toggleCode(options.cardKey, false);
     spinner.stop();
     if (!result.data.result.Enabled) {

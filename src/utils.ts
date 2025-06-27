@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import type { Credentials } from "./cmds/types.js";
+import type { BasicOptions, Credentials } from "./cmds/types.js";
 
 export function handleCliError(
   error: any,
@@ -102,4 +102,95 @@ export async function loadCredentialsFile(
     }
   }
   return credentials;
+}
+
+import ora from "ora";
+import { optionCredentials } from "./index.js";
+
+// Spinner abstraction for testability and control
+export interface Spinner {
+  start: (text?: string) => Spinner;
+  stop: () => Spinner;
+  text?: string;
+}
+
+// Default spinner factory (uses ora)
+export function createSpinner(enabled: boolean, text: string): Spinner {
+  if (!enabled) {
+    // No-op spinner: logs start/stop messages but does not animate
+    return {
+      start(msg?: string) {
+        if (msg || text) console.log(msg || text);
+        return this;
+      },
+      stop() {
+        // Optionally log stop if needed
+        return this;
+      },
+    };
+  }
+  // Real spinner
+  return ora(text);
+}
+export async function initializePbApi(
+  credentials: Credentials,
+  options: BasicOptions,
+) {
+  credentials = await optionCredentials(options, credentials);
+  let api;
+  if (process.env.DEBUG == "true") {
+    const { PbApi } = await import("./mock-pb.js");
+    api = new PbApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  } else {
+    const { InvestecPbApi } = await import("investec-pb-api");
+    api = new InvestecPbApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
+  await api.getAccessToken();
+  return api;
+}
+export async function initializeApi(
+  credentials: Credentials,
+  options: BasicOptions,
+) {
+  //printTitleBox();
+  credentials = await optionCredentials(options, credentials);
+  let api;
+  if (process.env.DEBUG == "true") {
+    // console.log(chalk.yellow('Using mock API for debugging'));
+    const { CardApi } = await import("./mock-card.js");
+    api = new CardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  } else {
+    const { InvestecCardApi } = await import("investec-card-api");
+    api = new InvestecCardApi(
+      credentials.clientId,
+      credentials.clientSecret,
+      credentials.apiKey,
+      credentials.host,
+    );
+  }
+  const accessResult = await api.getAccessToken();
+  // if (accessResult.scope !== "cards") {
+  //   console.log(
+  //     chalk.redBright(
+  //       "Scope is not only cards, please consider reducing the scopes",
+  //     ),
+  //   );
+  //   console.log("");
+  // }
+  return api;
 }

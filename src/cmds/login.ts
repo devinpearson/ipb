@@ -43,7 +43,10 @@ export async function loginCommand(options: any) {
       });
     }
     if (!options.email || !options.password) {
-      throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, "Email and password are required");
+      throw new CliError(
+        ERROR_CODES.INVALID_CREDENTIALS,
+        "Email and password are required",
+      );
     }
     console.log("💳 logging into account");
     const result = await fetch("https://ipb.sandboxpay.co.za/auth/login", {

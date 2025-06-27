@@ -1,9 +1,7 @@
-import { credentials, initializePbApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializePbApi } from "../utils.js";
+import { handleCliError, printTable, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
-
-interface Options extends CommonOptions {}
 
 /**
  * Minimal transaction type for CLI display.
@@ -21,10 +19,17 @@ type Transaction = {
  * @param accountId - The account ID to fetch transactions for.
  * @param options - CLI options.
  */
-export async function transactionsCommand(accountId: string, options: Options) {
+export async function transactionsCommand(
+  accountId: string,
+  options: CommonOptions,
+) {
   try {
     printTitleBox();
-    const spinner = ora("💳 fetching transactions...").start();
+    const disableSpinner = options.spinner === true;
+    const spinner = createSpinner(
+      !disableSpinner,
+      "💳 fetching transactions...",
+    ).start();
     const api = await initializePbApi(credentials, options);
 
     const result = await api.getAccountTransactions(
@@ -49,13 +54,8 @@ export async function transactionsCommand(accountId: string, options: Options) {
       }),
     );
     printTable(simpleTransactions);
-    console.log(`\n${transactions.length} transaction(s) found for account ${accountId}.`);
+    console.log(`\n${transactions.length} transaction(s) found.`);
   } catch (error: any) {
-    if (error.message && error.message === "Bad Request") {
-      console.log("");
-      console.error(`Account with ID ${accountId} not found.`);
-    } else {
-      handleCliError(error, options, "fetch transactions");
-    }
+    handleCliError(error, options, "fetch transactions");
   }
 }

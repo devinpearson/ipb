@@ -1,16 +1,15 @@
-import { credentials, initializePbApi, printTitleBox } from "../index.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializePbApi } from "../utils.js";
 import { handleCliError } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import { input, password } from "@inquirer/prompts";
-
-interface Options extends CommonOptions {}
+import { input } from "@inquirer/prompts";
 
 export async function payCommand(
   accountId: string,
   beneficiaryId: string,
   amount: number,
   reference: string,
-  options: Options,
+  options: CommonOptions,
 ) {
   try {
     // Prompt for missing arguments interactively

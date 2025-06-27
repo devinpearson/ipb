@@ -115,6 +115,7 @@ function addApiCredentialOptions(cmd: Command) {
       "--credentials-file <credentialsFile>",
       "Set a custom credentials file",
     )
+    .option("-s,--spinner", "disable spinner during command execution")
     .option("-v,--verbose", "additional debugging information");
 }
 
@@ -261,7 +262,10 @@ async function main() {
     program.command("transfer").description("Allows transfer between accounts"),
   )
     .argument("accountId", "accountId of the account to transfer from")
-    .argument("beneficiaryAccountId", "beneficiaryAccountId of the account to transfer to")
+    .argument(
+      "beneficiaryAccountId",
+      "beneficiaryAccountId of the account to transfer to",
+    )
     .argument("amount", "amount to transfer in rands (e.g. 100.00)")
     .argument("reference", "reference for the transfer")
     .action(transferCommand);
@@ -330,70 +334,6 @@ async function main() {
     handleCliError(err, { verbose: true }, "run CLI");
     process.exit(1);
   }
-}
-
-export async function initializeApi(
-  credentials: Credentials,
-  options: BasicOptions,
-) {
-  //printTitleBox();
-  credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    // console.log(chalk.yellow('Using mock API for debugging'));
-    const { CardApi } = await import("./mock-card.js");
-    api = new CardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  } else {
-    const { InvestecCardApi } = await import("investec-card-api");
-    api = new InvestecCardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  }
-  const accessResult = await api.getAccessToken();
-  // if (accessResult.scope !== "cards") {
-  //   console.log(
-  //     chalk.redBright(
-  //       "Scope is not only cards, please consider reducing the scopes",
-  //     ),
-  //   );
-  //   console.log("");
-  // }
-  return api;
-}
-
-export async function initializePbApi(
-  credentials: Credentials,
-  options: BasicOptions,
-) {
-  credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    const { PbApi } = await import("./mock-pb.js");
-    api = new PbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  } else {
-    const { InvestecPbApi } = await import("investec-pb-api");
-    api = new InvestecPbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  }
-  await api.getAccessToken();
-  return api;
 }
 
 export async function optionCredentials(

@@ -1,14 +1,16 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializeApi } from "../utils.js";
+import { handleCliError, printTable, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
 
-interface Options extends CommonOptions {}
-
-export async function merchantsCommand(options: Options) {
+export async function merchantsCommand(options: CommonOptions) {
   try {
     printTitleBox();
-    const spinner = ora("🏪 fetching merchants...").start();
+    const disableSpinner = options.spinner === true;
+    const spinner = createSpinner(
+      !disableSpinner,
+      "🏪 fetching merchants...",
+    ).start();
     const api = await initializeApi(credentials, options);
 
     const result = await api.getMerchants();

@@ -1,20 +1,20 @@
-import { credentials, initializePbApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializePbApi } from "../utils.js";
+import { handleCliError, printTable, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
-
-interface Options extends CommonOptions {
-  json?: boolean;
-}
 
 /**
  * Fetch and display Investec accounts.
  * @param options CLI options
  */
-export async function accountsCommand(options: Options) {
+export async function accountsCommand(options: CommonOptions) {
   try {
     printTitleBox();
-    const spinner = ora("💳 fetching accounts...").start();
+    const disableSpinner = options.spinner === true; // default false
+    const spinner = createSpinner(
+      !disableSpinner,
+      "💳 fetching accounts...",
+    ).start();
     const api = await initializePbApi(credentials, options);
     if (options.verbose) console.log("💳 fetching accounts...");
     const result = await api.getAccounts();

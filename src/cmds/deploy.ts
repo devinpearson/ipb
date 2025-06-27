@@ -1,9 +1,10 @@
 import fs from "fs";
 import dotenv from "dotenv";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializeApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
+import type { Spinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import ora from "ora";
 import { CliError, ERROR_CODES } from "../errors.js";
 
 interface Options extends CommonOptions {
@@ -15,11 +16,18 @@ interface Options extends CommonOptions {
 export async function deployCommand(options: Options) {
   try {
     printTitleBox();
-    const spinner = ora("💳 starting deployment...").start();
+    const disableSpinner = options.spinner === true; // default false
+    const spinner = createSpinner(
+      !disableSpinner,
+      "💳 starting deployment...",
+    ).start();
     let envObject = {};
     if (options.cardKey === undefined) {
       if (credentials.cardKey === "") {
-        throw new CliError(ERROR_CODES.MISSING_CARD_KEY, "card-key is required");
+        throw new CliError(
+          ERROR_CODES.MISSING_CARD_KEY,
+          "card-key is required",
+        );
       }
       options.cardKey = Number(credentials.cardKey);
     }
@@ -28,7 +36,10 @@ export async function deployCommand(options: Options) {
 
     if (options.env) {
       if (!fs.existsSync(`.env.${options.env}`)) {
-        throw new CliError(ERROR_CODES.MISSING_ENV_FILE, `Env file .env.${options.env} does not exist`);
+        throw new CliError(
+          ERROR_CODES.MISSING_ENV_FILE,
+          `Env file .env.${options.env} does not exist`,
+        );
       }
       spinner.text = `📦 uploading env from .env.${options.env}`;
       envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
@@ -50,10 +61,10 @@ export async function deployCommand(options: Options) {
       code,
     );
     spinner.stop();
-    if (result.data.result.codeId) {
-      console.log("🎉 code deployed");
-    }
+    console.log(
+      `🎉 code deployed with codeId: ${saveResult.data.result.codeId}`,
+    );
   } catch (error: any) {
-    handleCliError(error, { verbose: (options as any).verbose }, "deploy code");
+    handleCliError(error, options, "deploy code");
   }
 }

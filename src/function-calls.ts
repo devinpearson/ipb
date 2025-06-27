@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import { credentials, initializePbApi } from "./index.js";
+import { credentials } from "./index.js";
+import { initializePbApi } from "./utils.js";
 import type { BasicOptions } from "./cmds/types.js";
 import type {
   AccountBalance,

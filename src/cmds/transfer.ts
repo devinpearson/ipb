@@ -1,17 +1,15 @@
-import { credentials, initializePbApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
+import { credentials, printTitleBox } from "../index.js";
+import { initializePbApi } from "../utils.js";
+import { handleCliError, createSpinner } from "../utils.js";
 import type { CommonOptions } from "./types.js";
-import { input, password } from "@inquirer/prompts";
-import ora from "ora";
-
-interface Options extends CommonOptions {}
+import { input } from "@inquirer/prompts";
 
 export async function transferCommand(
   accountId: string,
   beneficiaryAccountId: string,
   amount: number,
   reference: string,
-  options: Options,
+  options: CommonOptions,
 ) {
   try {
     // Prompt for missing arguments interactively
@@ -34,7 +32,8 @@ export async function transferCommand(
       reference = await input({ message: "Enter reference for the transfer:" });
     }
     printTitleBox();
-    const spinner = ora("💳 transfering...").start();
+    const disableSpinner = options.spinner === true;
+    const spinner = createSpinner(!disableSpinner, "💳 transfering...");
     const api = await initializePbApi(credentials, options);
 
     const result = await api.transferMultiple(accountId, [
@@ -48,7 +47,7 @@ export async function transferCommand(
     spinner.stop();
     for (const transfer of result.data.TransferResponses) {
       console.log(
-        `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`,
+        `Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`,
       );
     }
   } catch (error: any) {
