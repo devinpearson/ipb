@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializeApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -25,6 +25,8 @@ export async function currenciesCommand(options: CommonOptions) {
     Code,
     Name,
   }));
-  printTable(simpleCurrencies);
-  console.log(`\n${currencies.length} currency(ies) found.`);
+
+  await formatOutput(simpleCurrencies, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} currency(ies) found.`);
+  });
 }

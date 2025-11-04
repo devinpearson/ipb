@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -40,6 +40,10 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
       description,
     })
   );
-  printTable(simpleTransactions);
-  console.log(`\n${transactions.length} transaction(s) found.`);
+
+  // Use raw transactions for JSON output, simplified for table
+  const dataToOutput = options.json || options.output ? transactions : simpleTransactions;
+  await formatOutput(dataToOutput, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} transaction(s) found.`);
+  });
 }

@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializeApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -22,6 +22,8 @@ export async function countriesCommand(options: CommonOptions) {
   }
 
   const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
-  printTable(simpleCountries);
-  console.log(`\n${countries.length} country(ies) found.`);
+
+  await formatOutput(simpleCountries, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} country(ies) found.`);
+  });
 }

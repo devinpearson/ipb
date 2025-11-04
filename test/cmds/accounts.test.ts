@@ -18,6 +18,7 @@ vi.mock('../../src/utils.ts', async () => {
       start: vi.fn(function() { return this; }),
       stop: vi.fn(),
     })),
+    formatOutput: vi.fn(),
     printTable: vi.fn(),
   };
 });
@@ -53,12 +54,11 @@ describe('accountsCommand', () => {
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
     console.log = vi.fn();
-    const { printTable } = await import('../../src/utils.ts');
+    const { formatOutput } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
 
-    expect(printTable).toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalled();
+    expect(formatOutput).toHaveBeenCalled();
   });
 
   it('should handle JSON output option', async () => {
@@ -83,10 +83,15 @@ describe('accountsCommand', () => {
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
     console.log = vi.fn();
+    const { formatOutput } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
 
-    expect(console.log).toHaveBeenCalledWith(JSON.stringify(mockAccounts, null, 2));
+    expect(formatOutput).toHaveBeenCalledWith(
+      mockAccounts,
+      { json: true, output: undefined },
+      expect.any(Function)
+    );
   });
 
   it('should propagate errors', async () => {

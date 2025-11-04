@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializeApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -26,6 +26,8 @@ export async function cardsCommand(options: CommonOptions) {
     CardNumber,
     IsProgrammable,
   }));
-  printTable(simpleCards);
-  console.log(`\n${cards.length} card(s) found.`);
+
+  await formatOutput(simpleCards, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} card(s) found.`);
+  });
 }

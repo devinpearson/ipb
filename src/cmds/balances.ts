@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -16,17 +16,19 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
 
   const result = await api.getAccountBalances(accountId);
   spinner.stop();
-  if (options.json) {
-    console.log(JSON.stringify(result.data, null, 2));
+
+  if (options.json || options.output) {
+    await formatOutput(result.data, { json: options.json, output: options.output });
     return;
-  } else {
-    console.log(`Account Id ${result.data.accountId}`);
-    console.log(`Currency: ${result.data.currency}`);
-    console.log('Balances:');
-    console.log(`Current: ${result.data.currentBalance}`);
-    console.log(`Available: ${result.data.availableBalance}`);
-    console.log(`Budget: ${result.data.budgetBalance}`);
-    console.log(`Straight: ${result.data.straightBalance}`);
-    console.log(`Cash: ${result.data.cashBalance}`);
   }
+
+  // Default formatted text output
+  console.log(`Account Id ${result.data.accountId}`);
+  console.log(`Currency: ${result.data.currency}`);
+  console.log('Balances:');
+  console.log(`Current: ${result.data.currentBalance}`);
+  console.log(`Available: ${result.data.availableBalance}`);
+  console.log(`Budget: ${result.data.budgetBalance}`);
+  console.log(`Straight: ${result.data.straightBalance}`);
+  console.log(`Cash: ${result.data.cashBalance}`);
 }

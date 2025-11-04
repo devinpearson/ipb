@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializeApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -22,6 +22,8 @@ export async function merchantsCommand(options: CommonOptions) {
   }
 
   const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
-  printTable(simpleMerchants);
-  console.log(`\n${merchants.length} merchant(s) found.`);
+
+  await formatOutput(simpleMerchants, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} merchant(s) found.`);
+  });
 }

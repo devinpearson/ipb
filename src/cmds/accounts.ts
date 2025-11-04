@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -19,19 +19,21 @@ export async function accountsCommand(options: CommonOptions) {
     console.log('No accounts found');
     return;
   }
-  if (options.json) {
-    console.log(JSON.stringify(accounts, null, 2));
-  } else {
-    const simpleAccounts = accounts.map(
-      ({ accountId, accountNumber, referenceName, productName }) => ({
-        accountId,
-        accountNumber,
-        referenceName,
-        productName,
-      })
-    );
-    spinner.stop();
-    printTable(simpleAccounts);
-    console.log(`\n${accounts.length} account(s) found.`);
-  }
+
+  const simpleAccounts = accounts.map(
+    ({ accountId, accountNumber, referenceName, productName }) => ({
+      accountId,
+      accountNumber,
+      referenceName,
+      productName,
+    })
+  );
+
+  spinner.stop();
+
+  // Use raw accounts for JSON output, simplified for table
+  const dataToOutput = options.json || options.output ? accounts : simpleAccounts;
+  await formatOutput(dataToOutput, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} account(s) found.`);
+  });
 }

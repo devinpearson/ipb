@@ -103,38 +103,28 @@ Examples:
 
 ---
 
-### 3. Structured Output Options
+### 3. Structured Output Options - **✅ Fully Implemented**
 
-**Current State**: Some commands support `--json` flag, but not consistently.
+**Current State**: ✅ All commands now support `--json` and `--output` flags consistently.
 
-**Recommendations**:
-- Add `--json` flag to all commands that return data
-- Create a unified output formatter utility
-- Support `--output <file>` to write JSON to file
+**Implementation**:
+- ✅ Created unified `formatOutput` utility function in `src/utils.ts`
+- ✅ Added `--json` and `--output` options to shared credential options
+- ✅ Updated all data-returning commands to use `formatOutput`
+- ✅ Commands now support both JSON output and file writing
 
-```typescript
-// src/utils.ts
-export function formatOutput(data: unknown, options: { json?: boolean; output?: string }): void {
-  if (options.json || options.output) {
-    const json = JSON.stringify(data, null, 2);
-    if (options.output) {
-      fsPromises.writeFile(options.output, json, 'utf8');
-      console.log(`Output written to ${options.output}`);
-    } else {
-      console.log(json);
-    }
-  } else {
-    // Default table format
-    printTable(data);
-  }
-}
-```
-
-**Files to Update**:
-- `src/cmds/cards.ts` - Add JSON output
-- `src/cmds/currencies.ts` - Add JSON output
-- `src/cmds/countries.ts` - Add JSON output
-- `src/cmds/merchants.ts` - Add JSON output
+**Files Updated**:
+- ✅ `src/utils.ts` - Added `formatOutput` utility function
+- ✅ `src/cmds/types.ts` - Added `output?: string` to `CommonOptions`
+- ✅ `src/index.ts` - Added `--json` and `--output` to shared options
+- ✅ `src/cmds/cards.ts` - Uses `formatOutput`
+- ✅ `src/cmds/currencies.ts` - Uses `formatOutput`
+- ✅ `src/cmds/countries.ts` - Uses `formatOutput`
+- ✅ `src/cmds/merchants.ts` - Uses `formatOutput`
+- ✅ `src/cmds/beneficiaries.ts` - Uses `formatOutput`
+- ✅ `src/cmds/accounts.ts` - Uses `formatOutput`
+- ✅ `src/cmds/transactions.ts` - Uses `formatOutput`
+- ✅ `src/cmds/balances.ts` - Uses `formatOutput`
 
 ---
 

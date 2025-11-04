@@ -18,6 +18,7 @@ vi.mock('../../src/utils.ts', async () => {
       start: vi.fn(function() { return this; }),
       stop: vi.fn(),
     })),
+    formatOutput: vi.fn(),
     printTable: vi.fn(),
   };
 });
@@ -57,15 +58,18 @@ describe('cardsCommand', () => {
     mockApi.getCards.mockResolvedValue({ data: { cards: mockCards } });
 
     console.log = vi.fn();
-    const { printTable } = await import('../../src/utils.ts');
+    const { formatOutput } = await import('../../src/utils.ts');
 
     await cardsCommand(options);
 
-    expect(printTable).toHaveBeenCalledWith([
-      { CardKey: '123', CardNumber: '4567 8901 2345 6789', IsProgrammable: true },
-      { CardKey: '456', CardNumber: '9876 5432 1098 7654', IsProgrammable: false },
-    ]);
-    expect(console.log).toHaveBeenCalledWith('\n2 card(s) found.');
+    expect(formatOutput).toHaveBeenCalledWith(
+      [
+        { CardKey: '123', CardNumber: '4567 8901 2345 6789', IsProgrammable: true },
+        { CardKey: '456', CardNumber: '9876 5432 1098 7654', IsProgrammable: false },
+      ],
+      { json: undefined, output: undefined },
+      expect.any(Function)
+    );
   });
 
   it('should handle no cards found', async () => {

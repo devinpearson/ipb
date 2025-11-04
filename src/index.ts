@@ -92,7 +92,9 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('-s,--spinner', 'disable spinner during command execution')
-    .option('-v,--verbose', 'additional debugging information');
+    .option('-v,--verbose', 'additional debugging information')
+    .option('--json', 'Output raw JSON instead of formatted table')
+    .option('--output <file>', 'Write JSON output to file instead of stdout');
 }
 
 // Show help if no arguments are provided
@@ -115,7 +117,7 @@ async function main() {
 Examples:
   $ ipb cards
   $ ipb cards --json
-  $ ipb cards --verbose
+  $ ipb cards --output cards.json
       `
       )
   ).action(withCommandContext('cards', cardsCommand));
@@ -351,6 +353,7 @@ Examples:
 Examples:
   $ ipb currencies
   $ ipb currencies --json
+  $ ipb currencies --output currencies.json
       `
       )
   ).action(withCommandContext('currencies', currenciesCommand));
@@ -364,6 +367,7 @@ Examples:
 Examples:
   $ ipb countries
   $ ipb countries --json
+  $ ipb countries --output countries.json
       `
       )
   ).action(withCommandContext('countries', countriesCommand));
@@ -377,6 +381,7 @@ Examples:
 Examples:
   $ ipb merchants
   $ ipb merchants --json
+  $ ipb merchants --output merchants.json
       `
       )
   ).action(withCommandContext('merchants', merchantsCommand));
@@ -390,11 +395,10 @@ Examples:
 Examples:
   $ ipb accounts
   $ ipb accounts --json
+  $ ipb accounts --output accounts.json
       `
       )
-  )
-    .option('--json', 'Output raw JSON instead of formatted table')
-    .action(withCommandContext('accounts', accountsCommand));
+  ).action(withCommandContext('accounts', accountsCommand));
   addApiCredentialOptions(
     program
       .command('balances')
@@ -405,11 +409,11 @@ Examples:
 Examples:
   $ ipb balances <accountId>
   $ ipb balances acc-123 --json
+  $ ipb balances acc-123 --output balance.json
       `
       )
   )
     .argument('accountId', 'Account ID to fetch balances for')
-    .option('--json', 'Output raw JSON instead of formatted text')
     .action(withCommandContext('balances', balancesCommand));
   addApiCredentialOptions(
     program
@@ -456,7 +460,8 @@ Examples:
         `
 Examples:
   $ ipb transactions <accountId>
-  $ ipb transactions acc-123
+  $ ipb transactions acc-123 --json
+  $ ipb transactions acc-123 --output transactions.json
       `
       )
   )
@@ -472,6 +477,7 @@ Examples:
 Examples:
   $ ipb beneficiaries
   $ ipb beneficiaries --json
+  $ ipb beneficiaries --output beneficiaries.json
       `
       )
   ).action(withCommandContext('beneficiaries', beneficiariesCommand));

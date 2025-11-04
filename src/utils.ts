@@ -85,6 +85,52 @@ export interface TableRow {
 export type TableData = TableRow[];
 
 /**
+ * Output formatting options for structured output.
+ */
+export interface OutputOptions {
+  json?: boolean;
+  output?: string;
+}
+
+/**
+ * Formats and outputs data in JSON or table format, optionally writing to a file.
+ * @param data - Data to output (can be any JSON-serializable value)
+ * @param options - Output options including JSON flag and output file path
+ * @param showCount - Optional function to show count message after table output
+ */
+export async function formatOutput(
+  data: unknown,
+  options: OutputOptions,
+  showCount?: (count: number) => void
+): Promise<void> {
+  if (options.json || options.output) {
+    const json = JSON.stringify(data, null, 2);
+    if (options.output) {
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(options.output, json, 'utf8');
+      console.log(`Output written to ${options.output}`);
+    } else {
+      console.log(json);
+    }
+  } else {
+    // Default table format for array data
+    if (Array.isArray(data)) {
+      if (data.length === 0) {
+        console.log('No data to display.');
+        return;
+      }
+      printTable(data as TableData);
+      if (showCount) {
+        showCount(data.length);
+      }
+    } else {
+      // For non-array data, output as JSON
+      console.log(JSON.stringify(data, null, 2));
+    }
+  }
+}
+
+/**
  * Prints tabular data to the console in a formatted table.
  * @param data - Array of row objects to display
  */

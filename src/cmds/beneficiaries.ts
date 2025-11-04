@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi, printTable } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -37,6 +37,8 @@ export async function beneficiariesCommand(options: CommonOptions) {
       referenceName,
     })
   );
-  printTable(simpleBeneficiaries);
-  console.log(`\n${beneficiaries.length} beneficiary(ies) found.`);
+
+  await formatOutput(simpleBeneficiaries, { json: options.json, output: options.output }, (count) => {
+    console.log(`\n${count} beneficiary(ies) found.`);
+  });
 }
