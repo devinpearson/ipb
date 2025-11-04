@@ -420,15 +420,40 @@ export async function checkForUpdates(force = false): Promise<void> {
 
 ---
 
-### 18. Better File Path Handling
+### 18. Better File Path Handling - **✅ Fully Implemented**
 
-**Current State**: File paths are strings without validation.
+**Current State**: ✅ File paths are now normalized, validated, and checked for permissions.
 
-**Recommendations**:
-- Normalize paths (handle `~/`, relative paths)
-- Validate file extensions
-- Check file permissions before operations
-- Provide better error messages for path issues
+**Implementation**:
+- ✅ Created `normalizeFilePath` function to expand `~` and resolve relative paths
+- ✅ Added `validateFileExtension` to check file extensions
+- ✅ Added `checkFilePermissions` to verify read/write permissions
+- ✅ Created `validateFilePath` and `validateFilePathForWrite` convenience functions
+- ✅ Updated all file-handling commands to use new path utilities
+- ✅ Better error messages for path issues (missing files, permissions, invalid extensions)
+
+**Features**:
+- **Path Normalization**: Expands `~/` to home directory, resolves relative paths
+- **Extension Validation**: Validates file extensions (e.g., `.js` for code files, `.json` for data files)
+- **Permission Checking**: Verifies read/write permissions before operations
+- **Better Errors**: Clear error messages for missing files, permission issues, and invalid extensions
+
+**Commands Updated**:
+- ✅ `deploy.ts` - Validates `.js` files and `.env.*` files
+- ✅ `upload.ts` - Validates `.js` files
+- ✅ `publish.ts` - Validates `.js` files
+- ✅ `run.ts` - Validates `.js` files and `.env.*` files
+- ✅ `simulate.ts` - Validates `.js` files
+- ✅ `fetch.ts` - Validates write paths for `.js` files
+- ✅ `logs.ts` - Validates write paths for `.json` files
+- ✅ `env.ts` - Validates write paths for `.json` files
+- ✅ `upload-env.ts` - Validates `.json` files
+- ✅ `published.ts` - Validates write paths for `.js` files
+- ✅ `ai.ts` - Validates write paths for generated files
+
+**Files Updated**:
+- ✅ `src/utils.ts` - Added path validation utilities
+- ✅ All command files using file operations - Updated to use new utilities
 
 ---
 

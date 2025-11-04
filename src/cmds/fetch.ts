@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -43,7 +44,8 @@ export async function fetchCommand(options: Options) {
   const code = result.data.result.code;
 
   spinner.stop();
-  console.log(`💾 saving to file: ${options.filename}`);
-  await fsPromises.writeFile(options.filename, code, 'utf8');
+  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+  console.log(`💾 saving to file: ${normalizedFilename}`);
+  await fsPromises.writeFile(normalizedFilename, code, 'utf8');
   console.log('🎉 code saved to file');
 }

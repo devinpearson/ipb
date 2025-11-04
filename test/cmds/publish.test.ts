@@ -20,6 +20,11 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
+    validateFilePath: vi.fn(async (path) => {
+      // Return absolute path for testing
+      const { resolve } = await import('node:path');
+      return resolve(path);
+    }),
   };
 });
 
@@ -75,8 +80,9 @@ describe('publishCommand', () => {
 
     await publishCommand(options);
 
-    expect(mockFsPromises.access).toHaveBeenCalledWith('test.js');
-    expect(mockFsPromises.readFile).toHaveBeenCalledWith('test.js', 'utf8');
+    const { resolve } = await import('node:path');
+    const expectedPath = resolve('test.js');
+    expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
     expect(console.log).toHaveBeenCalledWith('🎉 code published with codeId: code-123');
   });
@@ -94,7 +100,10 @@ describe('publishCommand', () => {
       verbose: false,
     };
 
-    mockFsPromises.access.mockRejectedValue(new Error('File not found'));
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockRejectedValue(
+      new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist')
+    );
 
     await expect(publishCommand(options)).rejects.toThrow(CliError);
     await expect(publishCommand(options)).rejects.toThrow('does not exist');
@@ -122,6 +131,8 @@ describe('publishCommand', () => {
       },
     };
 
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
 
@@ -146,6 +157,8 @@ describe('publishCommand', () => {
     const mockCode = 'console.log("test");';
     const apiError = new Error('Publish failed');
 
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
     mockApi.uploadPublishedCode.mockRejectedValue(apiError);
 

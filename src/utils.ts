@@ -1,5 +1,7 @@
 import fs from 'node:fs';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, access, constants } from 'node:fs/promises';
+import path from 'node:path';
+import { homedir } from 'node:os';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
@@ -380,6 +382,158 @@ export function printTable(data: TableData): void {
       console.log(dataRow);
     });
   }
+}
+
+/**
+ * Normalizes a file path by expanding ~ to home directory and resolving relative paths.
+ * @param filePath - The file path to normalize
+ * @returns Normalized absolute path
+ */
+export function normalizeFilePath(filePath: string): string {
+  // Expand ~ to home directory
+  if (filePath.startsWith('~/') || filePath === '~') {
+    filePath = filePath.replace('~', homedir());
+  }
+  
+  // Resolve relative paths to absolute paths
+  if (!path.isAbsolute(filePath)) {
+    filePath = path.resolve(process.cwd(), filePath);
+  }
+  
+  return path.normalize(filePath);
+}
+
+/**
+ * Validates file extension against allowed extensions.
+ * @param filePath - The file path to validate
+ * @param allowedExtensions - Array of allowed extensions (e.g., ['.js', '.json'])
+ * @param operation - Operation type for error messages (e.g., 'read', 'write')
+ * @throws {CliError} When file extension is not allowed
+ */
+export function validateFileExtension(
+  filePath: string,
+  allowedExtensions: string[],
+  operation: string = 'access'
+): void {
+  const ext = path.extname(filePath).toLowerCase();
+  if (!allowedExtensions.includes(ext)) {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `Invalid file extension for ${operation} operation. Allowed extensions: ${allowedExtensions.join(', ')}. Got: ${ext || 'no extension'}`
+    );
+  }
+}
+
+/**
+ * Checks file permissions before operations.
+ * @param filePath - The file path to check
+ * @param operation - Operation type ('read' or 'write')
+ * @throws {CliError} When file doesn't exist or lacks required permissions
+ */
+export async function checkFilePermissions(
+  filePath: string,
+  operation: 'read' | 'write' = 'read'
+): Promise<void> {
+  const normalizedPath = normalizeFilePath(filePath);
+  
+  try {
+    if (operation === 'read') {
+      await access(normalizedPath, constants.R_OK);
+    } else {
+      // For write, check if parent directory is writable
+      const dir = path.dirname(normalizedPath);
+      await access(dir, constants.W_OK);
+      // If file exists, check if it's writable
+      try {
+        await access(normalizedPath, constants.F_OK);
+        await access(normalizedPath, constants.W_OK);
+      } catch {
+        // File doesn't exist yet, that's fine for write operations
+      }
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('ENOENT')) {
+      if (operation === 'read') {
+        throw new CliError(
+          ERROR_CODES.FILE_NOT_FOUND,
+          `File "${normalizedPath}" does not exist. Check the file path and ensure the file exists.`
+        );
+      }
+      // For write, missing file is OK, but parent directory must exist
+      throw new CliError(
+        ERROR_CODES.FILE_NOT_FOUND,
+        `Directory "${path.dirname(normalizedPath)}" does not exist. Create the directory first.`
+      );
+    } else if (errorMessage.includes('EACCES') || errorMessage.includes('permission')) {
+      throw new CliError(
+        ERROR_CODES.FILE_NOT_FOUND,
+        `Permission denied: Cannot ${operation} file "${normalizedPath}". Check file permissions.`
+      );
+    }
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `Cannot ${operation} file "${normalizedPath}": ${errorMessage}`
+    );
+  }
+}
+
+/**
+ * Validates and normalizes a file path for read operations.
+ * @param filePath - The file path to validate and normalize
+ * @param allowedExtensions - Optional array of allowed extensions
+ * @returns Normalized absolute path
+ * @throws {CliError} When validation fails
+ */
+export async function validateFilePath(
+  filePath: string,
+  allowedExtensions?: string[]
+): Promise<string> {
+  if (!filePath || filePath.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'File path is required and cannot be empty.'
+    );
+  }
+  
+  const normalizedPath = normalizeFilePath(filePath);
+  
+  if (allowedExtensions && allowedExtensions.length > 0) {
+    validateFileExtension(normalizedPath, allowedExtensions, 'read');
+  }
+  
+  await checkFilePermissions(normalizedPath, 'read');
+  
+  return normalizedPath;
+}
+
+/**
+ * Validates and normalizes a file path for write operations.
+ * @param filePath - The file path to validate and normalize
+ * @param allowedExtensions - Optional array of allowed extensions
+ * @returns Normalized absolute path
+ * @throws {CliError} When validation fails
+ */
+export async function validateFilePathForWrite(
+  filePath: string,
+  allowedExtensions?: string[]
+): Promise<string> {
+  if (!filePath || filePath.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'File path is required and cannot be empty.'
+    );
+  }
+  
+  const normalizedPath = normalizeFilePath(filePath);
+  
+  if (allowedExtensions && allowedExtensions.length > 0) {
+    validateFileExtension(normalizedPath, allowedExtensions, 'write');
+  }
+  
+  await checkFilePermissions(normalizedPath, 'write');
+  
+  return normalizedPath;
 }
 
 /**

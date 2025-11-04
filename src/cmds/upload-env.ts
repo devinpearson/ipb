@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -19,11 +20,9 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
  */
 export async function uploadEnvCommand(options: Options) {
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.json']);
+  
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
   const disableSpinner = options.spinner === true;
@@ -31,7 +30,7 @@ export async function uploadEnvCommand(options: Options) {
   const api = await initializeApi(credentials, options);
 
   const raw = { variables: {} };
-  const variables = await fsPromises.readFile(options.filename, 'utf8');
+  const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.variables = JSON.parse(variables);
   const _result = await api.uploadEnv(cardKey, raw);
   spinner.stop();

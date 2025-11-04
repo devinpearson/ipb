@@ -20,6 +20,11 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
+    validateFilePathForWrite: vi.fn(async (path) => {
+      // Return absolute path for testing
+      const { resolve } = await import('node:path');
+      return resolve(path);
+    }),
   };
 });
 
@@ -72,8 +77,10 @@ describe('fetchCommand', () => {
     await fetchCommand(options);
 
     expect(mockApi.getSavedCode).toHaveBeenCalledWith('test-card-key');
-    expect(mockFsPromises.writeFile).toHaveBeenCalledWith('fetched.js', mockCode, 'utf8');
-    expect(console.log).toHaveBeenCalledWith('💾 saving to file: fetched.js');
+    const { resolve } = await import('node:path');
+    const expectedPath = resolve('fetched.js');
+    expect(mockFsPromises.writeFile).toHaveBeenCalledWith(expectedPath, mockCode, 'utf8');
+    expect(console.log).toHaveBeenCalledWith(`💾 saving to file: ${expectedPath}`);
     expect(console.log).toHaveBeenCalledWith('🎉 code saved to file');
   });
 

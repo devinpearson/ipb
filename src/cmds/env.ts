@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -27,7 +28,8 @@ export async function envCommand(options: Options) {
   const result = await api.getEnv(cardKey);
   const envs = result.data.result.variables;
   spinner.stop();
-  console.log(`💾 saving to file: ${options.filename}`);
-  await fsPromises.writeFile(options.filename, JSON.stringify(envs, null, 4), 'utf8');
+  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
+  console.log(`💾 saving to file: ${normalizedFilename}`);
+  await fsPromises.writeFile(normalizedFilename, JSON.stringify(envs, null, 4), 'utf8');
   console.log('🎉 envs saved to file');
 }

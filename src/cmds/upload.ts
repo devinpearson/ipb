@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -19,29 +20,16 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
  */
 export async function uploadCommand(options: Options) {
-  // Validate required filename option
-  if (!options.filename || options.filename.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'Filename is required. Use -f or --filename to specify the JavaScript file to upload.'
-    );
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
   
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
-    );
-  }
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '🚀 uploading code...');
   const api = await initializeApi(credentials, options);
   const raw = { code: '' };
-  const code = await fsPromises.readFile(options.filename, 'utf8');
+  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;
   const result = await api.uploadCode(cardKey, raw);
   spinner.stop();

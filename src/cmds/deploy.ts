@@ -6,6 +6,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePath,
+  validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -23,13 +25,8 @@ interface Options extends CommonOptions {
 export async function deployCommand(options: Options) {
   printTitleBox();
   
-  // Validate required filename option
-  if (!options.filename || options.filename.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'Filename is required. Use -f or --filename to specify the JavaScript file to deploy.'
-    );
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
   
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '💳 starting deployment...').start();
@@ -39,35 +36,29 @@ export async function deployCommand(options: Options) {
   const api = await initializeApi(credentials, options);
 
   if (options.env) {
+    const envFilePath = `.env.${options.env}`;
     try {
-      await fsPromises.access(`.env.${options.env}`);
-    } catch {
-      throw new CliError(
-        ERROR_CODES.MISSING_ENV_FILE,
-        `Env file .env.${options.env} does not exist`
-      );
-    }
-    spinner.text = `📦 uploading env from .env.${options.env}`;
-    const envFileContent = await fsPromises.readFile(`.env.${options.env}`, 'utf8');
-    envObject = dotenv.parse(envFileContent);
+      const normalizedEnvPath = await validateFilePath(envFilePath);
+      spinner.text = `📦 uploading env from ${envFilePath}`;
+      const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
+      envObject = dotenv.parse(envFileContent);
 
-    await api.uploadEnv(cardKey, { variables: envObject });
-    spinner.text = '📦 env uploaded';
+      await api.uploadEnv(cardKey, { variables: envObject });
+      spinner.text = '📦 env uploaded';
+    } catch (error) {
+      if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
+        throw new CliError(
+          ERROR_CODES.MISSING_ENV_FILE,
+          `Env file "${envFilePath}" does not exist. Check the file path and ensure the file exists.`
+        );
+      }
+      throw error;
+    }
   }
   spinner.text = '🚀 deploying code';
   const raw = { code: '' };
   
-  // Validate file exists before reading
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
-    );
-  }
-  
-  const code = await fsPromises.readFile(options.filename, 'utf8');
+  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;
   const saveResult = await api.uploadCode(cardKey, raw);
   await api.uploadPublishedCode(cardKey, saveResult.data.result.codeId, code);

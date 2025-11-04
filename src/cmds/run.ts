@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
+import { validateFilePath } from '../utils.js';
 
 interface Options {
   filename: string;
@@ -25,23 +26,10 @@ interface Options {
 export async function runCommand(options: Options) {
   printTitleBox();
   
-  // Validate required filename option
-  if (!options.filename || options.filename.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'Filename is required. Use -f or --filename to specify the JavaScript file to run.'
-    );
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
   
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
-    );
-  }
-  console.log(chalk.white(`Running code:`), chalk.blueBright(options.filename));
+  console.log(chalk.white(`Running code:`), chalk.blueBright(normalizedFilename));
   const transaction = createTransaction(
     options.currency,
     options.amount,
@@ -60,20 +48,24 @@ export async function runCommand(options: Options) {
 
   let environmentvariables: { [key: string]: string } = {};
   if (options.env) {
+    const envFilePath = `.env.${options.env}`;
     try {
-      await fsPromises.access(`.env.${options.env}`);
-    } catch {
-      throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'Env does not exist');
+      await validateFilePath(envFilePath);
+    } catch (error) {
+      if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
+        throw new CliError(ERROR_CODES.MISSING_ENV_FILE, `Env file "${envFilePath}" does not exist.`);
+      }
+      throw error;
     }
 
-    const data = await fsPromises.readFile(`.env.${options.env}`, 'utf8');
+    const data = await fsPromises.readFile(envFilePath, 'utf8');
     const lines = data.split('\n');
 
     environmentvariables = convertToJson(lines);
   }
   // Convert the environmentvariables to a string
   const environmentvariablesString = JSON.stringify(environmentvariables);
-  const code = await fsPromises.readFile(path.join(path.resolve(), options.filename), 'utf8');
+  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   // Run the code
   const executionItems = await run(transaction, code, environmentvariablesString);
   executionItems.forEach((item) => {

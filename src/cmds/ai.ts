@@ -109,16 +109,19 @@ export async function aiCommand(prompt: string, options: Options) {
   }
   console.log('');
   const output = response?.code as string;
-  console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
-  await fsPromises.writeFile(options.filename, output, 'utf8');
+  const { validateFilePathForWrite } = await import('../utils.js');
+  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+  console.log(`💾 saving to file: ${chalk.greenBright(normalizedFilename)}`);
+  await fsPromises.writeFile(normalizedFilename, output, 'utf8');
   console.log('🎉 generated code saved to file');
   if (response?.env_variables) {
     console.log('');
-    console.log(`💾 saving env variables to file: ${chalk.greenBright(envFilename)}`);
+    const normalizedEnvFilename = await validateFilePathForWrite(envFilename);
+    console.log(`💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)}`);
     const envContent = response.env_variables
       .map((envVar) => `${envVar}=${process.env[envVar] ?? ''}\n`)
       .join('');
-    await fsPromises.writeFile(envFilename, envContent, 'utf8');
+    await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
     console.log('🎉 env variables saved to file');
   }
   if (response?.example_transaction) {

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials } from '../index.js';
-import { initializeApi, normalizeCardKey } from '../utils.js';
+import { initializeApi, normalizeCardKey, validateFilePath } from '../utils.js';
 
 interface Options {
   cardKey?: string | number;
@@ -29,15 +29,14 @@ interface Options {
  */
 export async function simulateCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
-  }
+  
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
+  
   const api = await initializeApi(credentials, options);
 
   console.log('🚀 uploading code & running simulation');
-  const code = await fsPromises.readFile(options.filename, 'utf8');
+  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   const transaction = createTransaction(
     options.currency,
     options.amount,
@@ -50,7 +49,7 @@ export async function simulateCommand(options: Options) {
   const result = await api.executeCode(code, transaction, cardKey);
   const executionItems = result.data.result;
   console.log('');
-  console.log(chalk.white(`Simulated code:`), chalk.blueBright(options.filename));
+  console.log(chalk.white(`Simulated code:`), chalk.blueBright(normalizedFilename));
 
   console.log(chalk.blue(`currency:`), chalk.green(transaction.currencyCode));
   console.log(chalk.blue(`amount:`), chalk.green(transaction.centsAmount));

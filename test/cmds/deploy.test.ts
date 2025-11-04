@@ -21,6 +21,11 @@ vi.mock('../../src/utils.ts', async () => {
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
+    validateFilePath: vi.fn(async (path) => {
+      // Return absolute path for testing
+      const { resolve } = await import('node:path');
+      return resolve(path);
+    }),
   };
 });
 
@@ -93,7 +98,9 @@ describe('deployCommand', () => {
 
     await deployCommand(options);
 
-    expect(mockFsPromises.readFile).toHaveBeenCalledWith('test.js', 'utf8');
+    const { resolve } = await import('node:path');
+    const expectedPath = resolve('test.js');
+    expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
     expect(console.log).toHaveBeenCalledWith('🎉 code deployed with codeId: code-123');
@@ -122,7 +129,11 @@ describe('deployCommand', () => {
       },
     };
 
-    mockFsPromises.access.mockResolvedValue(undefined);
+    const { validateFilePath } = await import('../../src/utils.ts');
+    const { resolve } = await import('node:path');
+    (validateFilePath as vi.Mock)
+      .mockResolvedValueOnce(resolve('.env.production')) // For env file
+      .mockResolvedValueOnce(resolve('test.js')); // For code file
     mockFsPromises.readFile
       .mockResolvedValueOnce(mockEnvContent)
       .mockResolvedValueOnce(mockCode);
@@ -132,8 +143,10 @@ describe('deployCommand', () => {
 
     await deployCommand(options);
 
-    expect(mockFsPromises.access).toHaveBeenCalledWith('.env.production');
-    expect(mockFsPromises.readFile).toHaveBeenCalledWith('.env.production', 'utf8');
+    const expectedEnvPath = resolve('.env.production'); // Normalized path
+    const expectedCodePath = resolve('test.js');
+    expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedEnvPath, 'utf8');
+    expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedCodePath, 'utf8');
     expect(mockApi.uploadEnv).toHaveBeenCalledWith('test-card-key', {
       variables: { API_KEY: 'test123', SECRET: 'secret456' },
     });
@@ -154,10 +167,17 @@ describe('deployCommand', () => {
       verbose: false,
     };
 
-    mockFsPromises.access.mockRejectedValue(new Error('File not found'));
+    const { validateFilePath } = await import('../../src/utils.ts');
+    const { resolve } = await import('node:path');
+    (validateFilePath as vi.Mock)
+      .mockResolvedValueOnce(resolve('test.js')) // First call for test.js succeeds
+      .mockRejectedValueOnce( // Second call for .env.missing fails
+        new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist')
+      );
 
-    await expect(deployCommand(options)).rejects.toThrow(CliError);
-    await expect(deployCommand(options)).rejects.toThrow('Env file .env.missing does not exist');
+    const error = await deployCommand(options).catch((e) => e);
+    expect(error).toBeInstanceOf(CliError);
+    expect(error.message).toContain('Env file');
   });
 
   it('should use default card key when not provided', async () => {
@@ -180,6 +200,8 @@ describe('deployCommand', () => {
       },
     };
 
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
     mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
@@ -204,6 +226,8 @@ describe('deployCommand', () => {
     const mockCode = 'console.log("test");';
     const apiError = new Error('API connection failed');
 
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
     mockApi.uploadCode.mockRejectedValue(apiError);
 

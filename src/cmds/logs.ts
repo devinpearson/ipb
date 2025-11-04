@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -30,9 +31,10 @@ export async function logsCommand(options: Options) {
 
   const result = await api.getExecutions(cardKey);
   spinner.stop();
-  console.log(`💾 saving to file: ${options.filename}`);
+  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
+  console.log(`💾 saving to file: ${normalizedFilename}`);
   await fsPromises.writeFile(
-    options.filename,
+    normalizedFilename,
     JSON.stringify(result.data.result.executionItems, null, 4),
     'utf8'
   );

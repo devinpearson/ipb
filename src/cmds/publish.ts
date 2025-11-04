@@ -5,6 +5,7 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -20,14 +21,6 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or publishing fails
  */
 export async function publishCommand(options: Options) {
-  // Validate required filename option
-  if (!options.filename || options.filename.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'Filename is required. Use -f or --filename to specify the JavaScript file to publish.'
-    );
-  }
-  
   // Validate required codeId option
   if (!options.codeId || options.codeId.trim() === '') {
     throw new CliError(
@@ -36,21 +29,16 @@ export async function publishCommand(options: Options) {
     );
   }
   
-  try {
-    await fsPromises.access(options.filename);
-  } catch {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
-    );
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
+  
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
   const disableSpinner = options.spinner === true;
   const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
   const api = await initializeApi(credentials, options);
 
-  const code = await fsPromises.readFile(options.filename, 'utf8');
+  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   const result = await api.uploadPublishedCode(cardKey, options.codeId, code);
   spinner.stop();
   console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
