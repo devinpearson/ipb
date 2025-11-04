@@ -45,6 +45,7 @@ import {
   checkForUpdates,
   handleCliError,
   loadCredentialsFile,
+  logCommandHistory,
   readCredentialsFileSync,
   showUpdateNotification,
   withCommandContext,
@@ -110,8 +111,9 @@ if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
 async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
   
-  // Add --check-updates flag (global option)
+  // Add global options
   program.option('--check-updates', 'Check for available updates');
+  program.option('--no-history', 'Disable command history logging');
 
   // Use shared options for most commands
   addApiCredentialOptions(
@@ -614,8 +616,54 @@ Examples:
   const { isStdoutPiped } = await import('./utils.js');
   const isPiped = isStdoutPiped();
   
-  // Parse arguments to execute commands
-  await program.parseAsync(process.argv);
+  // Track command execution for history logging
+  const startTime = Date.now();
+  let commandName = '';
+  let commandArgs: string[] = [];
+  let commandOptions: Record<string, unknown> = {};
+  let exitCode = 0;
+  
+  // Hook into command execution to capture command details
+  program.hook('preAction', (thisCommand) => {
+    commandName = thisCommand.name() || (thisCommand.parent?.name() || '');
+    commandArgs = thisCommand.args || [];
+    // Merge global options and command-specific options
+    const globalOpts = program.opts();
+    const commandOpts = thisCommand.opts();
+    commandOptions = { ...globalOpts, ...commandOpts };
+  });
+  
+  try {
+    // Parse arguments to execute commands
+    await program.parseAsync(process.argv);
+    
+    // If we got here, command succeeded
+    exitCode = 0;
+  } catch (error) {
+    // Command failed - exit code will be set by handleCliError
+    exitCode = 1;
+    throw error;
+  } finally {
+    // Log command history unless --no-history is set (for both success and failure)
+    try {
+      const globalOpts = program.opts();
+      const noHistory = globalOpts.history === false;
+      
+      if (!noHistory && commandName) {
+        const duration = Date.now() - startTime;
+        // Get the actual command name from program.args or the command that was executed
+        const actualCommandName = program.args[0] || commandName;
+        const actualArgs = program.args.slice(1);
+        
+        // Merge all options (global + command-specific)
+        const allOptions = { ...globalOpts, ...commandOptions };
+        
+        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration);
+      }
+    } catch {
+      // Ignore errors logging history
+    }
+  }
   
   // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
   if (hasCheckUpdatesFlag && process.argv.length > 3) {

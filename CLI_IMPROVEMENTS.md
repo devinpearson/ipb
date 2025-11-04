@@ -296,12 +296,19 @@ if (!options.force) {
 
 ### 11. Command History/Logging
 
-**Current State**: No command history tracking.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Optionally log commands to `~/.ipb/history.json`
-- Useful for debugging and audit trails
-- Can be disabled with `--no-history` flag
+**Implementation**:
+- Commands are logged to `~/.ipb/history.json` with timestamp, command name, arguments, options, exit code, and duration
+- Sensitive data (API keys, credentials, tokens) is automatically sanitized/redacted
+- History is limited to the last 1000 entries to prevent file bloat
+- Can be disabled with `--no-history` global flag
+- Both successful and failed commands are logged
+- Useful for debugging, audit trails, and tracking command usage
+
+**Files Updated**:
+- `src/utils.ts` - Added `getHistoryFilePath()`, `readCommandHistory()`, `writeCommandHistory()`, `sanitizeOptions()`, `sanitizeArgs()`, `logCommandHistory()` functions
+- `src/index.ts` - Added `--no-history` global option, integrated history logging into command execution flow with `preAction` hook
 
 ---
 
