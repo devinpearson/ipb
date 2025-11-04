@@ -1,4 +1,4 @@
-import fs, { promises as fsPromises } from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import https from 'node:https';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -74,14 +74,10 @@ const outputSchema = z.object({
 type Output = z.infer<typeof outputSchema>;
 
 interface Options {
-  //   host: string; // will change this to openai compatible host
-  credentialsFile: string; // will allow the openai api key to be set in the file as well as its host
+  credentialsFile: string;
   filename: string;
   verbose: boolean;
 }
-// node . 'send a notification after transaction via twilio sms'
-// node . 'limit transactions to only Woolworths, Checkers and Spar'
-// node . 'allow transactions that USD or ZAR'
 /**
  * Generates card code using an LLM based on a prompt.
  * @param prompt - The prompt describing what the code should do
@@ -119,11 +115,10 @@ export async function aiCommand(prompt: string, options: Options) {
   if (response?.env_variables) {
     console.log('');
     console.log(`💾 saving env variables to file: ${chalk.greenBright(envFilename)}`);
-    const envFile = fs.createWriteStream(envFilename);
-    response.env_variables.forEach((envVar) => {
-      envFile.write(`${envVar}=${process.env[envVar]}\n`);
-    });
-    envFile.end();
+    const envContent = response.env_variables
+      .map((envVar) => `${envVar}=${process.env[envVar] ?? ''}\n`)
+      .join('');
+    await fsPromises.writeFile(envFilename, envContent, 'utf8');
     console.log('🎉 env variables saved to file');
   }
   if (response?.example_transaction) {

@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { deployCommand } from '../../src/cmds/deploy';
+import { publishCommand } from '../../src/cmds/publish';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
@@ -18,7 +18,6 @@ vi.mock('../../src/utils.ts', async () => {
     createSpinner: vi.fn(() => ({
       start: vi.fn(function() { return this; }),
       stop: vi.fn(),
-      text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
   };
@@ -34,41 +33,25 @@ vi.mock('node:fs', () => ({
   promises: mockFsPromises,
 }));
 
-vi.mock('dotenv', () => ({
-  default: {
-    parse: vi.fn((content: string) => {
-      const env: Record<string, string> = {};
-      content.split('\n').forEach((line) => {
-        const [key, ...valueParts] = line.split('=');
-        if (key && valueParts.length > 0) {
-          env[key.trim()] = valueParts.join('=').trim();
-        }
-      });
-      return env;
-    }),
-  },
-}));
-
 const { initializeApi } = await import('../../src/utils.ts');
 
 const mockApi = {
-  uploadCode: vi.fn(),
-  uploadEnv: vi.fn(),
   uploadPublishedCode: vi.fn(),
 };
 
 (initializeApi as vi.Mock).mockResolvedValue(mockApi);
 
-describe('deployCommand', () => {
+describe('publishCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     console.log = vi.fn();
     mockFsPromises.access.mockResolvedValue(undefined);
   });
 
-  it('should deploy code successfully without env file', async () => {
+  it('should publish code successfully', async () => {
     const options = {
       filename: 'test.js',
+      codeId: 'code-123',
       cardKey: 'test-card-key',
       host: 'test-host',
       apiKey: 'test-api-key',
@@ -78,7 +61,7 @@ describe('deployCommand', () => {
       verbose: false,
     };
 
-    const mockCode = 'console.log("test");';
+    const mockCode = 'console.log("publish test");';
     const mockResult = {
       data: {
         result: {
@@ -88,63 +71,20 @@ describe('deployCommand', () => {
     };
 
     mockFsPromises.readFile.mockResolvedValue(mockCode);
-    mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
 
-    await deployCommand(options);
+    await publishCommand(options);
 
+    expect(mockFsPromises.access).toHaveBeenCalledWith('test.js');
     expect(mockFsPromises.readFile).toHaveBeenCalledWith('test.js', 'utf8');
-    expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
-    expect(console.log).toHaveBeenCalledWith('🎉 code deployed with codeId: code-123');
+    expect(console.log).toHaveBeenCalledWith('🎉 code published with codeId: code-123');
   });
 
-  it('should deploy code with env file', async () => {
+  it('should throw CliError when file does not exist', async () => {
     const options = {
-      filename: 'test.js',
-      env: 'production',
-      cardKey: 'test-card-key',
-      host: 'test-host',
-      apiKey: 'test-api-key',
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      credentialsFile: 'test-credentials-file',
-      verbose: false,
-    };
-
-    const mockCode = 'console.log("test");';
-    const mockEnvContent = 'API_KEY=test123\nSECRET=secret456';
-    const mockResult = {
-      data: {
-        result: {
-          codeId: 'code-123',
-        },
-      },
-    };
-
-    mockFsPromises.access.mockResolvedValue(undefined);
-    mockFsPromises.readFile
-      .mockResolvedValueOnce(mockEnvContent)
-      .mockResolvedValueOnce(mockCode);
-    mockApi.uploadEnv.mockResolvedValue({});
-    mockApi.uploadCode.mockResolvedValue(mockResult);
-    mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
-
-    await deployCommand(options);
-
-    expect(mockFsPromises.access).toHaveBeenCalledWith('.env.production');
-    expect(mockFsPromises.readFile).toHaveBeenCalledWith('.env.production', 'utf8');
-    expect(mockApi.uploadEnv).toHaveBeenCalledWith('test-card-key', {
-      variables: { API_KEY: 'test123', SECRET: 'secret456' },
-    });
-    expect(mockApi.uploadCode).toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith('🎉 code deployed with codeId: code-123');
-  });
-
-  it('should throw CliError when env file does not exist', async () => {
-    const options = {
-      filename: 'test.js',
-      env: 'missing',
+      filename: 'missing.js',
+      codeId: 'code-123',
       cardKey: 'test-card-key',
       host: 'test-host',
       apiKey: 'test-api-key',
@@ -156,13 +96,15 @@ describe('deployCommand', () => {
 
     mockFsPromises.access.mockRejectedValue(new Error('File not found'));
 
-    await expect(deployCommand(options)).rejects.toThrow(CliError);
-    await expect(deployCommand(options)).rejects.toThrow('Env file .env.missing does not exist');
+    await expect(publishCommand(options)).rejects.toThrow(CliError);
+    await expect(publishCommand(options)).rejects.toThrow('File does not exist');
+    expect(mockApi.uploadPublishedCode).not.toHaveBeenCalled();
   });
 
   it('should use default card key when not provided', async () => {
     const options = {
       filename: 'test.js',
+      codeId: 'code-456',
       host: 'test-host',
       apiKey: 'test-api-key',
       clientId: 'test-client-id',
@@ -175,23 +117,23 @@ describe('deployCommand', () => {
     const mockResult = {
       data: {
         result: {
-          codeId: 'code-123',
+          codeId: 'code-456',
         },
       },
     };
 
     mockFsPromises.readFile.mockResolvedValue(mockCode);
-    mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
 
-    await deployCommand(options);
+    await publishCommand(options);
 
-    expect(mockApi.uploadCode).toHaveBeenCalledWith('default-card-key', { code: mockCode });
+    expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('default-card-key', 'code-456', mockCode);
   });
 
   it('should propagate API errors', async () => {
     const options = {
       filename: 'test.js',
+      codeId: 'code-123',
       cardKey: 'test-card-key',
       host: 'test-host',
       apiKey: 'test-api-key',
@@ -202,11 +144,12 @@ describe('deployCommand', () => {
     };
 
     const mockCode = 'console.log("test");';
-    const apiError = new Error('API connection failed');
+    const apiError = new Error('Publish failed');
 
     mockFsPromises.readFile.mockResolvedValue(mockCode);
-    mockApi.uploadCode.mockRejectedValue(apiError);
+    mockApi.uploadPublishedCode.mockRejectedValue(apiError);
 
-    await expect(deployCommand(options)).rejects.toThrow('API connection failed');
+    await expect(publishCommand(options)).rejects.toThrow('Publish failed');
   });
 });
+

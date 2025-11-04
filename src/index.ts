@@ -5,7 +5,6 @@
 // For more information, see README.md
 
 import 'dotenv/config';
-import fs from 'node:fs';
 import { homedir } from 'node:os';
 import process from 'node:process';
 import chalk from 'chalk';
@@ -41,7 +40,12 @@ import { simulateCommand } from './cmds/simulate.js';
 import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
-import { handleCliError, loadCredentialsFile } from './utils.js';
+import {
+  handleCliError,
+  loadCredentialsFile,
+  readCredentialsFileSync,
+  withCommandContext,
+} from './utils.js';
 
 const version = '0.8.3';
 const program = new Command();
@@ -63,38 +67,20 @@ export async function printTitleBox() {
   // Function intentionally empty - can be implemented if needed
 }
 
-// Load credentials from file if present
-let cred = {
-  clientId: '',
-  clientSecret: '',
-  apiKey: '',
-  cardKey: '',
-  openaiKey: '',
-  sandboxKey: '',
-};
-if (fs.existsSync(credentialLocation.filename)) {
-  try {
-    const data = fs.readFileSync(credentialLocation.filename, 'utf8');
-    cred = JSON.parse(data);
-  } catch (err) {
-    if (err instanceof Error) {
-      console.error(chalk.red(`🙀 Invalid credentials file format: ${err.message}`));
-      console.log('');
-    } else {
-      console.error(chalk.red('🙀 Invalid credentials file format'));
-      console.log('');
-    }
-  }
-}
+// Load credentials from file if present (sync for module initialization)
+const cred = readCredentialsFileSync(credentialLocation, (err) => {
+  console.error(chalk.red(`🙀 Invalid credentials file format: ${err.message}`));
+  console.log('');
+});
 
 export const credentials: Credentials = {
   host: process.env.INVESTEC_HOST || 'https://openapi.investec.com',
-  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
-  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey,
-  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey,
+  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId || '',
+  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret || '',
+  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey || '',
+  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey || '',
+  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey || '',
+  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey || '',
 };
 
 // Helper for shared API credential options
@@ -120,22 +106,22 @@ async function main() {
 
   // Use shared options for most commands
   addApiCredentialOptions(program.command('cards').description('Gets a list of your cards')).action(
-    cardsCommand
+    withCommandContext('cards', cardsCommand)
   );
   addApiCredentialOptions(program.command('config').description('set auth credentials'))
     .option('--card-key <cardKey>', 'Sets your card key for the Investec API')
     .option('--openai-key <openaiKey>', 'Sets your OpenAI key for the AI generation')
     .option('--sandbox-key <sandboxKey>', 'Sets your sandbox key for the AI generation')
-    .action(configCommand);
+    .action(withCommandContext('config', configCommand));
   addApiCredentialOptions(program.command('deploy').description('deploy code to card'))
     .option('-f,--filename <filename>', 'the filename')
     .option('-e,--env <env>', 'env to run')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(deployCommand);
+    .action(withCommandContext('deploy', deployCommand));
   addApiCredentialOptions(program.command('logs').description('fetches logs from the api'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(logsCommand);
+    .action(withCommandContext('logs', logsCommand));
   program
     .command('run')
     .description('runs the code locally')
@@ -148,34 +134,34 @@ async function main() {
     .option('-i,--city <city>', 'city name', 'Cape Town')
     .option('-o,--country <country>', 'country code', 'ZA')
     .option('-v,--verbose', 'additional debugging information')
-    .action(runCommand);
+    .action(withCommandContext('run', runCommand));
   addApiCredentialOptions(program.command('fetch').description('fetches the saved code'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(fetchCommand);
+    .action(withCommandContext('fetch', fetchCommand));
   addApiCredentialOptions(program.command('upload').description('uploads to saved code'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(uploadCommand);
+    .action(withCommandContext('upload', uploadCommand));
   addApiCredentialOptions(program.command('env').description('downloads to env to a local file'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(envCommand);
+    .action(withCommandContext('env', envCommand));
   addApiCredentialOptions(program.command('upload-env').description('uploads env to the card'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(uploadEnvCommand);
+    .action(withCommandContext('upload-env', uploadEnvCommand));
   addApiCredentialOptions(
     program.command('published').description('downloads to published code to a local file')
   )
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(publishedCommand);
+    .action(withCommandContext('published', publishedCommand));
   addApiCredentialOptions(program.command('publish').description('publishes code to the card'))
     .requiredOption('-f,--filename <filename>', 'the filename')
     .option('-c,--card-key <cardKey>', 'the cardkey')
     .option('-i,--code-id <codeId>', 'the code id of the save code')
-    .action(publishCommand);
+    .action(withCommandContext('publish', publishCommand));
   program
     .command('simulate')
     .description('runs the code using the online simulator')
@@ -189,30 +175,30 @@ async function main() {
     .option('-i,--city <city>', 'city name', 'Cape Town')
     .option('-o,--country <country>', 'country code', 'ZA')
     .option('-v,--verbose', 'additional debugging information')
-    .action(simulateCommand);
+    .action(withCommandContext('simulate', simulateCommand));
   addApiCredentialOptions(program.command('enable').description('enables code to be used on card'))
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(enableCommand);
+    .action(withCommandContext('enable', enableCommand));
   addApiCredentialOptions(
     program.command('disable').description('disables code to be used on card')
   )
     .option('-c,--card-key <cardKey>', 'the cardkey')
-    .action(disableCommand);
+    .action(withCommandContext('disable', disableCommand));
   addApiCredentialOptions(
     program.command('currencies').description('Gets a list of supported currencies')
-  ).action(currenciesCommand);
+  ).action(withCommandContext('currencies', currenciesCommand));
   addApiCredentialOptions(
     program.command('countries').description('Gets a list of countries')
-  ).action(countriesCommand);
+  ).action(withCommandContext('countries', countriesCommand));
   addApiCredentialOptions(
     program.command('merchants').description('Gets a list of merchants')
-  ).action(merchantsCommand);
+  ).action(withCommandContext('merchants', merchantsCommand));
   addApiCredentialOptions(program.command('accounts').description('Gets a list of your accounts'))
     .option('--json', 'output raw JSON')
-    .action(accountsCommand);
+    .action(withCommandContext('accounts', accountsCommand));
   addApiCredentialOptions(program.command('balances').description('Gets your account balances'))
     .argument('accountId', 'accountId of the account to fetch balances for')
-    .action(balancesCommand);
+    .action(withCommandContext('balances', balancesCommand));
   addApiCredentialOptions(
     program.command('transfer').description('Allows transfer between accounts')
   )
@@ -220,21 +206,21 @@ async function main() {
     .argument('beneficiaryAccountId', 'beneficiaryAccountId of the account to transfer to')
     .argument('amount', 'amount to transfer in rands (e.g. 100.00)')
     .argument('reference', 'reference for the transfer')
-    .action(transferCommand);
+    .action(withCommandContext('transfer', transferCommand));
   addApiCredentialOptions(program.command('pay').description('Pay a beneficiary from your account'))
     .argument('accountId', 'accountId of the account to transfer from')
     .argument('beneficiaryId', 'beneficiaryId of the beneficiary to pay')
     .argument('amount', 'amount to transfer in rands (e.g. 100.00)')
     .argument('reference', 'reference for the payment')
-    .action(payCommand);
+    .action(withCommandContext('pay', payCommand));
   addApiCredentialOptions(
     program.command('transactions').description('Gets your account transactions')
   )
     .argument('accountId', 'accountId of the account to fetch balances for')
-    .action(transactionsCommand);
+    .action(withCommandContext('transactions', transactionsCommand));
   addApiCredentialOptions(
     program.command('beneficiaries').description('Gets your beneficiaries')
-  ).action(beneficiariesCommand);
+  ).action(withCommandContext('beneficiaries', beneficiariesCommand));
   program
     .command('new')
     .description('Sets up scaffoldings for a new project')
@@ -246,7 +232,7 @@ async function main() {
         .default('default')
         .choices(['default', 'petro'])
     )
-    .action(newCommand);
+    .action(withCommandContext('new', newCommand));
   program
     .command('ai')
     .description('Generates card code using an LLM')
@@ -254,25 +240,25 @@ async function main() {
     .option('-f,--filename <filename>', 'the filename', 'ai-generated.js')
     .option('-v,--verbose', 'additional debugging information')
     .option('--force', 'force overwrite existing files')
-    .action(generateCommand);
+    .action(withCommandContext('ai', generateCommand));
   program
     .command('bank')
     .description('Uses the LLM to call your bank')
     .argument('prompt', 'prompt for the LLM')
     .option('-v,--verbose', 'additional debugging information')
-    .action(bankCommand);
+    .action(withCommandContext('bank', bankCommand));
   program
     .command('register')
     .description('registers with the server for LLM generation')
     .option('-e,--email <email>', 'your email')
     .option('-p,--password <password>', 'your password')
-    .action(registerCommand);
+    .action(withCommandContext('register', registerCommand));
   program
     .command('login')
     .description('login with the server for LLM generation')
     .option('-e,--email <email>', 'your email')
     .option('-p,--password <password>', 'your password')
-    .action(loginCommand);
+    .action(withCommandContext('login', loginCommand));
 
   await program.parseAsync(process.argv);
   console.log(''); // Add a newline after command execution
@@ -307,5 +293,7 @@ export async function optionCredentials(
 }
 
 main().catch((err) => {
-  handleCliError(err, { verbose: true }, 'run CLI');
+  const commandContext = (err as Error & { commandContext?: string })?.commandContext;
+  const context = commandContext ? `${commandContext} command` : 'run CLI';
+  handleCliError(err, { verbose: true }, context);
 });

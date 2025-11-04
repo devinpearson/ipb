@@ -1,14 +1,28 @@
 /// <reference types="vitest" />
 
-import chalk from 'chalk';
 import { describe, expect, it, vi } from 'vitest';
 import { cardsCommand } from '../../src/cmds/cards';
-import { initializeApi } from '../../src/index.ts';
 
 vi.mock('../../src/index.ts', () => ({
-  initializeApi: vi.fn(),
   credentials: {},
+  printTitleBox: vi.fn(),
+  optionCredentials: vi.fn(async (options, credentials) => credentials),
 }));
+
+vi.mock('../../src/utils.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');
+  return {
+    ...actual,
+    initializeApi: vi.fn(),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn(function() { return this; }),
+      stop: vi.fn(),
+    })),
+    printTable: vi.fn(),
+  };
+});
+
+const { initializeApi } = await import('../../src/utils.ts');
 
 const mockApi = {
   getCards: vi.fn(),
@@ -43,16 +57,15 @@ describe('cardsCommand', () => {
     mockApi.getCards.mockResolvedValue({ data: { cards: mockCards } });
 
     console.log = vi.fn();
+    const { printTable } = await import('../../src/utils.ts');
 
     await cardsCommand(options);
 
-    expect(console.log).toHaveBeenCalledWith('💳 fetching cards');
-    expect(console.log).toHaveBeenCalledWith('');
-    expect(console.log).toHaveBeenCalledWith('CardKey | CardNumber          | IsProgrammable');
-    expect(console.log).toHaveBeenCalledWith('----------------------------------------------');
-    expect(console.log).toHaveBeenCalledWith('123     | 4567 8901 2345 6789 | true          ');
-    expect(console.log).toHaveBeenCalledWith('456     | 9876 5432 1098 7654 | false         ');
-    expect(console.log).toHaveBeenCalledWith('');
+    expect(printTable).toHaveBeenCalledWith([
+      { CardKey: '123', CardNumber: '4567 8901 2345 6789', IsProgrammable: true },
+      { CardKey: '456', CardNumber: '9876 5432 1098 7654', IsProgrammable: false },
+    ]);
+    expect(console.log).toHaveBeenCalledWith('\n2 card(s) found.');
   });
 
   it('should handle no cards found', async () => {
@@ -71,12 +84,10 @@ describe('cardsCommand', () => {
 
     await cardsCommand(options);
 
-    expect(console.log).toHaveBeenCalledWith('💳 fetching cards');
-    expect(console.log).toHaveBeenCalledWith('');
     expect(console.log).toHaveBeenCalledWith('No cards found');
   });
 
-  it('should handle errors gracefully', async () => {
+  it('should propagate errors (error handling is done at top level)', async () => {
     const options = {
       host: 'test-host',
       apiKey: 'test-api-key',
@@ -89,14 +100,6 @@ describe('cardsCommand', () => {
     const error = new Error('Test error');
     mockApi.getCards.mockRejectedValue(error);
 
-    console.error = vi.fn();
-
-    await cardsCommand(options);
-
-    expect(console.error).toHaveBeenCalledWith(
-      chalk.redBright('Failed to fetch cards:'),
-      error.message
-    );
-    expect(console.error).toHaveBeenCalledWith(error);
+    await expect(cardsCommand(options)).rejects.toThrow('Test error');
   });
 });

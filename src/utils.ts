@@ -22,6 +22,36 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
 }
 
 /**
+ * Wraps a command function to automatically capture and attach command context to errors.
+ * When an error occurs, the command name is attached to the error object so it can be
+ * used in error messages for better user feedback.
+ * @param commandName - The name of the command (e.g., 'accounts', 'deploy')
+ * @param handler - The command handler function
+ * @returns Wrapped handler that attaches context to errors
+ */
+export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
+  commandName: string,
+  handler: T
+): T {
+  return (async (...args: Parameters<T>) => {
+    try {
+      return await handler(...args);
+    } catch (error) {
+      // Attach command context to error
+      if (error instanceof Error) {
+        Object.defineProperty(error, 'commandContext', {
+          value: commandName,
+          writable: false,
+          enumerable: false,
+          configurable: true,
+        });
+      }
+      throw error;
+    }
+  }) as T;
+}
+
+/**
  * Checks the latest version of the package from npm registry.
  * @returns The latest version string, or null if the check fails
  */
@@ -87,7 +117,43 @@ export function printTable(data: TableData): void {
 }
 
 /**
- * Reads credentials from the default credentials file location.
+ * Default credentials structure with all fields initialized to empty strings.
+ */
+const defaultCreds = {
+  clientId: '',
+  clientSecret: '',
+  apiKey: '',
+  cardKey: '',
+  openaiKey: '',
+  sandboxKey: '',
+};
+
+/**
+ * Reads credentials from file synchronously (for module initialization).
+ * @param credentialLocation - The credential location object with filename and folder
+ * @param onError - Optional callback to handle errors (for non-throwing behavior)
+ * @returns Credentials object with values from file, or default empty strings if file doesn't exist or parsing fails
+ */
+export function readCredentialsFileSync(
+  credentialLocation: { filename: string; folder: string },
+  onError?: (error: Error) => void
+): Record<string, string> {
+  if (fs.existsSync(credentialLocation.filename)) {
+    try {
+      const data = fs.readFileSync(credentialLocation.filename, 'utf8');
+      return { ...defaultCreds, ...JSON.parse(data) };
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
+      return defaultCreds;
+    }
+  }
+  return defaultCreds;
+}
+
+/**
+ * Reads credentials from the default credentials file location (async version).
  * @param credentialLocation - The credential location object with filename and folder
  * @returns Credentials object with values from file, or empty strings if file doesn't exist
  * @throws {Error} When the credentials file exists but cannot be parsed
@@ -96,15 +162,6 @@ export async function readCredentialsFile(credentialLocation: {
   filename: string;
   folder: string;
 }): Promise<Record<string, string>> {
-  const defaultCreds = {
-    clientId: '',
-    clientSecret: '',
-    apiKey: '',
-    cardKey: '',
-    openaiKey: '',
-    sandboxKey: '',
-  };
-
   try {
     if (fs.existsSync(credentialLocation.filename)) {
       const data = await readFile(credentialLocation.filename, 'utf8');

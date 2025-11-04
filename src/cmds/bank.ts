@@ -14,8 +14,7 @@ let openai: OpenAI | undefined;
 const instructions = `- You are a banking bot, enabling the user to access their investec accounts based on user input. -if fetching transactions only retrieve from 5 days ago`;
 
 interface Options {
-  //   host: string; // will change this to openai compatible host
-  credentialsFile: string; // will allow the openai api key to be set in the file as well as its host
+  credentialsFile: string;
   filename: string;
   verbose: boolean;
 }
