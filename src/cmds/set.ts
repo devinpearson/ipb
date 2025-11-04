@@ -57,6 +57,6 @@ export async function configCommand(options: Options) {
     await writeCredentialsFile(credentialLocation.filename, cred);
     console.log('🔑 credentials saved');
   } catch (error: unknown) {
-    handleCliError(error, options, 'set config');
+    handleCliError(error, options, 'set credentials');
   }
 }

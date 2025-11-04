@@ -136,7 +136,7 @@ export async function aiCommand(prompt: string, options: Options) {
       );
     }
   } catch (error: unknown) {
-    handleCliError(error, options, 'AI generation');
+    handleCliError(error, options, 'generate code');
   }
 }
 

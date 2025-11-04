@@ -65,7 +65,7 @@ export async function bankCommand(prompt: string, options: Options) {
       console.log(response);
     }
   } catch (error: unknown) {
-    handleCliError(error, options, 'bank command');
+    handleCliError(error, options, 'execute bank command');
   }
 }
 

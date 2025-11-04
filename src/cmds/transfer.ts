@@ -57,6 +57,6 @@ export async function transferCommand(
       console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
     }
   } catch (error: unknown) {
-    handleCliError(error, options, 'transfer');
+    handleCliError(error, options, 'transfer funds');
   }
 }

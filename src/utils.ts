@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { CliError, ERROR_CODES } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 
 /**
@@ -205,6 +206,34 @@ export async function initializePbApi(
   }
   await api.getAccessToken();
   return api;
+}
+
+/**
+ * Normalizes cardKey to a number, handling both string and number inputs.
+ * @param cardKey - Card key as string or number
+ * @param credentialsCardKey - Fallback card key from credentials (string)
+ * @returns Normalized card key as number
+ * @throws {CliError} When card key cannot be determined or is invalid
+ */
+export function normalizeCardKey(
+  cardKey: string | number | undefined,
+  credentialsCardKey: string
+): number {
+  if (cardKey !== undefined) {
+    const num = typeof cardKey === 'string' ? Number(cardKey) : cardKey;
+    if (Number.isNaN(num)) {
+      throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Invalid card key: must be a number');
+    }
+    return num;
+  }
+  if (credentialsCardKey === '') {
+    throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'card-key is required');
+  }
+  const num = Number(credentialsCardKey);
+  if (Number.isNaN(num)) {
+    throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Invalid card key in credentials: must be a number');
+  }
+  return num;
 }
 
 /**

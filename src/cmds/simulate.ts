@@ -3,10 +3,10 @@ import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials } from '../index.js';
-import { handleCliError, initializeApi } from '../utils.js';
+import { handleCliError, initializeApi, normalizeCardKey } from '../utils.js';
 
 interface Options {
-  cardKey: number;
+  cardKey?: string | number;
   filename: string;
   currency: string;
   amount: number;
@@ -29,12 +29,7 @@ interface Options {
  */
 export async function simulateCommand(options: Options) {
   try {
-    if (options.cardKey === undefined) {
-      if (credentials.cardKey === '') {
-        throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'card-key is required');
-      }
-      options.cardKey = Number(credentials.cardKey);
-    }
+    const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
     try {
       await fsPromises.access(options.filename);
     } catch {
@@ -53,7 +48,7 @@ export async function simulateCommand(options: Options) {
       options.country
     );
 
-    const result = await api.executeCode(code, transaction, options.cardKey);
+    const result = await api.executeCode(code, transaction, cardKey);
     const executionItems = result.data.result;
     console.log('');
     console.log(chalk.white(`Simulated code:`), chalk.blueBright(options.filename));

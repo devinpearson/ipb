@@ -87,6 +87,6 @@ export async function loginCommand(options: Options) {
     await writeCredentialsFile(credentialLocation.filename, cred);
     console.log('🔑 access token saved');
   } catch (error: unknown) {
-    handleCliError(error, options, 'login');
+    handleCliError(error, options, 'login to account');
   }
 }
