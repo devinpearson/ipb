@@ -95,7 +95,7 @@ describe('uploadCommand', () => {
     mockFsPromises.access.mockRejectedValue(new Error('File not found'));
 
     await expect(uploadCommand(options)).rejects.toThrow(CliError);
-    await expect(uploadCommand(options)).rejects.toThrow('File does not exist');
+    await expect(uploadCommand(options)).rejects.toThrow('does not exist');
     expect(mockApi.uploadCode).not.toHaveBeenCalled();
   });
 

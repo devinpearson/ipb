@@ -97,7 +97,7 @@ describe('publishCommand', () => {
     mockFsPromises.access.mockRejectedValue(new Error('File not found'));
 
     await expect(publishCommand(options)).rejects.toThrow(CliError);
-    await expect(publishCommand(options)).rejects.toThrow('File does not exist');
+    await expect(publishCommand(options)).rejects.toThrow('does not exist');
     expect(mockApi.uploadPublishedCode).not.toHaveBeenCalled();
   });
 

@@ -24,10 +24,22 @@ interface Options {
  */
 export async function runCommand(options: Options) {
   printTitleBox();
+  
+  // Validate required filename option
+  if (!options.filename || options.filename.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'Filename is required. Use -f or --filename to specify the JavaScript file to run.'
+    );
+  }
+  
   try {
     await fsPromises.access(options.filename);
   } catch {
-    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
+    );
   }
   console.log(chalk.white(`Running code:`), chalk.blueBright(options.filename));
   const transaction = createTransaction(

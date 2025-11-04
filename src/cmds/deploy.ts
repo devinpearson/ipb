@@ -22,6 +22,15 @@ interface Options extends CommonOptions {
  */
 export async function deployCommand(options: Options) {
   printTitleBox();
+  
+  // Validate required filename option
+  if (!options.filename || options.filename.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'Filename is required. Use -f or --filename to specify the JavaScript file to deploy.'
+    );
+  }
+  
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '💳 starting deployment...').start();
   let envObject = {};
@@ -47,6 +56,17 @@ export async function deployCommand(options: Options) {
   }
   spinner.text = '🚀 deploying code';
   const raw = { code: '' };
+  
+  // Validate file exists before reading
+  try {
+    await fsPromises.access(options.filename);
+  } catch {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
+    );
+  }
+  
   const code = await fsPromises.readFile(options.filename, 'utf8');
   raw.code = code;
   const saveResult = await api.uploadCode(cardKey, raw);

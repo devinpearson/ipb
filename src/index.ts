@@ -156,7 +156,7 @@ Examples:
       `
       )
   )
-    .option('-f,--filename <filename>', 'JavaScript file to deploy (required)')
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to deploy')
     .option('-e,--env <env>', 'Environment name (loads variables from .env.<env> file)')
     .option('-c,--card-key <cardKey>', 'Card identifier to deploy to')
     .action(withCommandContext('deploy', deployCommand));
@@ -187,7 +187,7 @@ Examples:
   $ ipb run -f app.js --amount 10000 --merchant "Test Store" --city "Cape Town"
       `
     )
-    .option('-f,--filename <filename>', 'JavaScript file to execute (required)')
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to execute')
     .option('-e,--env <env>', 'Environment file to load (.env.<env>)')
     .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
     .option('-u,--currency <currency>', 'Currency code (ISO 4217)', 'zar')
@@ -291,8 +291,8 @@ Examples:
       )
   )
     .requiredOption('-f,--filename <filename>', 'JavaScript file to publish (must match uploaded code)')
+    .requiredOption('-i,--code-id <codeId>', 'Code ID from previous upload command')
     .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
-    .option('-i,--code-id <codeId>', 'Code ID from previous upload command (required)')
     .action(withCommandContext('publish', publishCommand));
   program
     .command('simulate')

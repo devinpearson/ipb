@@ -5,7 +5,7 @@ import { CliError, ERROR_CODES } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 
 /**
- * Handles and displays CLI errors with optional verbose output.
+ * Handles and displays CLI errors with optional verbose output and actionable suggestions.
  * Exits the process with code 1 after displaying the error.
  * @param error - The error to handle (can be any type)
  * @param options - Options including verbose flag
@@ -13,8 +13,108 @@ import type { BasicOptions, Credentials } from './cmds/types.js';
  */
 export function handleCliError(error: unknown, options: { verbose?: boolean }, context: string) {
   const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  
+  // Extract error code if it's a CliError
+  let errorCode: string | undefined;
+  if (error instanceof CliError) {
+    errorCode = error.code;
+  }
+  
+  // Generate actionable suggestions based on error type and message
+  let suggestion = '';
+  const lowerMessage = errorMessage.toLowerCase();
+  
+  // File not found errors
+  if (
+    errorCode === ERROR_CODES.FILE_NOT_FOUND ||
+    lowerMessage.includes('file does not exist') ||
+    lowerMessage.includes('enoent') ||
+    lowerMessage.includes('no such file or directory') ||
+    lowerMessage.includes('received undefined') && lowerMessage.includes('path')
+  ) {
+    // Check if it's a missing filename error
+    if (lowerMessage.includes('received undefined') && lowerMessage.includes('path')) {
+      suggestion = '\n💡 Tip: Filename is required. Use -f or --filename to specify the file.';
+    } else {
+      suggestion = '\n💡 Tip: Check the file path and ensure the file exists.';
+    }
+  }
+  // Card key errors
+  else if (
+    errorCode === ERROR_CODES.MISSING_CARD_KEY ||
+    lowerMessage.includes('card key') ||
+    lowerMessage.includes('card-key') ||
+    lowerMessage.includes('cardkey')
+  ) {
+    suggestion = '\n💡 Tip: Use `ipb cards` to list your cards and get the card key, or provide it with `-c <card-key>`.';
+  }
+  // Credential/authentication errors
+  else if (
+    errorCode === ERROR_CODES.INVALID_CREDENTIALS ||
+    errorCode === ERROR_CODES.MISSING_API_TOKEN ||
+    lowerMessage.includes('credentials') ||
+    lowerMessage.includes('authentication') ||
+    lowerMessage.includes('unauthorized') ||
+    lowerMessage.includes('401') ||
+    lowerMessage.includes('403') ||
+    lowerMessage.includes('invalid token')
+  ) {
+    suggestion = '\n💡 Tip: Run `ipb config` to set your credentials, or check your API keys in the Investec Developer Portal.';
+  }
+  // Missing env file errors
+  else if (
+    errorCode === ERROR_CODES.MISSING_ENV_FILE ||
+    lowerMessage.includes('env file') ||
+    lowerMessage.includes('.env.') && lowerMessage.includes('does not exist')
+  ) {
+    suggestion = '\n💡 Tip: Create the environment file (e.g., `.env.production`) or use a different environment name.';
+  }
+  // Missing account ID errors
+  else if (
+    errorCode === ERROR_CODES.MISSING_ACCOUNT_ID ||
+    lowerMessage.includes('account id') ||
+    lowerMessage.includes('accountid')
+  ) {
+    suggestion = '\n💡 Tip: Use `ipb accounts` to list your accounts and get the account ID.';
+  }
+  // Template errors
+  else if (
+    errorCode === ERROR_CODES.TEMPLATE_NOT_FOUND ||
+    lowerMessage.includes('template does not exist')
+  ) {
+    suggestion = '\n💡 Tip: Check available templates or verify the template name is correct.';
+  }
+  // Project exists errors
+  else if (
+    errorCode === ERROR_CODES.PROJECT_EXISTS ||
+    lowerMessage.includes('project') && lowerMessage.includes('exists')
+  ) {
+    suggestion = '\n💡 Tip: Use a different project name or remove the existing project directory.';
+  }
+  // Network/API errors
+  else if (
+    lowerMessage.includes('network') ||
+    lowerMessage.includes('fetch failed') ||
+    lowerMessage.includes('econnrefused') ||
+    lowerMessage.includes('timeout')
+  ) {
+    suggestion = '\n💡 Tip: Check your internet connection and verify the API host is accessible.';
+  }
+  // Permission errors
+  else if (
+    lowerMessage.includes('permission') ||
+    lowerMessage.includes('eacces') ||
+    lowerMessage.includes('access denied')
+  ) {
+    suggestion = '\n💡 Tip: Check file permissions or run with appropriate access rights.';
+  }
+  
   console.error(chalk.redBright(`Failed to ${context}:`), errorMessage);
+  if (suggestion) {
+    console.error(chalk.yellow(suggestion));
+  }
   console.log('');
+  
   if (options.verbose) {
     console.error(error);
   }

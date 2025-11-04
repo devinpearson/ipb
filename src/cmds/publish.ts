@@ -20,10 +20,29 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or publishing fails
  */
 export async function publishCommand(options: Options) {
+  // Validate required filename option
+  if (!options.filename || options.filename.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'Filename is required. Use -f or --filename to specify the JavaScript file to publish.'
+    );
+  }
+  
+  // Validate required codeId option
+  if (!options.codeId || options.codeId.trim() === '') {
+    throw new CliError(
+      ERROR_CODES.MISSING_API_TOKEN,
+      'Code ID is required. Use -i or --code-id to specify the code ID from a previous upload command.'
+    );
+  }
+  
   try {
     await fsPromises.access(options.filename);
   } catch {
-    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `File "${options.filename}" does not exist. Check the file path and ensure the file exists.`
+    );
   }
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
