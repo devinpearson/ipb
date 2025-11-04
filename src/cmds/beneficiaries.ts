@@ -38,7 +38,7 @@ export async function beneficiariesCommand(options: CommonOptions) {
     })
   );
 
-  await formatOutput(simpleBeneficiaries, { json: options.json, output: options.output }, (count) => {
+  await formatOutput(simpleBeneficiaries, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} beneficiary(ies) found.`);
   });
 }

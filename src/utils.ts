@@ -89,13 +89,14 @@ export type TableData = TableRow[];
  */
 export interface OutputOptions {
   json?: boolean;
+  yaml?: boolean;
   output?: string;
 }
 
 /**
- * Formats and outputs data in JSON or table format, optionally writing to a file.
+ * Formats and outputs data in JSON, YAML, or table format, optionally writing to a file.
  * @param data - Data to output (can be any JSON-serializable value)
- * @param options - Output options including JSON flag and output file path
+ * @param options - Output options including JSON/YAML flags and output file path
  * @param showCount - Optional function to show count message after table output
  */
 export async function formatOutput(
@@ -103,14 +104,27 @@ export async function formatOutput(
   options: OutputOptions,
   showCount?: (count: number) => void
 ): Promise<void> {
-  if (options.json || options.output) {
-    const json = JSON.stringify(data, null, 2);
+  // Determine output format: YAML takes precedence over JSON if both are specified
+  const outputFormat = options.yaml ? 'yaml' : options.json ? 'json' : null;
+  const shouldOutputStructured = outputFormat || options.output;
+
+  if (shouldOutputStructured) {
+    let output: string;
+    
+    if (outputFormat === 'yaml') {
+      const yaml = await import('js-yaml');
+      output = yaml.dump(data, { indent: 2, lineWidth: -1 });
+    } else {
+      // Default to JSON if output file is specified without format flag
+      output = JSON.stringify(data, null, 2);
+    }
+
     if (options.output) {
       const { writeFile } = await import('node:fs/promises');
-      await writeFile(options.output, json, 'utf8');
+      await writeFile(options.output, output, 'utf8');
       console.log(`Output written to ${options.output}`);
     } else {
-      console.log(json);
+      console.log(output);
     }
   } else {
     // Default table format for array data

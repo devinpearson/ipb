@@ -8,7 +8,8 @@ export interface CommonOptions {
   verbose: boolean;
   spinner?: boolean; // allow disabling spinner
   json?: boolean; // output in JSON format
-  output?: string; // output file path for JSON
+  yaml?: boolean; // output in YAML format
+  output?: string; // output file path for JSON/YAML
 }
 
 export interface Credentials {

@@ -23,7 +23,7 @@ export async function merchantsCommand(options: CommonOptions) {
 
   const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
 
-  await formatOutput(simpleMerchants, { json: options.json, output: options.output }, (count) => {
+  await formatOutput(simpleMerchants, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} merchant(s) found.`);
   });
 }

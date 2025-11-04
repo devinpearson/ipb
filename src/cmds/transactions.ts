@@ -41,9 +41,9 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
     })
   );
 
-  // Use raw transactions for JSON output, simplified for table
-  const dataToOutput = options.json || options.output ? transactions : simpleTransactions;
-  await formatOutput(dataToOutput, { json: options.json, output: options.output }, (count) => {
+  // Use raw transactions for structured output, simplified for table
+  const dataToOutput = options.json || options.yaml || options.output ? transactions : simpleTransactions;
+  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} transaction(s) found.`);
   });
 }

@@ -26,7 +26,7 @@ export async function currenciesCommand(options: CommonOptions) {
     Name,
   }));
 
-  await formatOutput(simpleCurrencies, { json: options.json, output: options.output }, (count) => {
+  await formatOutput(simpleCurrencies, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} currency(ies) found.`);
   });
 }

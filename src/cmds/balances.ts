@@ -17,8 +17,8 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   const result = await api.getAccountBalances(accountId);
   spinner.stop();
 
-  if (options.json || options.output) {
-    await formatOutput(result.data, { json: options.json, output: options.output });
+  if (options.json || options.yaml || options.output) {
+    await formatOutput(result.data, { json: options.json, yaml: options.yaml, output: options.output });
     return;
   }
 

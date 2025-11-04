@@ -94,7 +94,8 @@ function addApiCredentialOptions(cmd: Command) {
     .option('-s,--spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
-    .option('--output <file>', 'Write JSON output to file instead of stdout');
+    .option('--yaml', 'Output raw YAML instead of formatted table')
+    .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
 }
 
 // Show help if no arguments are provided
@@ -117,7 +118,9 @@ async function main() {
 Examples:
   $ ipb cards
   $ ipb cards --json
+  $ ipb cards --yaml
   $ ipb cards --output cards.json
+  $ ipb cards --yaml --output cards.yaml
       `
       )
   ).action(withCommandContext('cards', cardsCommand));
@@ -353,6 +356,7 @@ Examples:
 Examples:
   $ ipb currencies
   $ ipb currencies --json
+  $ ipb currencies --yaml
   $ ipb currencies --output currencies.json
       `
       )
@@ -367,6 +371,7 @@ Examples:
 Examples:
   $ ipb countries
   $ ipb countries --json
+  $ ipb countries --yaml
   $ ipb countries --output countries.json
       `
       )
@@ -381,6 +386,7 @@ Examples:
 Examples:
   $ ipb merchants
   $ ipb merchants --json
+  $ ipb merchants --yaml
   $ ipb merchants --output merchants.json
       `
       )
@@ -395,6 +401,7 @@ Examples:
 Examples:
   $ ipb accounts
   $ ipb accounts --json
+  $ ipb accounts --yaml
   $ ipb accounts --output accounts.json
       `
       )
@@ -409,6 +416,7 @@ Examples:
 Examples:
   $ ipb balances <accountId>
   $ ipb balances acc-123 --json
+  $ ipb balances acc-123 --yaml
   $ ipb balances acc-123 --output balance.json
       `
       )
@@ -461,6 +469,7 @@ Examples:
 Examples:
   $ ipb transactions <accountId>
   $ ipb transactions acc-123 --json
+  $ ipb transactions acc-123 --yaml
   $ ipb transactions acc-123 --output transactions.json
       `
       )
@@ -477,6 +486,7 @@ Examples:
 Examples:
   $ ipb beneficiaries
   $ ipb beneficiaries --json
+  $ ipb beneficiaries --yaml
   $ ipb beneficiaries --output beneficiaries.json
       `
       )

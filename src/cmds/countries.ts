@@ -23,7 +23,7 @@ export async function countriesCommand(options: CommonOptions) {
 
   const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
 
-  await formatOutput(simpleCountries, { json: options.json, output: options.output }, (count) => {
+  await formatOutput(simpleCountries, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} country(ies) found.`);
   });
 }

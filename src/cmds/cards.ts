@@ -27,7 +27,7 @@ export async function cardsCommand(options: CommonOptions) {
     IsProgrammable,
   }));
 
-  await formatOutput(simpleCards, { json: options.json, output: options.output }, (count) => {
+  await formatOutput(simpleCards, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} card(s) found.`);
   });
 }

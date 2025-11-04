@@ -31,9 +31,9 @@ export async function accountsCommand(options: CommonOptions) {
 
   spinner.stop();
 
-  // Use raw accounts for JSON output, simplified for table
-  const dataToOutput = options.json || options.output ? accounts : simpleAccounts;
-  await formatOutput(dataToOutput, { json: options.json, output: options.output }, (count) => {
+  // Use raw accounts for structured output, simplified for table
+  const dataToOutput = options.json || options.yaml || options.output ? accounts : simpleAccounts;
+  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
     console.log(`\n${count} account(s) found.`);
   });
 }

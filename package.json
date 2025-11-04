@@ -34,11 +34,13 @@
   "description": "A cli application to manage programmable banking cards",
   "dependencies": {
     "@inquirer/prompts": "^7.5.3",
+    "@types/js-yaml": "^4.0.9",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "dotenv": "^16.3.1",
     "investec-card-api": "^0.2.0",
     "investec-pb-api": "^0.3.6",
+    "js-yaml": "^4.1.0",
     "node-fetch": "^3.3.2",
     "openai": "^4.96.0",
     "ora": "^8.2.0",
