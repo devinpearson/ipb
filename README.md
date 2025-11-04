@@ -41,8 +41,9 @@ This repository is crafted with ❤️ by our talented community members. It's a
   - [Pay](#pay)
   - [Transactions](#transactions)
   - [Beneficiaries](#beneficiaries)
-  - [Config](#config)
-  - [Bank](#bank)
+- [Config](#config)
+- [Bank](#bank)
+- [Error Codes](#error-codes)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -425,6 +426,62 @@ ipb bank "Show me my last 5 transactions"
 ```
 
 This command uses AI to interpret your prompt and interact with your bank data.
+
+---
+
+## Error Codes
+
+The CLI uses standardized error codes to help identify and troubleshoot issues. When an error occurs, you'll see a message in the format: `Error (E####): [message]`
+
+### Error Code Reference
+
+| Code | Description |
+|------|-------------|
+| `E4002` | Missing API Token - The API token is required but was not provided |
+| `E4003` | Missing Card Key - The card key is required but was not provided |
+| `E4004` | Missing Environment File - The specified environment file does not exist |
+| `E4005` | Invalid Credentials - The provided credentials are invalid or authentication failed |
+| `E4007` | Template Not Found - The specified template does not exist |
+| `E4008` | Invalid Project Name - The project name contains invalid characters |
+| `E4009` | Project Exists - A project with the specified name already exists |
+| `E4010` | File Not Found - The specified file does not exist |
+| `E4011` | Missing Email or Password - Email and password are required for authentication |
+| `E4012` | Missing Account ID - The account ID is required but was not provided |
+| `E5001` | Deploy Failed - Code deployment or API operation failed |
+
+### Understanding Error Messages
+
+Error messages are displayed in the following format:
+
+```text
+Error (E4003): card-key is required
+```
+
+- The error code (e.g., `E4003`) helps identify the type of error
+- The message provides context-specific information about what went wrong
+- Use the `--verbose` flag to get additional debugging information
+
+### Common Error Scenarios
+
+#### Missing Card Key (E4003)
+
+- **Cause**: No card key provided via CLI option or credentials file
+- **Solution**: Provide the card key using `-c <card-key>` or set it in your credentials file
+
+#### Missing Environment File (E4004)
+
+- **Cause**: The specified `.env.<environment>` file does not exist
+- **Solution**: Create the environment file or use a different environment name
+
+#### Invalid Credentials (E4005)
+
+- **Cause**: API credentials are incorrect or expired
+- **Solution**: Verify your credentials using `ipb config` or check your API keys in the Investec Developer Portal
+
+#### File Not Found (E4010)
+
+- **Cause**: The specified file path does not exist
+- **Solution**: Verify the file path and ensure the file exists before running the command
 
 ---
 
