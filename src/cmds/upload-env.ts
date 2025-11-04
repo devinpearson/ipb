@@ -3,7 +3,6 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  handleCliError,
   initializeApi,
   normalizeCardKey,
 } from '../utils.js';
@@ -26,19 +25,15 @@ export async function uploadEnvCommand(options: Options) {
     throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
   }
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-  try {
-    printTitleBox();
-    const disableSpinner = options.spinner === true;
-    const spinner = createSpinner(!disableSpinner, '🚀 uploading env...');
-    const api = await initializeApi(credentials, options);
+  printTitleBox();
+  const disableSpinner = options.spinner === true;
+  const spinner = createSpinner(!disableSpinner, '🚀 uploading env...');
+  const api = await initializeApi(credentials, options);
 
-    const raw = { variables: {} };
-    const variables = await fsPromises.readFile(options.filename, 'utf8');
-    raw.variables = JSON.parse(variables);
-    const _result = await api.uploadEnv(cardKey, raw);
-    spinner.stop();
-    console.log(`🎉 env uploaded`);
-  } catch (error: unknown) {
-    handleCliError(error, options, 'upload environment variables');
-  }
+  const raw = { variables: {} };
+  const variables = await fsPromises.readFile(options.filename, 'utf8');
+  raw.variables = JSON.parse(variables);
+  const _result = await api.uploadEnv(cardKey, raw);
+  spinner.stop();
+  console.log(`🎉 env uploaded`);
 }

@@ -4,7 +4,6 @@ import chalk from 'chalk';
 import OpenAI from 'openai';
 import { availableFunctions, tools } from '../function-calls.js';
 import { credentials, printTitleBox } from '../index.js';
-import { handleCliError } from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -28,44 +27,40 @@ interface Options {
  * @throws {Error} When LLM interaction fails or API calls fail
  */
 export async function bankCommand(prompt: string, options: Options) {
-  try {
-    printTitleBox();
-    // Prompt for prompt if not provided
-    if (!prompt) {
-      prompt = await input({ message: 'Enter your banking prompt:' });
-    }
+  printTitleBox();
+  // Prompt for prompt if not provided
+  if (!prompt) {
+    prompt = await input({ message: 'Enter your banking prompt:' });
+  }
 
+  openai = new OpenAI({
+    apiKey: credentials.openaiKey,
+  });
+
+  if (credentials.openaiKey === '' || credentials.openaiKey === undefined) {
     openai = new OpenAI({
-      apiKey: credentials.openaiKey,
+      httpAgent: agent,
+      apiKey: credentials.sandboxKey,
+      baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
     });
+  }
+  if (!openai) {
+    throw new Error('OpenAI client is not initialized');
+  }
 
-    if (credentials.openaiKey === '' || credentials.openaiKey === undefined) {
-      openai = new OpenAI({
-        httpAgent: agent,
-        apiKey: credentials.sandboxKey,
-        baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
-      });
-    }
-    if (!openai) {
-      throw new Error('OpenAI client is not initialized');
-    }
+  console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
+  console.log(chalk.blueBright('Prompt:'));
+  console.log(prompt);
 
-    console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
-    console.log(chalk.blueBright('Prompt:'));
-    console.log(prompt);
-
-    const response = await generateResponse(prompt, instructions);
-    if (options.verbose) {
-      console.log('');
-      console.log(chalk.blueBright('Response from OpenAI:'));
-      console.log(response);
-    } else {
-      console.log('');
-      console.log(chalk.blueBright('Response from OpenAI:'));
-      console.log(response);
-    }
-  } catch (error: unknown) {
-    handleCliError(error, options, 'execute bank command');
+  const response = await generateResponse(prompt, instructions);
+  if (options.verbose) {
+    console.log('');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(response);
+  } else {
+    console.log('');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(response);
   }
 }
 

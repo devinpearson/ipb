@@ -6,6 +6,7 @@ import type { BasicOptions, Credentials } from './cmds/types.js';
 
 /**
  * Handles and displays CLI errors with optional verbose output.
+ * Exits the process with code 1 after displaying the error.
  * @param error - The error to handle (can be any type)
  * @param options - Options including verbose flag
  * @param context - Context string describing what operation failed
@@ -17,6 +18,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   if (options.verbose) {
     console.error(error);
   }
+  process.exit(1);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, handleCliError, initializePbApi, printTable } from '../utils.js';
+import { createSpinner, initializePbApi, printTable } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -19,31 +19,27 @@ type Transaction = {
  * @param options - CLI options.
  */
 export async function transactionsCommand(accountId: string, options: CommonOptions) {
-  try {
-    printTitleBox();
-    const disableSpinner = options.spinner === true;
-    const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
-    const api = await initializePbApi(credentials, options);
+  printTitleBox();
+  const disableSpinner = options.spinner === true;
+  const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
+  const api = await initializePbApi(credentials, options);
 
-    const result = await api.getAccountTransactions(accountId);
-    const transactions = result.data.transactions;
-    spinner.stop();
-    if (!transactions) {
-      console.log('No transactions found');
-      return;
-    }
-
-    const simpleTransactions = transactions.map(
-      ({ uuid, amount, transactionDate, description }: Transaction) => ({
-        uuid,
-        amount,
-        transactionDate,
-        description,
-      })
-    );
-    printTable(simpleTransactions);
-    console.log(`\n${transactions.length} transaction(s) found.`);
-  } catch (error: unknown) {
-    handleCliError(error, options, 'fetch transactions');
+  const result = await api.getAccountTransactions(accountId);
+  const transactions = result.data.transactions;
+  spinner.stop();
+  if (!transactions) {
+    console.log('No transactions found');
+    return;
   }
+
+  const simpleTransactions = transactions.map(
+    ({ uuid, amount, transactionDate, description }: Transaction) => ({
+      uuid,
+      amount,
+      transactionDate,
+      description,
+    })
+  );
+  printTable(simpleTransactions);
+  console.log(`\n${transactions.length} transaction(s) found.`);
 }

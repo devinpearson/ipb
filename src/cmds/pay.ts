@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { handleCliError, initializePbApi } from '../utils.js';
+import { initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -19,58 +19,54 @@ export async function payCommand(
   reference: string,
   options: CommonOptions
 ) {
-  try {
-    // Prompt for missing arguments interactively
-    if (!accountId) {
-      accountId = await input({ message: 'Enter your account ID:' });
+  // Prompt for missing arguments interactively
+  if (!accountId) {
+    accountId = await input({ message: 'Enter your account ID:' });
+  }
+  if (!beneficiaryId) {
+    beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
+  }
+  if (!amount) {
+    const amt = await input({ message: 'Enter amount (in rands):' });
+    amount = parseFloat(amt);
+    if (Number.isNaN(amount) || amount <= 0) {
+      throw new Error('Amount must be a positive number');
     }
-    if (!beneficiaryId) {
-      beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
-    }
-    if (!amount) {
-      const amt = await input({ message: 'Enter amount (in rands):' });
-      amount = parseFloat(amt);
-      if (Number.isNaN(amount) || amount <= 0) {
-        throw new Error('Amount must be a positive number');
-      }
-    }
-    if (!reference) {
-      reference = await input({ message: 'Enter reference for the payment:' });
-    }
-    printTitleBox();
-    const api = await initializePbApi(credentials, options);
+  }
+  if (!reference) {
+    reference = await input({ message: 'Enter reference for the payment:' });
+  }
+  printTitleBox();
+  const api = await initializePbApi(credentials, options);
 
-    // Show transaction summary and require confirmation
-    console.log(`\nTransaction Summary:`);
-    console.log('-------------------------');
-    console.log(`Account: ${accountId}`);
-    console.log(`Beneficiary: ${beneficiaryId}`);
-    console.log(`Amount: R${amount.toFixed(2)}`);
-    console.log(`Reference: ${reference}\n`);
+  // Show transaction summary and require confirmation
+  console.log(`\nTransaction Summary:`);
+  console.log('-------------------------');
+  console.log(`Account: ${accountId}`);
+  console.log(`Beneficiary: ${beneficiaryId}`);
+  console.log(`Amount: R${amount.toFixed(2)}`);
+  console.log(`Reference: ${reference}\n`);
 
-    const confirmPayment = await input({
-      message: "Type 'CONFIRM' to proceed with this payment:",
-    });
-    if (confirmPayment !== 'CONFIRM') {
-      console.log('Payment cancelled.');
-      return;
-    }
+  const confirmPayment = await input({
+    message: "Type 'CONFIRM' to proceed with this payment:",
+  });
+  if (confirmPayment !== 'CONFIRM') {
+    console.log('Payment cancelled.');
+    return;
+  }
 
-    console.log('💳 paying');
-    const result = await api.payMultiple(accountId, [
-      {
-        beneficiaryId: beneficiaryId,
-        amount: amount.toString(),
-        myReference: reference,
-        theirReference: reference,
-      },
-    ]);
-    for (const transfer of result.data.TransferResponses) {
-      console.log(
-        `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`
-      );
-    }
-  } catch (error: unknown) {
-    handleCliError(error, options, 'pay beneficiary');
+  console.log('💳 paying');
+  const result = await api.payMultiple(accountId, [
+    {
+      beneficiaryId: beneficiaryId,
+      amount: amount.toString(),
+      myReference: reference,
+      theirReference: reference,
+    },
+  ]);
+  for (const transfer of result.data.TransferResponses) {
+    console.log(
+      `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`
+    );
   }
 }

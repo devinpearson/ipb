@@ -2,7 +2,6 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  handleCliError,
   initializeApi,
   normalizeCardKey,
 } from '../utils.js';
@@ -19,20 +18,16 @@ interface Options extends CommonOptions {
  */
 export async function disableCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-  try {
-    printTitleBox();
-    const disableSpinner = options.spinner === true; // default false
-    const spinner = createSpinner(!disableSpinner, '🍄 disabling code on card...').start();
-    const api = await initializeApi(credentials, options);
+  printTitleBox();
+  const disableSpinner = options.spinner === true; // default false
+  const spinner = createSpinner(!disableSpinner, '🍄 disabling code on card...').start();
+  const api = await initializeApi(credentials, options);
 
-    const result = await api.toggleCode(cardKey, false);
-    spinner.stop();
-    if (!result.data.result.Enabled) {
-      console.log('✅ code disabled successfully');
-    } else {
-      console.log('❌ code disable failed');
-    }
-  } catch (error: unknown) {
-    handleCliError(error, options, 'disable card code');
+  const result = await api.toggleCode(cardKey, false);
+  spinner.stop();
+  if (!result.data.result.Enabled) {
+    console.log('✅ code disabled successfully');
+  } else {
+    console.log('❌ code disable failed');
   }
 }

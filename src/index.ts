@@ -274,14 +274,8 @@ async function main() {
     .option('-p,--password <password>', 'your password')
     .action(loginCommand);
 
-  try {
-    await program.parseAsync(process.argv);
-    console.log(''); // Add a newline after command execution
-  } catch (err) {
-    // Use handleCliError with fallback context and options
-    handleCliError(err, { verbose: true }, 'run CLI');
-    process.exit(1);
-  }
+  await program.parseAsync(process.argv);
+  console.log(''); // Add a newline after command execution
 }
 
 /**
@@ -314,5 +308,4 @@ export async function optionCredentials(
 
 main().catch((err) => {
   handleCliError(err, { verbose: true }, 'run CLI');
-  process.exit(1);
 });

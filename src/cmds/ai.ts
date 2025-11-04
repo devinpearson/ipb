@@ -6,7 +6,6 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { credentials, printTitleBox } from '../index.js';
-import { handleCliError } from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -90,53 +89,49 @@ interface Options {
  * @throws {Error} When code generation fails or file operations fail
  */
 export async function aiCommand(prompt: string, options: Options) {
-  try {
-    const envFilename = '.env.ai';
-    printTitleBox();
-    // Prompt for prompt if not provided
-    if (!prompt) {
-      prompt = await input({ message: 'Enter your AI code prompt:' });
-    }
+  const envFilename = '.env.ai';
+  printTitleBox();
+  // Prompt for prompt if not provided
+  if (!prompt) {
+    prompt = await input({ message: 'Enter your AI code prompt:' });
+  }
 
-    console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
-    console.log(chalk.blueBright('Prompt:'));
-    console.log(prompt);
+  console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
+  console.log(chalk.blueBright('Prompt:'));
+  console.log(prompt);
 
-    const response = await generateCode(prompt, instructions);
-    if (options.verbose) {
-      console.log('');
-      console.log(chalk.blueBright('Response from OpenAI:'));
-      console.log(response);
-    } else {
-      console.log('');
-      console.log(chalk.blueBright('Response from OpenAI:'));
-      console.log(chalk.blueBright('Description:'));
-      console.log(response?.description);
-    }
+  const response = await generateCode(prompt, instructions);
+  if (options.verbose) {
     console.log('');
-    const output = response?.code as string;
-    console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
-    await fsPromises.writeFile(options.filename, output, 'utf8');
-    console.log('🎉 generated code saved to file');
-    if (response?.env_variables) {
-      console.log('');
-      console.log(`💾 saving env variables to file: ${chalk.greenBright(envFilename)}`);
-      const envFile = fs.createWriteStream(envFilename);
-      response.env_variables.forEach((envVar) => {
-        envFile.write(`${envVar}=${process.env[envVar]}\n`);
-      });
-      envFile.end();
-      console.log('🎉 env variables saved to file');
-    }
-    if (response?.example_transaction) {
-      console.log('');
-      console.log(chalk.blueBright('To test locally run:'));
-      console.log(
-        `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`
-      );
-    }
-  } catch (error: unknown) {
-    handleCliError(error, options, 'generate code');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(response);
+  } else {
+    console.log('');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(chalk.blueBright('Description:'));
+    console.log(response?.description);
+  }
+  console.log('');
+  const output = response?.code as string;
+  console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
+  await fsPromises.writeFile(options.filename, output, 'utf8');
+  console.log('🎉 generated code saved to file');
+  if (response?.env_variables) {
+    console.log('');
+    console.log(`💾 saving env variables to file: ${chalk.greenBright(envFilename)}`);
+    const envFile = fs.createWriteStream(envFilename);
+    response.env_variables.forEach((envVar) => {
+      envFile.write(`${envVar}=${process.env[envVar]}\n`);
+    });
+    envFile.end();
+    console.log('🎉 env variables saved to file');
+  }
+  if (response?.example_transaction) {
+    console.log('');
+    console.log(chalk.blueBright('To test locally run:'));
+    console.log(
+      `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`
+    );
   }
 }
 

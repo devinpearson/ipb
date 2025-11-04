@@ -3,7 +3,6 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  handleCliError,
   initializeApi,
   normalizeCardKey,
 } from '../utils.js';
@@ -22,22 +21,18 @@ interface Options extends CommonOptions {
  */
 export async function publishCommand(options: Options) {
   try {
-    try {
-      await fsPromises.access(options.filename);
-    } catch {
-      throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
-    }
-    const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-    printTitleBox();
-    const disableSpinner = options.spinner === true;
-    const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
-    const api = await initializeApi(credentials, options);
-
-    const code = await fsPromises.readFile(options.filename, 'utf8');
-    const result = await api.uploadPublishedCode(cardKey, options.codeId, code);
-    spinner.stop();
-    console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
-  } catch (error: unknown) {
-    handleCliError(error, options, 'publish code');
+    await fsPromises.access(options.filename);
+  } catch {
+    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
   }
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const disableSpinner = options.spinner === true;
+  const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
+  const api = await initializeApi(credentials, options);
+
+  const code = await fsPromises.readFile(options.filename, 'utf8');
+  const result = await api.uploadPublishedCode(cardKey, options.codeId, code);
+  spinner.stop();
+  console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
 }
