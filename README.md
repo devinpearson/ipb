@@ -45,6 +45,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 - [Bank](#bank)
 - [Error Codes](#error-codes)
 - [Development](#development)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -503,6 +504,189 @@ To run the CLI during development, run the following command:
 ```sh
 node . [command]
 ```
+
+### Building
+
+To build the project:
+
+```sh
+npm run build
+```
+
+This compiles TypeScript to JavaScript and copies necessary files to the `bin/` directory.
+
+### Linting and Formatting
+
+The project uses Biome for linting and formatting:
+
+```sh
+# Check for linting issues
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+```
+
+### Type Checking
+
+To verify TypeScript types:
+
+```sh
+npm run type-check
+```
+
+---
+
+## Testing
+
+The project uses [Vitest](https://vitest.dev/) for testing. The test suite includes comprehensive coverage of command functionality, error handling, and utility functions.
+
+### Running Tests
+
+Run all tests:
+
+```sh
+npm test
+```
+
+Run tests in watch mode (for development):
+
+```sh
+npm run dev
+```
+
+Run tests once and exit:
+
+```sh
+npm test -- --run
+```
+
+Run tests with coverage:
+
+```sh
+npm test -- --coverage
+```
+
+### Test Structure
+
+Tests are organized in the `test/` directory:
+
+```text
+test/
+├── cmds/              # Command-specific tests
+│   ├── accounts.test.ts
+│   ├── balances.test.ts
+│   ├── cards.test.ts
+│   ├── deploy.test.ts
+│   ├── fetch.test.ts
+│   ├── publish.test.ts
+│   ├── transactions.test.ts
+│   └── upload.test.ts
+├── __mocks__/         # Mock implementations
+└── helpers.ts         # Test utilities
+```
+
+### Current Test Coverage
+
+**28 tests passing** across 8 test files, covering:
+
+- **Core Commands**: `cards`, `accounts`, `balances`, `transactions`
+- **Code Management**: `deploy`, `fetch`, `upload`, `publish`
+- **Error Handling**: CliError propagation, file not found, API errors
+- **Edge Cases**: Missing files, invalid responses, default values
+
+### Test Patterns
+
+Tests follow consistent patterns for mocking and assertions:
+
+#### Mocking ESM Modules
+
+For ESM modules like `node:fs`, use `vi.hoisted()` to create mocks:
+
+```typescript
+const mockFsPromises = vi.hoisted(() => ({
+  access: vi.fn(),
+  readFile: vi.fn(),
+}));
+
+vi.mock('node:fs', () => ({
+  default: {},
+  promises: mockFsPromises,
+}));
+```
+
+#### Testing Error Propagation
+
+Since commands use centralized error handling, tests verify errors propagate correctly:
+
+```typescript
+it('should propagate errors', async () => {
+  const error = new Error('API error');
+  mockApi.getCards.mockRejectedValue(error);
+  
+  await expect(cardsCommand(options)).rejects.toThrow('API error');
+});
+```
+
+#### Testing Command Context
+
+Error context is automatically attached via `withCommandContext`. Tests verify error messages include the command name:
+
+```typescript
+// Error messages will be: "Failed to cards command: <error>"
+```
+
+### Writing New Tests
+
+When adding tests for new commands:
+
+1. **Create test file** in `test/cmds/` following the naming pattern: `<command>.test.ts`
+
+2. **Set up mocks**:
+
+   ```typescript
+   vi.mock('../../src/index.ts', () => ({
+     credentials: {},
+     printTitleBox: vi.fn(),
+     optionCredentials: vi.fn(async (options, credentials) => credentials),
+   }));
+   
+   vi.mock('../../src/utils.ts', async () => {
+     const actual = await vi.importActual('../../src/utils.ts');
+     return {
+       ...actual,
+       initializeApi: vi.fn(),
+       // ... other mocked utilities
+     };
+   });
+   ```
+
+3. **Test success cases**: Verify command executes correctly with valid inputs
+
+4. **Test error cases**: Verify errors propagate correctly (no try-catch in commands)
+
+5. **Test edge cases**: Missing files, invalid inputs, API failures
+
+### Test Coverage Goals
+
+- **Current**: 28 tests covering core functionality
+- **Target**: 80%+ code coverage
+- **Priority**: Critical paths first (deploy, fetch, upload, publish)
+
+### Test Documentation
+
+See `TEST_SUGGESTIONS.md` for:
+
+- Complete list of commands needing tests
+- Testing best practices
+- Test implementation templates
+- Coverage goals and priorities
 
 ---
 
