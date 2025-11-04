@@ -1,23 +1,19 @@
-import { credentials, printTitleBox } from "../index.js";
-import { initializeApi } from "../utils.js";
-import { handleCliError, printTable, createSpinner } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, printTitleBox } from '../index.js';
+import { createSpinner, handleCliError, initializeApi, printTable } from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 export async function currenciesCommand(options: CommonOptions) {
   try {
     printTitleBox();
     const disableSpinner = options.spinner === true; // default false
-    const spinner = createSpinner(
-      !disableSpinner,
-      "💳 fetching currencies...",
-    ).start();
+    const spinner = createSpinner(!disableSpinner, '💳 fetching currencies...').start();
     const api = await initializeApi(credentials, options);
 
     const result = await api.getCurrencies();
     spinner.stop();
     const currencies = result.data.result;
     if (!currencies) {
-      console.log("No currencies found");
+      console.log('No currencies found');
       return;
     }
 
@@ -27,7 +23,7 @@ export async function currenciesCommand(options: CommonOptions) {
     }));
     printTable(simpleCurrencies);
     console.log(`\n${currencies.length} currency(ies) found.`);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch currencies");
+  } catch (error: unknown) {
+    handleCliError(error, options, 'fetch currencies');
   }
 }

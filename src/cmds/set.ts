@@ -1,6 +1,6 @@
-import fs from "fs";
-import { credentialLocation } from "../index.js";
-import { handleCliError } from "../utils.js";
+import fs, { promises as fsPromises } from 'node:fs';
+import { credentialLocation } from '../index.js';
+import { handleCliError, writeCredentialsFile } from '../utils.js';
 
 interface Options {
   clientId: string;
@@ -14,17 +14,20 @@ interface Options {
 export async function configCommand(options: Options) {
   try {
     let cred = {
-      clientId: "",
-      clientSecret: "",
-      apiKey: "",
-      cardKey: "",
-      openaiKey: "",
-      sandboxKey: "",
+      clientId: '',
+      clientSecret: '',
+      apiKey: '',
+      cardKey: '',
+      openaiKey: '',
+      sandboxKey: '',
     };
     if (fs.existsSync(credentialLocation.filename)) {
-      cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
+      const data = await fsPromises.readFile(credentialLocation.filename, 'utf8');
+      cred = JSON.parse(data);
     } else {
-      fs.mkdirSync(credentialLocation.folder);
+      if (!fs.existsSync(credentialLocation.folder)) {
+        await fsPromises.mkdir(credentialLocation.folder, { recursive: true });
+      }
     }
 
     if (options.clientId) {
@@ -45,9 +48,9 @@ export async function configCommand(options: Options) {
     if (options.sandboxKey) {
       cred.sandboxKey = options.sandboxKey;
     }
-    await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
-    console.log("🔑 credentials saved");
-  } catch (error: any) {
-    handleCliError(error, options, "set config");
+    await writeCredentialsFile(credentialLocation.filename, cred);
+    console.log('🔑 credentials saved');
+  } catch (error: unknown) {
+    handleCliError(error, options, 'set config');
   }
 }

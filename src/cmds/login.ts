@@ -1,13 +1,13 @@
-import { credentialLocation, printTitleBox } from "../index.js";
-import fs from "fs";
-import fetch from "node-fetch";
-import https from "https";
-import { handleCliError } from "../utils.js";
-import { input, password } from "@inquirer/prompts";
-import { CliError, ERROR_CODES } from "../errors.js";
+import fs, { promises as fsPromises } from 'node:fs';
+import https from 'node:https';
+import { input, password } from '@inquirer/prompts';
+import fetch from 'node-fetch';
+import { CliError, ERROR_CODES } from '../errors.js';
+import { credentialLocation, printTitleBox } from '../index.js';
+import { handleCliError, writeCredentialsFile } from '../utils.js';
 
 const agent = new https.Agent({
-  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
 });
 
 interface Options {
@@ -24,36 +24,31 @@ interface LoginResponse {
   created_at: number;
 }
 
-export async function loginCommand(options: any) {
+export async function loginCommand(options: Options) {
   try {
     printTitleBox();
     if (!options.email) {
       options.email = await input({
-        message: "Enter your email:",
-        validate: (input: string) =>
-          input.includes("@") || "Please enter a valid email.",
+        message: 'Enter your email:',
+        validate: (input: string) => input.includes('@') || 'Please enter a valid email.',
       });
     }
     if (!options.password) {
       options.password = await password({
-        message: "Enter your password:",
-        mask: "*",
-        validate: (input: string) =>
-          input.length >= 6 || "Password must be at least 6 characters.",
+        message: 'Enter your password:',
+        mask: '*',
+        validate: (input: string) => input.length >= 6 || 'Password must be at least 6 characters.',
       });
     }
     if (!options.email || !options.password) {
-      throw new CliError(
-        ERROR_CODES.INVALID_CREDENTIALS,
-        "Email and password are required",
-      );
+      throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, 'Email and password are required');
     }
-    console.log("💳 logging into account");
-    const result = await fetch("https://ipb.sandboxpay.co.za/auth/login", {
+    console.log('💳 logging into account');
+    const result = await fetch('https://ipb.sandboxpay.co.za/auth/login', {
       agent,
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         email: options.email,
@@ -62,32 +57,31 @@ export async function loginCommand(options: any) {
     });
     if (!result.ok) {
       const body = await result.text();
-      throw new Error(`Error: ${result.status} ${body}`);
+      throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, `Login failed: ${result.status} ${body}`);
     }
     const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
-    console.log("Login successful");
+    console.log('Login successful');
     let cred = {
-      clientId: "",
-      clientSecret: "",
-      apiKey: "",
-      cardKey: "",
-      openaiKey: "",
-      sandboxKey: "",
+      clientId: '',
+      clientSecret: '',
+      apiKey: '',
+      cardKey: '',
+      openaiKey: '',
+      sandboxKey: '',
     };
     if (fs.existsSync(credentialLocation.filename)) {
-      cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
+      const data = await fsPromises.readFile(credentialLocation.filename, 'utf8');
+      cred = JSON.parse(data);
     } else {
       if (!fs.existsSync(credentialLocation.folder)) {
-        fs.mkdirSync(credentialLocation.folder, { recursive: true });
+        await fsPromises.mkdir(credentialLocation.folder, { recursive: true });
       }
-
-      await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
+      await writeCredentialsFile(credentialLocation.filename, cred);
     }
-    cred = JSON.parse(fs.readFileSync(credentialLocation.filename, "utf8"));
     cred.sandboxKey = loginResponse.access_token;
-    await fs.writeFileSync(credentialLocation.filename, JSON.stringify(cred));
-    console.log("🔑 access token saved");
-  } catch (error: any) {
-    handleCliError(error, options, "login");
+    await writeCredentialsFile(credentialLocation.filename, cred);
+    console.log('🔑 access token saved');
+  } catch (error: unknown) {
+    handleCliError(error, options, 'login');
   }
 }

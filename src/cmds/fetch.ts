@@ -1,8 +1,7 @@
-import fs from "fs";
-import { credentials, printTitleBox } from "../index.js";
-import { initializeApi } from "../utils.js";
-import { handleCliError, createSpinner } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import fs from 'node:fs';
+import { credentials, printTitleBox } from '../index.js';
+import { createSpinner, handleCliError, initializeApi } from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
   cardKey: number;
@@ -11,27 +10,36 @@ interface Options extends CommonOptions {
 
 export async function fetchCommand(options: Options) {
   if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
+    if (credentials.cardKey === '') {
+      throw new Error('card-key is required');
     }
     options.cardKey = Number(credentials.cardKey);
   }
   try {
     printTitleBox();
     const disableSpinner = options.spinner === true; // default false
-    const spinner = createSpinner(
-      !disableSpinner,
-      "💳 fetching code...",
-    ).start();
+    const spinner = createSpinner(!disableSpinner, '💳 fetching code...').start();
     const api = await initializeApi(credentials, options);
-    const result = await api.getCode(options.cardKey);
+
+    // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
+    if (typeof (api as any).getSavedCode !== 'function') {
+      spinner.stop();
+      throw new Error('API client does not support fetching saved code (getSavedCode missing)');
+    }
+    const result = await (api as any).getSavedCode(options.cardKey);
+
+    if (!result || !result.data || !result.data.result || typeof result.data.result.code !== 'string') {
+      spinner.stop();
+      throw new Error('Failed to fetch code: Unexpected API response');
+    }
+
     const code = result.data.result.code;
 
     spinner.stop();
     console.log(`💾 saving to file: ${options.filename}`);
     await fs.writeFileSync(options.filename, code);
-    console.log("🎉 code saved to file");
-  } catch (error: any) {
-    handleCliError(error, options, "fetch saved code");
+    console.log('🎉 code saved to file');
+  } catch (error: unknown) {
+    handleCliError(error, options, 'fetch saved code');
   }
 }

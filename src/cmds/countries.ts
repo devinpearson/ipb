@@ -1,30 +1,26 @@
-import { credentials, printTitleBox } from "../index.js";
-import { initializeApi } from "../utils.js";
-import { handleCliError, printTable, createSpinner } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, printTitleBox } from '../index.js';
+import { createSpinner, handleCliError, initializeApi, printTable } from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 export async function countriesCommand(options: CommonOptions) {
   try {
     printTitleBox();
     const disableSpinner = options.spinner === true; // default false
-    const spinner = createSpinner(
-      !disableSpinner,
-      "💳 fetching countries...",
-    ).start();
+    const spinner = createSpinner(!disableSpinner, '💳 fetching countries...').start();
     const api = await initializeApi(credentials, options);
 
     const result = await api.getCountries();
     spinner.stop();
     const countries = result.data.result;
     if (!countries) {
-      console.log("No countries found");
+      console.log('No countries found');
       return;
     }
 
     const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
     printTable(simpleCountries);
     console.log(`\n${countries.length} country(ies) found.`);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch countries");
+  } catch (error: unknown) {
+    handleCliError(error, options, 'fetch countries');
   }
 }

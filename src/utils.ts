@@ -1,13 +1,10 @@
-import chalk from "chalk";
-import type { BasicOptions, Credentials } from "./cmds/types.js";
+import chalk from 'chalk';
+import type { BasicOptions, Credentials } from './cmds/types.js';
 
-export function handleCliError(
-  error: any,
-  options: { verbose?: boolean },
-  context: string,
-) {
-  console.error(chalk.redBright(`Failed to ${context}:`), error.message);
-  console.log("");
+export function handleCliError(error: unknown, options: { verbose?: boolean }, context: string) {
+  const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  console.error(chalk.redBright(`Failed to ${context}:`), errorMessage);
+  console.log('');
   if (options.verbose) {
     console.error(error);
   }
@@ -15,10 +12,10 @@ export function handleCliError(
 
 export async function checkLatestVersion() {
   try {
-    const response = await fetch("https://registry.npmjs.org/investec-ipb", {
-      method: "GET",
+    const response = await fetch('https://registry.npmjs.org/investec-ipb', {
+      method: 'GET',
       headers: {
-        Accept: "application/vnd.npm.install-v1+json",
+        Accept: 'application/vnd.npm.install-v1+json',
       },
     });
 
@@ -26,12 +23,12 @@ export async function checkLatestVersion() {
       throw new Error(`Failed to fetch version: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as { "dist-tags": { latest: string } };
-    const latestVersion = data["dist-tags"].latest;
+    const data = (await response.json()) as { 'dist-tags': { latest: string } };
+    const latestVersion = data['dist-tags'].latest;
 
     return latestVersion;
   } catch (error) {
-    console.warn("Failed to check latest version:", error);
+    console.warn('Failed to check latest version:', error);
     return null;
   }
 }
@@ -44,51 +41,48 @@ export type TableData = TableRow[];
 
 export function printTable(data: TableData): void {
   if (!data || data.length === 0) {
-    console.log("No data to display.");
+    console.log('No data to display.');
     return;
   }
 
   // Determine column widths based on header and data length
   const headers: string[] = Object.keys(data[0] as TableRow);
   const colWidths: number[] = headers.map((header) =>
-    Math.max(header.length, ...data.map((row) => String(row[header]).length)),
+    Math.max(header.length, ...data.map((row) => String(row[header]).length))
   );
 
   // Print header row
   const headerRow: string = headers
     .map((header, index) => header.padEnd(colWidths[index] ?? 0))
-    .join(" | ");
+    .join(' | ');
   console.log(headerRow);
-  console.log("-".repeat(headerRow.length));
+  console.log('-'.repeat(headerRow.length));
 
   // Print data rows
   data.forEach((row) => {
     const dataRow: string = headers
       .map((header, index) => String(row[header]).padEnd(colWidths[index] ?? 0))
-      .join(" | ");
+      .join(' | ');
     console.log(dataRow);
   });
 }
 
-export async function loadCredentialsFile(
-  credentials: Credentials,
-  credentialsFile: string,
-) {
+export async function loadCredentialsFile(credentials: Credentials, credentialsFile: string) {
   if (credentialsFile) {
     try {
-      const file = await import("file://" + credentialsFile, {
-        with: { type: "json" },
+      const file = await import(`file://${credentialsFile}`, {
+        with: { type: 'json' },
       });
 
       // Only copy known credential properties
       const credentialKeys: (keyof Credentials)[] = [
-        "host",
-        "apiKey",
-        "clientId",
-        "clientSecret",
-        "openaiKey",
-        "sandboxKey",
-        "cardKey",
+        'host',
+        'apiKey',
+        'clientId',
+        'clientSecret',
+        'openaiKey',
+        'sandboxKey',
+        'cardKey',
       ];
 
       credentialKeys.forEach((key) => {
@@ -104,8 +98,29 @@ export async function loadCredentialsFile(
   return credentials;
 }
 
-import ora from "ora";
-import { optionCredentials } from "./index.js";
+import { promises as fs } from 'node:fs';
+import { chmod } from 'node:fs/promises';
+import ora from 'ora';
+import { optionCredentials } from './index.js';
+import type { ICardApi } from './mock-card.js';
+import type { IPbApi } from './mock-pb.js';
+
+/**
+ * Write credentials file with secure permissions (read/write for owner only)
+ * @param filepath - Path to the credentials file
+ * @param data - Credentials data to write
+ */
+export async function writeCredentialsFile(
+  filepath: string,
+  data: Record<string, string>
+): Promise<void> {
+  await fs.writeFile(filepath, JSON.stringify(data, null, 2), {
+    encoding: 'utf8',
+    flag: 'w',
+  });
+  // Set file permissions to read/write for owner only (0o600)
+  await chmod(filepath, 0o600);
+}
 
 // Spinner abstraction for testability and control
 export interface Spinner {
@@ -134,25 +149,25 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
 }
 export async function initializePbApi(
   credentials: Credentials,
-  options: BasicOptions,
-) {
+  options: BasicOptions
+): Promise<IPbApi> {
   credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    const { PbApi } = await import("./mock-pb.js");
+  let api: IPbApi;
+  if (process.env.DEBUG === 'true') {
+    const { PbApi } = await import('./mock-pb.js');
     api = new PbApi(
       credentials.clientId,
       credentials.clientSecret,
       credentials.apiKey,
-      credentials.host,
+      credentials.host
     );
   } else {
-    const { InvestecPbApi } = await import("investec-pb-api");
+    const { InvestecPbApi } = await import('investec-pb-api');
     api = new InvestecPbApi(
       credentials.clientId,
       credentials.clientSecret,
       credentials.apiKey,
-      credentials.host,
+      credentials.host
     );
   }
   await api.getAccessToken();
@@ -160,37 +175,27 @@ export async function initializePbApi(
 }
 export async function initializeApi(
   credentials: Credentials,
-  options: BasicOptions,
-) {
-  //printTitleBox();
+  options: BasicOptions
+): Promise<ICardApi> {
   credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    // console.log(chalk.yellow('Using mock API for debugging'));
-    const { CardApi } = await import("./mock-card.js");
+  let api: ICardApi;
+  if (process.env.DEBUG === 'true') {
+    const { CardApi } = await import('./mock-card.js');
     api = new CardApi(
       credentials.clientId,
       credentials.clientSecret,
       credentials.apiKey,
-      credentials.host,
+      credentials.host
     );
   } else {
-    const { InvestecCardApi } = await import("investec-card-api");
+    const { InvestecCardApi } = await import('investec-card-api');
     api = new InvestecCardApi(
       credentials.clientId,
       credentials.clientSecret,
       credentials.apiKey,
-      credentials.host,
+      credentials.host
     );
   }
-  const accessResult = await api.getAccessToken();
-  // if (accessResult.scope !== "cards") {
-  //   console.log(
-  //     chalk.redBright(
-  //       "Scope is not only cards, please consider reducing the scopes",
-  //     ),
-  //   );
-  //   console.log("");
-  // }
+  await api.getAccessToken();
   return api;
 }

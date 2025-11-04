@@ -1,7 +1,6 @@
-import { credentials, printTitleBox } from "../index.js";
-import { initializePbApi } from "../utils.js";
-import { handleCliError, printTable, createSpinner } from "../utils.js";
-import type { CommonOptions } from "./types.js";
+import { credentials, printTitleBox } from '../index.js';
+import { createSpinner, handleCliError, initializePbApi, printTable } from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 /**
  * Minimal transaction type for CLI display.
@@ -19,29 +18,18 @@ type Transaction = {
  * @param accountId - The account ID to fetch transactions for.
  * @param options - CLI options.
  */
-export async function transactionsCommand(
-  accountId: string,
-  options: CommonOptions,
-) {
+export async function transactionsCommand(accountId: string, options: CommonOptions) {
   try {
     printTitleBox();
     const disableSpinner = options.spinner === true;
-    const spinner = createSpinner(
-      !disableSpinner,
-      "💳 fetching transactions...",
-    ).start();
+    const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
     const api = await initializePbApi(credentials, options);
 
-    const result = await api.getAccountTransactions(
-      accountId,
-      null,
-      null,
-      null,
-    );
+    const result = await api.getAccountTransactions(accountId);
     const transactions = result.data.transactions;
     spinner.stop();
     if (!transactions) {
-      console.log("No transactions found");
+      console.log('No transactions found');
       return;
     }
 
@@ -51,11 +39,11 @@ export async function transactionsCommand(
         amount,
         transactionDate,
         description,
-      }),
+      })
     );
     printTable(simpleTransactions);
     console.log(`\n${transactions.length} transaction(s) found.`);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch transactions");
+  } catch (error: unknown) {
+    handleCliError(error, options, 'fetch transactions');
   }
 }

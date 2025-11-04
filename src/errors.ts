@@ -4,23 +4,23 @@ export class CliError extends Error {
   constructor(code: string, message: string) {
     super(`Error (${code}): ${message}`);
     this.code = code;
-    this.name = "CliError";
+    this.name = 'CliError';
   }
 }
 
 // Example error codes and messages
 export const ERROR_CODES = {
-  MISSING_API_TOKEN: "E4002",
-  MISSING_CARD_KEY: "E4003",
-  MISSING_ENV_FILE: "E4004",
-  INVALID_CREDENTIALS: "E4005",
-  DEPLOY_FAILED: "E5001",
-  TEMPLATE_NOT_FOUND: "E4007",
-  INVALID_PROJECT_NAME: "E4008",
-  PROJECT_EXISTS: "E4009",
-  FILE_NOT_FOUND: "E4010",
-  MISSING_EMAIL_OR_PASSWORD: "E4011", // Added for register command
-  MISSING_ACCOUNT_ID: "E4012", // Added for balances command
+  MISSING_API_TOKEN: 'E4002',
+  MISSING_CARD_KEY: 'E4003',
+  MISSING_ENV_FILE: 'E4004',
+  INVALID_CREDENTIALS: 'E4005',
+  DEPLOY_FAILED: 'E5001',
+  TEMPLATE_NOT_FOUND: 'E4007',
+  INVALID_PROJECT_NAME: 'E4008',
+  PROJECT_EXISTS: 'E4009',
+  FILE_NOT_FOUND: 'E4010',
+  MISSING_EMAIL_OR_PASSWORD: 'E4011', // Added for register command
+  MISSING_ACCOUNT_ID: 'E4012', // Added for balances command
   // Add more as needed
 };
 
@@ -36,6 +36,6 @@ export function printCliError(error: unknown) {
   } else if (error instanceof Error) {
     console.error(`Error: ${error.message}`);
   } else {
-    console.error("An unknown error occurred.");
+    console.error('An unknown error occurred.');
   }
 }
