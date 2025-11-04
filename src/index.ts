@@ -108,6 +108,272 @@ if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
   process.exit(0);
 }
 
+/**
+ * Generates shell completion script for bash or zsh.
+ * @param shell - Shell type ('bash' or 'zsh')
+ * @returns Completion script as a string
+ */
+function generateCompletionScript(shell: string): string {
+  if (shell !== 'bash' && shell !== 'zsh') {
+    throw new Error(`Unsupported shell: ${shell}. Supported shells: bash, zsh`);
+  }
+
+  const commands = [
+    'accounts',
+    'ai',
+    'balances',
+    'bank',
+    'beneficiaries',
+    'cards',
+    'completion',
+    'config',
+    'countries',
+    'currencies',
+    'deploy',
+    'disable',
+    'enable',
+    'env',
+    'env-list',
+    'fetch',
+    'login',
+    'logs',
+    'merchants',
+    'new',
+    'pay',
+    'publish',
+    'published',
+    'register',
+    'run',
+    'simulate',
+    'transfer',
+    'transactions',
+    'upload',
+    'upload-env',
+  ];
+
+  const globalOptions = [
+    '--check-updates',
+    '--no-history',
+    '--api-key',
+    '--client-id',
+    '--client-secret',
+    '--host',
+    '--credentials-file',
+    '--spinner',
+    '--verbose',
+    '--json',
+    '--yaml',
+    '--output',
+  ];
+
+  const commandOptions: Record<string, string[]> = {
+    accounts: ['--json', '--yaml', '--output'],
+    ai: ['--filename', '--force', '--verbose'],
+    balances: ['--json', '--yaml', '--output'],
+    bank: ['--verbose'],
+    beneficiaries: ['--json', '--yaml', '--output'],
+    cards: ['--json', '--yaml', '--output'],
+    config: ['--card-key', '--openai-key', '--sandbox-key'],
+    countries: ['--json', '--yaml', '--output'],
+    currencies: ['--json', '--yaml', '--output'],
+    deploy: ['--filename', '--env', '--card-key'],
+    disable: ['--card-key'],
+    enable: ['--card-key'],
+    env: ['--filename', '--card-key'],
+    'env-list': ['--json', '--yaml', '--output'],
+    fetch: ['--filename', '--card-key'],
+    login: ['--email', '--password'],
+    logs: ['--filename', '--card-key'],
+    merchants: ['--json', '--yaml', '--output'],
+    new: ['--template', '--force', '--verbose'],
+    pay: [],
+    publish: ['--filename', '--code-id', '--card-key'],
+    published: ['--filename', '--card-key'],
+    register: ['--email', '--password'],
+    run: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
+    simulate: ['--filename', '--card-key', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
+    transfer: [],
+    transactions: ['--json', '--yaml', '--output'],
+    upload: ['--filename', '--card-key'],
+    'upload-env': ['--filename', '--card-key'],
+  };
+
+  if (shell === 'bash') {
+    return generateBashCompletion(commands, globalOptions, commandOptions);
+  } else {
+    return generateZshCompletion(commands, globalOptions, commandOptions);
+  }
+}
+
+/**
+ * Generates bash completion script.
+ */
+function generateBashCompletion(
+  commands: string[],
+  globalOptions: string[],
+  commandOptions: Record<string, string[]>
+): string {
+  const commandsList = commands.join(' ');
+  const globalOptionsList = globalOptions.join(' ');
+
+  return `#!/usr/bin/env bash
+# Bash completion script for ipb CLI
+
+_ipb() {
+  local cur prev words cword
+  COMPREPLY=()
+  cur="\${COMP_WORDS[COMP_CWORD]}"
+  prev="\${COMP_WORDS[COMP_CWORD-1]}"
+  words=("\${COMP_WORDS[@]}")
+  cword=$COMP_CWORD
+
+  case "\${prev}" in
+    --output)
+      COMPREPLY=($(compgen -f -- "\${cur}"))
+      return 0
+      ;;
+    --filename|-f)
+      COMPREPLY=($(compgen -f -X '!*.js' -- "\${cur}"))
+      return 0
+      ;;
+    --template)
+      COMPREPLY=($(compgen -W "default petro" -- "\${cur}"))
+      return 0
+      ;;
+    --env|-e)
+      # Complete .env.* files
+      COMPREPLY=($(compgen -f -X '!*.env.*' -- "\${cur}"))
+      return 0
+      ;;
+    --email|-e)
+      # No completion for email
+      return 0
+      ;;
+    --password|-p)
+      # No completion for password
+      return 0
+      ;;
+  esac
+
+  # Check if we're completing a command
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=($(compgen -W "${commandsList}" -- "\${cur}"))
+    return 0
+  fi
+
+  # Get the command name
+  local cmd="\${words[1]}"
+
+  # Complete options for specific commands
+  case "\${cmd}" in
+${commands
+  .map(
+    (cmd) => `    ${cmd})
+      local opts="${commandOptions[cmd]?.join(' ') || ''} ${globalOptionsList}"
+      COMPREPLY=($(compgen -W "\${opts}" -- "\${cur}"))
+      return 0
+      ;;`
+  )
+  .join('\n')}
+    *)
+      # Default: complete global options
+      COMPREPLY=($(compgen -W "${globalOptionsList}" -- "\${cur}"))
+      return 0
+      ;;
+  esac
+}
+
+complete -F _ipb ipb
+`;
+}
+
+/**
+ * Generates zsh completion script.
+ */
+function generateZshCompletion(
+  commands: string[],
+  globalOptions: string[],
+  commandOptions: Record<string, string[]>
+): string {
+  return `#compdef ipb
+# Zsh completion script for ipb CLI
+
+_ipb() {
+  local -a commands
+  commands=(
+${commands.map((cmd) => `    '${cmd}:${cmd} command'`).join('\n')}
+  )
+
+  local -a global_opts
+  global_opts=(
+${globalOptions.map((opt) => `    '${opt}'`).join('\n')}
+  )
+
+  local context state line
+  typeset -A opt_args
+
+  _arguments -C \\
+    "1: :->commands" \\
+    "*::arg:->args"
+
+  case $state in
+    commands)
+      _describe 'command' commands
+      ;;
+    args)
+      case $words[1] in
+${commands
+  .map((cmd) => {
+    const opts = commandOptions[cmd] || [];
+    const allOpts = [...opts, ...globalOptions];
+    return `        ${cmd})
+          _arguments \\
+${allOpts
+  .map((opt) => {
+    if (opt.includes('--filename') || opt.includes('-f')) {
+      return `            '${opt}[JavaScript file]:file:_files -g "*.js"'`;
+    }
+    if (opt.includes('--output')) {
+      return `            '${opt}[Output file]:file:_files'`;
+    }
+    if (opt.includes('--template')) {
+      return `            '${opt}[Template]:template:(default petro)'`;
+    }
+    if (opt.includes('--env') || opt.includes('-e')) {
+      return `            '${opt}[Environment file]:env:_files -g ".env.*"'`;
+    }
+    if (opt.includes('--email')) {
+      return `            '${opt}[Email address]:email:'`;
+    }
+    if (opt.includes('--password')) {
+      return `            '${opt}[Password]:password:'`;
+    }
+    if (opt.includes('<')) {
+      const match = opt.match(/--([^<]+)\s*<([^>]+)>/);
+      if (match && match[1] && match[2]) {
+        const optName = match[1].replace(/-/g, '_');
+        const argName = match[2];
+        return `            '${opt}[${argName}]:${optName}:'`;
+      }
+    }
+    return `            '${opt}'`;
+  })
+  .join(' \\\n')}
+          ;;
+`;
+  })
+  .join('')}        *)
+          _arguments $global_opts
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_ipb "$@"
+`;
+}
+
 async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
   
@@ -596,6 +862,29 @@ Examples:
     .option('-e,--email <email>', 'Your registered email address')
     .option('-p,--password <password>', 'Your account password')
     .action(withCommandContext('login', loginCommand));
+  program
+    .command('completion')
+    .description('Generate shell completion script for bash or zsh')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb completion bash > /etc/bash_completion.d/ipb
+  $ ipb completion zsh > ~/.zsh/completions/_ipb
+  $ source <(ipb completion bash)  # For current session only
+      `
+    )
+    .argument('<shell>', 'Shell type (bash or zsh)')
+    .action((shell) => {
+      try {
+        const completionScript = generateCompletionScript(shell);
+        console.log(completionScript);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(chalk.red(`Error generating completion script: ${errorMessage}`));
+        process.exit(1);
+      }
+    });
 
   // Check for --check-updates flag in raw arguments
   const hasCheckUpdatesFlag = process.argv.includes('--check-updates');

@@ -70,6 +70,39 @@ On Windows, you may need to set your execution policy to allow running scripts. 
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
+### Shell Autocomplete
+
+The CLI supports shell autocomplete for bash and zsh, making it easier to discover commands and options.
+
+**Bash:**
+
+```sh
+# Install for all users (requires sudo)
+sudo ipb completion bash > /etc/bash_completion.d/ipb
+
+# Or install for current user only
+mkdir -p ~/.bash_completion.d
+ipb completion bash > ~/.bash_completion.d/ipb
+echo "source ~/.bash_completion.d/ipb" >> ~/.bashrc
+
+# For current session only
+source <(ipb completion bash)
+```
+
+**Zsh:**
+
+```sh
+# Install completion script
+mkdir -p ~/.zsh/completions
+ipb completion zsh > ~/.zsh/completions/_ipb
+
+# Add to ~/.zshrc
+fpath=(~/.zsh/completions $fpath)
+autoload -U compinit && compinit
+```
+
+After installation, restart your terminal or source your shell configuration file. You can then use `Tab` to autocomplete commands, options, and file paths.
+
 ---
 
 ## Configuration

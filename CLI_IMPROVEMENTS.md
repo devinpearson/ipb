@@ -314,21 +314,29 @@ if (!options.force) {
 
 ### 12. Autocomplete Support
 
-**Current State**: No shell autocomplete.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Add autocomplete script generation for bash/zsh
-- Command: `ipb completion [bash|zsh]`
+**Implementation**:
+- Added `completion` command that generates shell completion scripts for bash and zsh
+- Supports all 30 commands with their specific options
+- Intelligent file completion for `--filename` (JavaScript files), `--output` (any file), `--env` (.env.* files)
+- Template completion for `--template` option (default, petro)
+- Global options available for all commands
+- Command-specific options properly scoped
 
-```typescript
-program
-  .command('completion')
-  .description('Generate shell completion script')
-  .argument('<shell>', 'shell type (bash|zsh)')
-  .action((shell) => {
-    // Generate completion script
-  });
+**Usage**:
+```bash
+# Bash
+ipb completion bash > /etc/bash_completion.d/ipb
+source <(ipb completion bash)  # For current session
+
+# Zsh
+ipb completion zsh > ~/.zsh/completions/_ipb
+# Then add to ~/.zshrc: fpath=(~/.zsh/completions $fpath)
 ```
+
+**Files Updated**:
+- `src/index.ts` - Added `completion` command and `generateCompletionScript()`, `generateBashCompletion()`, `generateZshCompletion()` functions
 
 ---
 
