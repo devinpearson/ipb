@@ -91,6 +91,31 @@ INVESTEC_CLIENT_SECRET=your-client-secret
 INVESTEC_API_KEY=your-api-key
 ```
 
+### Environment Variables
+
+The CLI supports several environment variables that can be set in your shell or `.env` file. To see all supported environment variables with detailed descriptions, run:
+
+```sh
+ipb env-list
+```
+
+This command displays:
+- **API Credentials**: `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
+- **AI Generation**: `OPENAI_API_KEY`, `SANDBOX_KEY`
+- **Development**: `DEBUG`
+- **Security**: `REJECT_UNAUTHORIZED`
+
+You can also get structured output:
+```sh
+ipb env-list --json
+ipb env-list --yaml --output env-vars.yaml
+```
+
+**Priority Order** (highest to lowest):
+1. Command line options (e.g., `--client-id`, `--api-key`)
+2. Environment variables
+3. Credentials file (`~/.ipb/credentials.json`)
+
 You also have the option to specify the host, client ID, client secret, API key, and card ID when calling each command. These will override the configuration set in the `.env` file and your credential file:
 
 ```sh

@@ -6,6 +6,7 @@ import { currenciesCommand } from './currencies.js';
 import { deployCommand } from './deploy.js';
 import { disableCommand } from './disable.js';
 import { envCommand } from './env.js';
+import { envListCommand } from './env-list.js';
 import { fetchCommand } from './fetch.js';
 import { logsCommand } from './logs.js';
 import { merchantsCommand } from './merchants.js';
@@ -26,6 +27,7 @@ export {
   disableCommand,
   enableCommand,
   envCommand,
+  envListCommand,
   fetchCommand,
   runCommand,
   logsCommand,

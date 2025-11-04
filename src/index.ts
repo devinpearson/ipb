@@ -22,6 +22,7 @@ import {
   disableCommand,
   enableCommand,
   envCommand,
+  envListCommand,
   fetchCommand,
   generateCommand,
   logsCommand,
@@ -245,6 +246,20 @@ Examples:
     .requiredOption('-f,--filename <filename>', 'Output filename for environment variables (JSON format)')
     .option('-c,--card-key <cardKey>', 'Card identifier to fetch environment from')
     .action(withCommandContext('env', envCommand));
+  addApiCredentialOptions(
+    program
+      .command('env-list')
+      .description('List all supported environment variables with descriptions and usage examples')
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb env-list
+  $ ipb env-list --json
+  $ ipb env-list --yaml --output env-vars.yaml
+      `
+      )
+  ).action(withCommandContext('env-list', envListCommand));
   addApiCredentialOptions(
     program
       .command('upload-env')

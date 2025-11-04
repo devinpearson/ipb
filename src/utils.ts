@@ -245,7 +245,77 @@ export async function formatOutput(
 }
 
 /**
- * Prints tabular data to the console in a formatted table.
+ * Truncates a string to a maximum length, adding ellipsis if truncated.
+ * @param value - The value to truncate
+ * @param maxLength - Maximum length before truncation
+ * @returns Truncated string
+ */
+function truncateValue(value: unknown, maxLength: number): string {
+  const str = String(value ?? '');
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return str.substring(0, maxLength - 3) + '...';
+}
+
+/**
+ * Converts a value to a string representation, handling nested objects.
+ * @param value - The value to convert
+ * @param maxLength - Maximum length for string values
+ * @returns String representation
+ */
+function formatCellValue(value: unknown, maxLength: number = 50): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'object') {
+    // Handle nested objects by converting to JSON
+    try {
+      const json = JSON.stringify(value);
+      return truncateValue(json, maxLength);
+    } catch {
+      return String(value);
+    }
+  }
+  return truncateValue(value, maxLength);
+}
+
+/**
+ * Determines column alignment based on data type.
+ * @param header - Column header name
+ * @param sampleData - Sample data to analyze
+ * @returns Alignment ('left' | 'right' | 'center')
+ */
+function determineAlignment(header: string, sampleData: TableData): 'left' | 'right' | 'center' {
+  // Check if header name suggests numeric data
+  const numericPattern = /^(amount|balance|price|cost|total|count|id|key|number)$/i;
+  if (numericPattern.test(header)) {
+    return 'right';
+  }
+  
+  // Check actual data types in sample
+  const sampleValues = sampleData.slice(0, 10).map((row) => row[header]);
+  const allNumeric = sampleValues.length > 0 && sampleValues.every((val) => {
+    if (val === null || val === undefined || val === '') return false;
+    const num = Number(val);
+    return !Number.isNaN(num) && isFinite(num);
+  });
+  
+  if (allNumeric) {
+    return 'right';
+  }
+  
+  // Boolean values can be centered
+  if (sampleValues.every((val) => typeof val === 'boolean')) {
+    return 'center';
+  }
+  
+  return 'left';
+}
+
+/**
+ * Prints tabular data to the console in a formatted table with improved formatting.
+ * Uses cli-table3 for better column alignment, borders, and handling of long values.
  * @param data - Array of row objects to display
  */
 export function printTable(data: TableData): void {
@@ -254,26 +324,62 @@ export function printTable(data: TableData): void {
     return;
   }
 
-  // Determine column widths based on header and data length
-  const headers: string[] = Object.keys(data[0] as TableRow);
-  const colWidths: number[] = headers.map((header) =>
-    Math.max(header.length, ...data.map((row) => String(row[header]).length))
-  );
+  try {
+    // Use cli-table3 for better formatting
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Table = require('cli-table3');
+    const headers: string[] = Object.keys(data[0] as TableRow);
+    
+    // Determine column widths (max 80 chars per column, min 10)
+    // Use terminal width if available, otherwise default to 120
+    const terminalWidth = process.stdout.columns || 120;
+    const maxWidth = Math.min(80, Math.max(10, Math.floor(terminalWidth / headers.length)));
+    
+    // Create table with column configurations
+    const table = new Table({
+      head: headers.map((h) => chalk.bold(h)),
+      style: {
+        head: [],
+        border: ['gray'],
+        compact: false,
+      },
+      colWidths: headers.map(() => maxWidth),
+      colAligns: headers.map((header) => determineAlignment(header, data)),
+      wordWrap: true,
+    });
 
-  // Print header row
-  const headerRow: string = headers
-    .map((header, index) => header.padEnd(colWidths[index] ?? 0))
-    .join(' | ');
-  console.log(headerRow);
-  console.log('-'.repeat(headerRow.length));
+    // Add rows with formatted values
+    data.forEach((row) => {
+      const rowData = headers.map((header) => {
+        const value = row[header];
+        return formatCellValue(value, maxWidth);
+      });
+      table.push(rowData);
+    });
 
-  // Print data rows
-  data.forEach((row) => {
-    const dataRow: string = headers
-      .map((header, index) => String(row[header]).padEnd(colWidths[index] ?? 0))
+    console.log(table.toString());
+  } catch (error) {
+    // Fallback to basic formatting if cli-table3 is not available
+    const headers: string[] = Object.keys(data[0] as TableRow);
+    const colWidths: number[] = headers.map((header) =>
+      Math.max(header.length, ...data.map((row) => String(row[header] ?? '').length))
+    );
+
+    // Print header row
+    const headerRow: string = headers
+      .map((header, index) => header.padEnd(colWidths[index] ?? 0))
       .join(' | ');
-    console.log(dataRow);
-  });
+    console.log(headerRow);
+    console.log('-'.repeat(headerRow.length));
+
+    // Print data rows
+    data.forEach((row) => {
+      const dataRow: string = headers
+        .map((header, index) => String(row[header] ?? '').padEnd(colWidths[index] ?? 0))
+        .join(' | ');
+      console.log(dataRow);
+    });
+  }
 }
 
 /**

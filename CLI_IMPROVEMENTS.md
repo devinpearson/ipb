@@ -352,15 +352,29 @@ export async function checkForUpdates(force = false): Promise<void> {
 
 ---
 
-### 14. Better Table Formatting
+### 14. Better Table Formatting - **✅ Fully Implemented**
 
-**Current State**: Basic table formatting with `printTable`.
+**Current State**: ✅ Tables now use `cli-table3` for professional formatting.
 
-**Recommendations**:
-- Use a library like `cli-table3` or `table` for better formatting
-- Add column alignment
-- Support for nested data
-- Better handling of long values
+**Implementation**:
+- ✅ Integrated `cli-table3` library for better table formatting
+- ✅ Added intelligent column alignment (left/right/center based on data type)
+- ✅ Support for nested data (objects converted to JSON with truncation)
+- ✅ Better handling of long values (truncation with ellipsis)
+- ✅ Automatic column width calculation based on terminal size
+- ✅ Word wrapping for long text
+- ✅ Fallback to basic formatting if library unavailable
+
+**Features**:
+- **Smart Alignment**: Numeric columns (amount, balance, id, etc.) are right-aligned
+- **Nested Data**: Objects are serialized to JSON and truncated if too long
+- **Long Values**: Values exceeding column width are truncated with "..."
+- **Adaptive Width**: Column widths adjust based on terminal size
+- **Professional Borders**: Clean table borders using cli-table3 styling
+
+**Files Updated**:
+- ✅ `package.json` - Added cli-table3 dependency
+- ✅ `src/utils.ts` - Enhanced `printTable` function with cli-table3 support
 
 ---
 
@@ -375,14 +389,23 @@ export async function checkForUpdates(force = false): Promise<void> {
 
 ---
 
-### 16. Environment Variable Documentation
+### 16. Environment Variable Documentation - **✅ Fully Implemented**
 
-**Current State**: Environment variables mentioned but not fully documented.
+**Current State**: ✅ Environment variables are now fully documented with a dedicated command.
 
-**Recommendations**:
-- Add `ipb env-list` command to show all supported environment variables
-- Document each variable's purpose and format
-- Add validation for environment variable values
+**Implementation**:
+- ✅ Created `ipb env-list` command to display all supported environment variables
+- ✅ Documents each variable's purpose, format, required status, and default values
+- ✅ Groups variables by category (API Credentials, AI Generation, Development, Security)
+- ✅ Provides usage examples and priority order explanation
+- ✅ Supports JSON and YAML output formats
+- ✅ Updated README with environment variable documentation section
+
+**Files Updated**:
+- ✅ `src/cmds/env-list.ts` - New command to list environment variables
+- ✅ `src/cmds/index.ts` - Added export for envListCommand
+- ✅ `src/index.ts` - Added env-list command to CLI
+- ✅ `README.md` - Added environment variables documentation section
 
 ---
 
