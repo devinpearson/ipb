@@ -42,9 +42,11 @@ import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 import {
+  checkForUpdates,
   handleCliError,
   loadCredentialsFile,
   readCredentialsFileSync,
+  showUpdateNotification,
   withCommandContext,
 } from './utils.js';
 
@@ -99,14 +101,17 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
 }
 
-// Show help if no arguments are provided
-if (process.argv.length <= 2) {
+// Show help if no arguments are provided (unless --check-updates is specified)
+if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
   program.outputHelp();
   process.exit(0);
 }
 
 async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
+  
+  // Add --check-updates flag (global option)
+  program.option('--check-updates', 'Check for available updates');
 
   // Use shared options for most commands
   addApiCredentialOptions(
@@ -590,8 +595,60 @@ Examples:
     .option('-p,--password <password>', 'Your account password')
     .action(withCommandContext('login', loginCommand));
 
+  // Check for --check-updates flag in raw arguments
+  const hasCheckUpdatesFlag = process.argv.includes('--check-updates');
+  
+  // If --check-updates flag is present, handle it before parsing
+  if (hasCheckUpdatesFlag && process.argv.length === 3) {
+    // Only --check-updates flag, no command
+    const latestVersion = await checkForUpdates(version, true);
+    if (latestVersion) {
+      showUpdateNotification(version, latestVersion);
+    } else {
+      console.log(chalk.green('✓ You are using the latest version.'));
+    }
+    process.exit(0);
+  }
+  
+  // Check if stdout is piped before parsing
+  const { isStdoutPiped } = await import('./utils.js');
+  const isPiped = isStdoutPiped();
+  
+  // Parse arguments to execute commands
   await program.parseAsync(process.argv);
-  console.log(''); // Add a newline after command execution
+  
+  // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
+  if (hasCheckUpdatesFlag && process.argv.length > 3) {
+    // --check-updates flag with a command - check after command execution
+    const latestVersion = await checkForUpdates(version, true);
+    if (latestVersion) {
+      showUpdateNotification(version, latestVersion);
+    } else {
+      console.log(chalk.green('✓ You are using the latest version.'));
+    }
+  } else if (process.argv.length === 2) {
+    // No arguments provided (shouldn't happen due to early exit, but just in case)
+    const latestVersion = await checkForUpdates(version, false);
+    if (latestVersion) {
+      showUpdateNotification(version, latestVersion);
+    }
+  } else if (!hasCheckUpdatesFlag) {
+    // Background check for regular commands (non-blocking, cached for 24 hours)
+    checkForUpdates(version, false)
+      .then((latest) => {
+        if (latest) {
+          showUpdateNotification(version, latest);
+        }
+      })
+      .catch(() => {
+        // Silent failure for background checks
+      });
+  }
+  
+  // Only add newline if not piped (to avoid corrupting JSON output)
+  if (!isPiped) {
+    console.log(''); // Add a newline after command execution
+  }
 }
 
 /**

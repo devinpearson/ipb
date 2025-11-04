@@ -8,8 +8,13 @@ import type { CommonOptions } from './types.js';
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function currenciesCommand(options: CommonOptions) {
-  printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  
+  if (!isPiped) {
+    printTitleBox();
+  }
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching currencies...').start();
   const api = await initializeApi(credentials, options);
 
@@ -17,7 +22,11 @@ export async function currenciesCommand(options: CommonOptions) {
   spinner.stop();
   const currencies = result.data.result;
   if (!currencies) {
-    console.log('No currencies found');
+    if (!isPiped) {
+      console.log('No currencies found');
+    } else {
+      process.stdout.write('[]\n');
+    }
     return;
   }
 
@@ -26,7 +35,11 @@ export async function currenciesCommand(options: CommonOptions) {
     Name,
   }));
 
-  await formatOutput(simpleCurrencies, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    console.log(`\n${count} currency(ies) found.`);
+  // Use full currencies data when piped or structured output requested
+  const dataToOutput = options.json || options.yaml || options.output || isPiped ? currencies : simpleCurrencies;
+  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
+    if (!isPiped) {
+      console.log(`\n${count} currency(ies) found.`);
+    }
   });
 }

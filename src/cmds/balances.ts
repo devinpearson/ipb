@@ -1,3 +1,4 @@
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -9,20 +10,51 @@ import type { CommonOptions } from './types.js';
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function balancesCommand(accountId: string, options: CommonOptions) {
-  printTitleBox();
-  const disableSpinner = options.spinner === true;
+  const { isStdoutPiped, readStdin } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  
+  // If accountId is not provided and stdin has data, try to read from stdin
+  if (!accountId || accountId.trim() === '') {
+    const stdinData = await readStdin();
+    if (stdinData) {
+      try {
+        const parsed = JSON.parse(stdinData);
+        // If stdin is an array, take the first accountId
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          accountId = parsed[0].accountId || parsed[0].accountId;
+        } else if (parsed.accountId) {
+          accountId = parsed.accountId;
+        } else if (typeof parsed === 'string') {
+          accountId = parsed;
+        }
+      } catch {
+        // If not JSON, treat as plain accountId
+        accountId = stdinData.trim();
+      }
+    }
+  }
+  
+  if (!accountId || accountId.trim() === '') {
+    throw new CliError(ERROR_CODES.MISSING_ACCOUNT_ID, 'Account ID is required. Provide it as an argument or via stdin.');
+  }
+  
+  if (!isPiped) {
+    printTitleBox();
+  }
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching balances...').start();
   const api = await initializePbApi(credentials, options);
 
   const result = await api.getAccountBalances(accountId);
   spinner.stop();
 
-  if (options.json || options.yaml || options.output) {
+  // Always use structured output when piped or when explicitly requested
+  if (options.json || options.yaml || options.output || isPiped) {
     await formatOutput(result.data, { json: options.json, yaml: options.yaml, output: options.output });
     return;
   }
 
-  // Default formatted text output
+  // Default formatted text output (only when not piped)
   console.log(`Account Id ${result.data.accountId}`);
   console.log(`Currency: ${result.data.currency}`);
   console.log('Balances:');

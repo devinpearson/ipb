@@ -20,6 +20,7 @@ vi.mock('../../src/utils.ts', async () => {
     })),
     formatOutput: vi.fn(),
     printTable: vi.fn(),
+    isStdoutPiped: vi.fn(() => false), // Mock as not piped for tests
   };
 });
 

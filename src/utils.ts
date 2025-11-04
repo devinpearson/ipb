@@ -154,6 +154,47 @@ export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
 }
 
 /**
+ * Gets the path to the cache directory for storing update check timestamps.
+ * @returns Path to the cache file
+ */
+function getUpdateCheckCachePath(): string {
+  return path.join(homedir(), '.ipb', 'update-check.json');
+}
+
+/**
+ * Gets the timestamp of the last update check.
+ * @returns Timestamp in milliseconds, or null if never checked
+ */
+function getLastUpdateCheck(): number | null {
+  try {
+    const cachePath = getUpdateCheckCachePath();
+    if (fs.existsSync(cachePath)) {
+      const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+      return data.lastCheck || null;
+    }
+  } catch {
+    // Ignore errors reading cache
+  }
+  return null;
+}
+
+/**
+ * Updates the timestamp of the last update check.
+ */
+function setLastUpdateCheck(): void {
+  try {
+    const cachePath = getUpdateCheckCachePath();
+    const dir = path.dirname(cachePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(cachePath, JSON.stringify({ lastCheck: Date.now() }, null, 2), 'utf8');
+  } catch {
+    // Ignore errors writing cache
+  }
+}
+
+/**
  * Checks the latest version of the package from npm registry.
  * @returns The latest version string, or null if the check fails
  */
@@ -175,9 +216,50 @@ export async function checkLatestVersion() {
 
     return latestVersion;
   } catch (error) {
-    console.warn('Failed to check latest version:', error);
+    // Silent failure - don't warn users about version check failures
     return null;
   }
+}
+
+/**
+ * Checks for updates with rate limiting (caches for 24 hours).
+ * @param currentVersion - Current version of the CLI
+ * @param force - Force check even if checked recently
+ * @returns Promise that resolves to the latest version if available, or null
+ */
+export async function checkForUpdates(currentVersion: string, force = false): Promise<string | null> {
+  const lastCheck = getLastUpdateCheck();
+  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+  // Skip if checked recently (unless forced)
+  if (!force && lastCheck && Date.now() - lastCheck < CACHE_DURATION) {
+    return null;
+  }
+
+  try {
+    const latest = await checkLatestVersion();
+    
+    // Update cache timestamp (even if check failed)
+    setLastUpdateCheck();
+    
+    if (latest && latest !== currentVersion) {
+      return latest;
+    }
+  } catch {
+    // Silent failure
+  }
+
+  return null;
+}
+
+/**
+ * Displays an update notification if a newer version is available.
+ * @param currentVersion - Current version of the CLI
+ * @param latestVersion - Latest available version
+ */
+export function showUpdateNotification(currentVersion: string, latestVersion: string): void {
+  console.log(chalk.yellow(`\n⚠️  New version available: ${latestVersion} (current: ${currentVersion})`));
+  console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
 }
 
 export interface TableRow {
@@ -196,7 +278,54 @@ export interface OutputOptions {
 }
 
 /**
+ * Checks if stdout is piped (not a TTY).
+ * @returns True if stdout is piped to another command
+ */
+export function isStdoutPiped(): boolean {
+  return !process.stdout.isTTY && process.stdout.writable;
+}
+
+/**
+ * Checks if stdin has data available (for piping).
+ * @returns True if stdin has data piped from another command
+ */
+export function isStdinPiped(): boolean {
+  return !process.stdin.isTTY && process.stdin.readable;
+}
+
+/**
+ * Reads data from stdin if available.
+ * @returns Promise that resolves to the stdin data, or null if no data available
+ */
+export async function readStdin(): Promise<string | null> {
+  if (!isStdinPiped()) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    let data = '';
+    process.stdin.setEncoding('utf8');
+    
+    process.stdin.on('data', (chunk: string) => {
+      data += chunk;
+    });
+    
+    process.stdin.on('end', () => {
+      resolve(data.trim() || null);
+    });
+    
+    // Timeout after 100ms if no data arrives
+    setTimeout(() => {
+      if (!data) {
+        resolve(null);
+      }
+    }, 100);
+  });
+}
+
+/**
  * Formats and outputs data in JSON, YAML, or table format, optionally writing to a file.
+ * Automatically detects pipe mode and outputs JSON when piped.
  * @param data - Data to output (can be any JSON-serializable value)
  * @param options - Output options including JSON/YAML flags and output file path
  * @param showCount - Optional function to show count message after table output
@@ -206,8 +335,12 @@ export async function formatOutput(
   options: OutputOptions,
   showCount?: (count: number) => void
 ): Promise<void> {
+  // Auto-detect pipe mode: if stdout is piped, use JSON format
+  const isPiped = isStdoutPiped();
+  const autoJson = isPiped && !options.yaml && !options.output;
+  
   // Determine output format: YAML takes precedence over JSON if both are specified
-  const outputFormat = options.yaml ? 'yaml' : options.json ? 'json' : null;
+  const outputFormat = options.yaml ? 'yaml' : options.json || autoJson ? 'json' : null;
   const shouldOutputStructured = outputFormat || options.output;
 
   if (shouldOutputStructured) {
@@ -224,24 +357,38 @@ export async function formatOutput(
     if (options.output) {
       const { writeFile } = await import('node:fs/promises');
       await writeFile(options.output, output, 'utf8');
-      console.log(`Output written to ${options.output}`);
+      if (!isPiped) {
+        console.log(`Output written to ${options.output}`);
+      }
     } else {
-      console.log(output);
+      // When piped, output directly to stdout without extra messages
+      process.stdout.write(output);
     }
   } else {
-    // Default table format for array data
+    // Default table format for array data (only when not piped)
     if (Array.isArray(data)) {
       if (data.length === 0) {
-        console.log('No data to display.');
+        if (!isPiped) {
+          console.log('No data to display.');
+        }
         return;
       }
-      printTable(data as TableData);
-      if (showCount) {
-        showCount(data.length);
+      if (!isPiped) {
+        printTable(data as TableData);
+        if (showCount) {
+          showCount(data.length);
+        }
+      } else {
+        // When piped, output as JSON
+        process.stdout.write(JSON.stringify(data, null, 2));
       }
     } else {
       // For non-array data, output as JSON
-      console.log(JSON.stringify(data, null, 2));
+      if (isPiped) {
+        process.stdout.write(JSON.stringify(data, null, 2));
+      } else {
+        console.log(JSON.stringify(data, null, 2));
+      }
     }
   }
 }
@@ -705,14 +852,14 @@ export interface Spinner {
  */
 export function createSpinner(enabled: boolean, text: string): Spinner {
   if (!enabled) {
-    // No-op spinner: logs start/stop messages but does not animate
+    // No-op spinner: does not log anything (for pipe mode)
     return {
-      start(msg?: string) {
-        if (msg || text) console.log(msg || text);
+      start(_msg?: string) {
+        // Don't log anything when disabled (pipe mode)
         return this;
       },
       stop() {
-        // Optionally log stop if needed
+        // Don't log anything when disabled
         return this;
       },
     };

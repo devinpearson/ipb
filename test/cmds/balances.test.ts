@@ -18,6 +18,8 @@ vi.mock('../../src/utils.ts', async () => {
       start: vi.fn(function() { return this; }),
       stop: vi.fn(),
     })),
+    isStdoutPiped: vi.fn(() => false), // Mock as not piped for tests
+    readStdin: vi.fn(async () => null),
   };
 });
 

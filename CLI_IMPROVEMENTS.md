@@ -325,30 +325,42 @@ program
 
 ---
 
-### 13. Version Update Notification
+### 13. Version Update Notification - **✅ Fully Implemented**
 
-**Current State**: Version checking exists but not actively used.
+**Current State**: ✅ Version checking is now active with rate limiting and update notifications.
 
-**Recommendations**:
-- Check for updates on startup (with rate limiting)
-- Show update notification if newer version available
-- Add `--check-updates` flag
+**Implementation**:
+- ✅ Enhanced `checkLatestVersion` to handle errors silently
+- ✅ Added `checkForUpdates` function with 24-hour cache/rate limiting
+- ✅ Added `showUpdateNotification` to display update messages
+- ✅ Added `getLastUpdateCheck` and `setLastUpdateCheck` for cache management
+- ✅ Added `--check-updates` global flag to force update check
+- ✅ Integrated update checking into main CLI entry point
+- ✅ Background update checks (non-blocking) for regular commands
+- ✅ Cache stored in `~/.ipb/update-check.json`
 
-```typescript
-// Check for updates (cache for 24 hours)
-export async function checkForUpdates(force = false): Promise<void> {
-  const lastCheck = getLastUpdateCheck();
-  if (!force && lastCheck && Date.now() - lastCheck < 24 * 60 * 60 * 1000) {
-    return; // Skip if checked recently
-  }
-  
-  const latest = await checkLatestVersion();
-  if (latest && latest !== version) {
-    console.log(chalk.yellow(`\n⚠️  New version available: ${latest}`));
-    console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
-  }
-}
+**Features**:
+- **Rate Limiting**: Updates are checked at most once per 24 hours
+- **Cache Management**: Last check timestamp stored in `~/.ipb/update-check.json`
+- **Background Checks**: Non-blocking update checks for regular commands
+- **Force Check**: `--check-updates` flag forces immediate check
+- **User-Friendly Messages**: Clear notifications with update instructions
+
+**Usage**:
+```bash
+# Automatic background check (cached for 24 hours)
+ipb cards
+
+# Force check for updates
+ipb --check-updates
+
+# Check on startup (when no command provided)
+ipb
 ```
+
+**Files Updated**:
+- ✅ `src/utils.ts` - Added update checking functions with caching
+- ✅ `src/index.ts` - Integrated update checking into main function
 
 ---
 
@@ -409,14 +421,50 @@ export async function checkForUpdates(force = false): Promise<void> {
 
 ---
 
-### 17. Command Chaining/Piping
+### 17. Command Chaining/Piping - **✅ Fully Implemented**
 
-**Current State**: Commands are standalone.
+**Current State**: ✅ Commands now support piping and command chaining.
 
-**Recommendations**:
-- Consider supporting command chaining for common workflows
-- Example: `ipb accounts | ipb balances <accountId>`
-- Or workflow commands: `ipb workflow deploy --test-first`
+**Implementation**:
+- ✅ Added `isStdoutPiped()` to detect when output is piped
+- ✅ Added `isStdinPiped()` to detect when input is piped
+- ✅ Added `readStdin()` to read data from stdin
+- ✅ Updated `formatOutput` to automatically output JSON when piped
+- ✅ Updated all data-returning commands to support pipe mode
+- ✅ Commands suppress human-friendly messages when piped
+- ✅ Commands disable spinners when piped
+
+**Features**:
+- **Auto JSON Output**: When stdout is piped, commands automatically output JSON
+- **Stdin Support**: Commands like `balances` and `transactions` can read account IDs from stdin
+- **Pipe-Friendly**: No spinners, no title boxes, no extra messages when piped
+- **Command Chaining**: Support for workflows like `ipb accounts | ipb balances`
+
+**Usage Examples**:
+```bash
+# Get accounts and pipe to balances
+ipb accounts | jq '.[0].accountId' | xargs ipb balances
+
+# Get accounts as JSON and filter
+ipb accounts | jq '.[] | select(.productName == "Private")'
+
+# Chain commands
+ipb accounts --json | ipb balances  # balances will read accountId from stdin
+```
+
+**Commands Updated**:
+- ✅ `accounts.ts` - Supports piping, outputs JSON when piped
+- ✅ `balances.ts` - Supports piping, reads accountId from stdin if available
+- ✅ `transactions.ts` - Supports piping, reads accountId from stdin if available
+- ✅ `cards.ts` - Supports piping, outputs JSON when piped
+- ✅ `beneficiaries.ts` - Supports piping, outputs JSON when piped
+- ✅ `merchants.ts` - Supports piping, outputs JSON when piped
+- ✅ `currencies.ts` - Supports piping, outputs JSON when piped
+- ✅ `countries.ts` - Supports piping, outputs JSON when piped
+
+**Files Updated**:
+- ✅ `src/utils.ts` - Added pipe detection utilities and updated formatOutput
+- ✅ All data-returning command files - Updated to support pipe mode
 
 ---
 

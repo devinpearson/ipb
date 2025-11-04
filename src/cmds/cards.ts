@@ -8,8 +8,13 @@ import type { CommonOptions } from './types.js';
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function cardsCommand(options: CommonOptions) {
-  printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  
+  if (!isPiped) {
+    printTitleBox();
+  }
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching cards...').start();
   const api = await initializeApi(credentials, options);
 
@@ -17,7 +22,11 @@ export async function cardsCommand(options: CommonOptions) {
   const cards = result.data.cards;
   spinner.stop();
   if (!cards) {
-    console.log('No cards found');
+    if (!isPiped) {
+      console.log('No cards found');
+    } else {
+      process.stdout.write('[]\n');
+    }
     return;
   }
 
@@ -27,7 +36,11 @@ export async function cardsCommand(options: CommonOptions) {
     IsProgrammable,
   }));
 
-  await formatOutput(simpleCards, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    console.log(`\n${count} card(s) found.`);
+  // Use full cards data when piped or structured output requested
+  const dataToOutput = options.json || options.yaml || options.output || isPiped ? cards : simpleCards;
+  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
+    if (!isPiped) {
+      console.log(`\n${count} card(s) found.`);
+    }
   });
 }

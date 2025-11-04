@@ -19,8 +19,39 @@ type Transaction = {
  * @param options - CLI options.
  */
 export async function transactionsCommand(accountId: string, options: CommonOptions) {
-  printTitleBox();
-  const disableSpinner = options.spinner === true;
+  const { isStdoutPiped, readStdin } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  
+  // If accountId is not provided and stdin has data, try to read from stdin
+  if (!accountId || accountId.trim() === '') {
+    const stdinData = await readStdin();
+    if (stdinData) {
+      try {
+        const parsed = JSON.parse(stdinData);
+        // If stdin is an array, take the first accountId
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          accountId = parsed[0].accountId || parsed[0].accountId;
+        } else if (parsed.accountId) {
+          accountId = parsed.accountId;
+        } else if (typeof parsed === 'string') {
+          accountId = parsed;
+        }
+      } catch {
+        // If not JSON, treat as plain accountId
+        accountId = stdinData.trim();
+      }
+    }
+  }
+  
+  if (!accountId || accountId.trim() === '') {
+    const { CliError, ERROR_CODES } = await import('../errors.js');
+    throw new CliError(ERROR_CODES.MISSING_ACCOUNT_ID, 'Account ID is required. Provide it as an argument or via stdin.');
+  }
+  
+  if (!isPiped) {
+    printTitleBox();
+  }
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
   const api = await initializePbApi(credentials, options);
 
@@ -28,7 +59,11 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   const transactions = result.data.transactions;
   spinner.stop();
   if (!transactions) {
-    console.log('No transactions found');
+    if (!isPiped) {
+      console.log('No transactions found');
+    } else {
+      process.stdout.write('[]\n');
+    }
     return;
   }
 
@@ -42,8 +77,10 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   );
 
   // Use raw transactions for structured output, simplified for table
-  const dataToOutput = options.json || options.yaml || options.output ? transactions : simpleTransactions;
+  const dataToOutput = options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
   await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    console.log(`\n${count} transaction(s) found.`);
+    if (!isPiped) {
+      console.log(`\n${count} transaction(s) found.`);
+    }
   });
 }

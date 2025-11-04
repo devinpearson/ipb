@@ -7,16 +7,28 @@ import type { CommonOptions } from './types.js';
  * @param options CLI options
  */
 export async function accountsCommand(options: CommonOptions) {
-  printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
-  const spinner = createSpinner(!disableSpinner, '💳 fetching accounts...').start();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  
+  if (!isPiped) {
+    printTitleBox();
+  }
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
+  const spinner = createSpinner(!disableSpinner, '💳 fetching accounts...');
+  if (!isPiped) {
+    spinner.start();
+  }
   const api = await initializePbApi(credentials, options);
-  if (options.verbose) console.log('💳 fetching accounts...');
+  if (options.verbose && !isPiped) console.log('💳 fetching accounts...');
   const result = await api.getAccounts();
   const accounts = result.data.accounts;
   if (!accounts || accounts.length === 0) {
-    spinner.stop();
-    console.log('No accounts found');
+    if (!isPiped) {
+      spinner.stop();
+      console.log('No accounts found');
+    } else {
+      process.stdout.write('[]\n');
+    }
     return;
   }
 
@@ -29,11 +41,15 @@ export async function accountsCommand(options: CommonOptions) {
     })
   );
 
-  spinner.stop();
+  if (!isPiped) {
+    spinner.stop();
+  }
 
   // Use raw accounts for structured output, simplified for table
-  const dataToOutput = options.json || options.yaml || options.output ? accounts : simpleAccounts;
+  const dataToOutput = options.json || options.yaml || options.output || isPiped ? accounts : simpleAccounts;
   await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    console.log(`\n${count} account(s) found.`);
+    if (!isPiped) {
+      console.log(`\n${count} account(s) found.`);
+    }
   });
 }
