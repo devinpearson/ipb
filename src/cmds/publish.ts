@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializeApi } from '../utils.js';
@@ -12,7 +12,9 @@ interface Options extends CommonOptions {
 
 export async function publishCommand(options: Options) {
   try {
-    if (!fs.existsSync(options.filename)) {
+    try {
+      await fsPromises.access(options.filename);
+    } catch {
       throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
     }
     if (options.cardKey === undefined) {
@@ -26,7 +28,7 @@ export async function publishCommand(options: Options) {
     const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
     const api = await initializeApi(credentials, options);
 
-    const code = fs.readFileSync(options.filename).toString();
+    const code = await fsPromises.readFile(options.filename, 'utf8');
     const result = await api.uploadPublishedCode(options.cardKey, options.codeId, code);
     spinner.stop();
     console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);

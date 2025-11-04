@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { promises as fsPromises } from 'node:fs';
 import dotenv from 'dotenv';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
@@ -27,21 +27,24 @@ export async function deployCommand(options: Options) {
     const api = await initializeApi(credentials, options);
 
     if (options.env) {
-      if (!fs.existsSync(`.env.${options.env}`)) {
+      try {
+        await fsPromises.access(`.env.${options.env}`);
+      } catch {
         throw new CliError(
           ERROR_CODES.MISSING_ENV_FILE,
           `Env file .env.${options.env} does not exist`
         );
       }
       spinner.text = `📦 uploading env from .env.${options.env}`;
-      envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
+      const envFileContent = await fsPromises.readFile(`.env.${options.env}`, 'utf8');
+      envObject = dotenv.parse(envFileContent);
 
       await api.uploadEnv(options.cardKey, { variables: envObject });
       spinner.text = '📦 env uploaded';
     }
     spinner.text = '🚀 deploying code';
     const raw = { code: '' };
-    const code = fs.readFileSync(options.filename).toString();
+    const code = await fsPromises.readFile(options.filename, 'utf8');
     raw.code = code;
     const saveResult = await api.uploadCode(options.cardKey, raw);
     await api.uploadPublishedCode(options.cardKey, saveResult.data.result.codeId, code);

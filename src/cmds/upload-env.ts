@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializeApi } from '../utils.js';
@@ -10,7 +10,9 @@ interface Options extends CommonOptions {
 }
 
 export async function uploadEnvCommand(options: Options) {
-  if (!fs.existsSync(options.filename)) {
+  try {
+    await fsPromises.access(options.filename);
+  } catch {
     throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
   }
   if (options.cardKey === undefined) {
@@ -26,7 +28,7 @@ export async function uploadEnvCommand(options: Options) {
     const api = await initializeApi(credentials, options);
 
     const raw = { variables: {} };
-    const variables = fs.readFileSync(options.filename, 'utf8');
+    const variables = await fsPromises.readFile(options.filename, 'utf8');
     raw.variables = JSON.parse(variables);
     const _result = await api.uploadEnv(options.cardKey, raw);
     spinner.stop();

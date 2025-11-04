@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { promises as fsPromises } from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
@@ -20,7 +20,9 @@ interface Options {
 export async function runCommand(options: Options) {
   printTitleBox();
   try {
-    if (!fs.existsSync(options.filename)) {
+    try {
+      await fsPromises.access(options.filename);
+    } catch {
       throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
     }
     console.log(chalk.white(`Running code:`), chalk.blueBright(options.filename));
@@ -42,18 +44,20 @@ export async function runCommand(options: Options) {
 
     let environmentvariables: { [key: string]: string } = {};
     if (options.env) {
-      if (!fs.existsSync(`.env.${options.env}`)) {
+      try {
+        await fsPromises.access(`.env.${options.env}`);
+      } catch {
         throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'Env does not exist');
       }
 
-      const data = fs.readFileSync(`.env.${options.env}`, 'utf8');
+      const data = await fsPromises.readFile(`.env.${options.env}`, 'utf8');
       const lines = data.split('\n');
 
       environmentvariables = convertToJson(lines);
     }
     // Convert the environmentvariables to a string
     const environmentvariablesString = JSON.stringify(environmentvariables);
-    const code = fs.readFileSync(path.join(path.resolve(), options.filename), 'utf8');
+    const code = await fsPromises.readFile(path.join(path.resolve(), options.filename), 'utf8');
     // Run the code
     const executionItems = await run(transaction, code, environmentvariablesString);
     executionItems.forEach((item) => {

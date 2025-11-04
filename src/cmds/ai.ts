@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { promises as fsPromises } from 'node:fs';
 import https from 'node:https';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -128,7 +128,7 @@ export async function aiCommand(prompt: string, options: Options) {
     // remove ```
     // output = output.replace(/```/g, "");
     console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
-    await fs.writeFileSync(options.filename, output);
+    await fsPromises.writeFile(options.filename, output, 'utf8');
     console.log('🎉 generated code saved to file');
     // write the env variables to a file
     if (response?.env_variables) {

@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializeApi } from '../utils.js';
@@ -26,7 +26,7 @@ export async function publishedCommand(options: Options) {
     const code = result.data.result.code;
     spinner.stop();
     console.log(`💾 saving to file: ${options.filename}`);
-    await fs.writeFileSync(options.filename, code);
+    await fsPromises.writeFile(options.filename, code, 'utf8');
     console.log('🎉 code saved to file');
   } catch (error: unknown) {
     handleCliError(error, options, 'fetch published code');

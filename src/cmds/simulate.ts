@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
@@ -29,13 +29,15 @@ export async function simulateCommand(options: Options) {
       }
       options.cardKey = Number(credentials.cardKey);
     }
-    if (!fs.existsSync(options.filename)) {
+    try {
+      await fsPromises.access(options.filename);
+    } catch {
       throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist');
     }
     const api = await initializeApi(credentials, options);
 
     console.log('🚀 uploading code & running simulation');
-    const code = fs.readFileSync(options.filename).toString();
+    const code = await fsPromises.readFile(options.filename, 'utf8');
     const transaction = createTransaction(
       options.currency,
       options.amount,
