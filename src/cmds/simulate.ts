@@ -21,6 +21,12 @@ interface Options {
   credentialsFile: string;
   verbose: boolean;
 }
+
+/**
+ * Runs code using the online simulator.
+ * @param options - CLI options including card key, filename, transaction details, and API credentials
+ * @throws {CliError} When card key is missing, file doesn't exist, or simulation fails
+ */
 export async function simulateCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {

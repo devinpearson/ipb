@@ -11,6 +11,12 @@ interface Options {
   force: boolean;
 }
 
+/**
+ * Creates a new project from a template.
+ * @param name - Name of the new project
+ * @param options - CLI options including template name and force flag
+ * @throws {CliError} When template is not found, project name is invalid, or project already exists
+ */
 export async function newCommand(name: string, options: Options) {
   printTitleBox();
   const uri = path.join(import.meta.dirname, '/../templates/', options.template);

@@ -17,6 +17,12 @@ interface Options {
   country: string;
   verbose: boolean;
 }
+
+/**
+ * Runs code locally using the programmable card code emulator.
+ * @param options - CLI options including filename, transaction details, and optional env file
+ * @throws {CliError} When file doesn't exist or code execution fails
+ */
 export async function runCommand(options: Options) {
   printTitleBox();
   try {

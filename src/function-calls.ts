@@ -28,6 +28,12 @@ export const getWeatherFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
+/**
+ * Gets weather information for given coordinates (mock implementation).
+ * @param _latitude - Latitude coordinate
+ * @param _longitude - Longitude coordinate
+ * @returns Mock weather temperature string
+ */
 export async function getWeather(_latitude: number, _longitude: number) {
   // Mock implementation - real API call commented out
   return '24C';
@@ -113,6 +119,12 @@ export const transferMultipleFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
+/**
+ * Fetches a list of accounts.
+ * @param _args - Optional arguments (unused)
+ * @returns Array of account objects
+ * @throws {Error} When API call fails
+ */
 export async function getAccounts(_args?: unknown): Promise<AccountResponse['data']['accounts']> {
   const api = await initializePbApi(credentials, {} as Options);
   const result = await api.getAccounts();
@@ -121,6 +133,12 @@ export async function getAccounts(_args?: unknown): Promise<AccountResponse['dat
   return accounts;
 }
 
+/**
+ * Fetches account balances for a specific account.
+ * @param args - Arguments object containing accountId
+ * @returns Account balance object
+ * @throws {Error} When accountId is missing or API call fails
+ */
 export async function getAccountBalances(args: unknown): Promise<AccountBalance> {
   const options = args as { accountId: string };
   if (!options || typeof options !== 'object' || !('accountId' in options)) {
@@ -133,7 +151,12 @@ export async function getAccountBalances(args: unknown): Promise<AccountBalance>
   return accounts;
 }
 
-// thin out responses as they use too many tokens
+/**
+ * Fetches account transactions for a specific account and date range.
+ * @param args - Arguments object containing accountId, fromDate, and toDate
+ * @returns Array of account transaction objects
+ * @throws {Error} When required arguments are missing or API call fails
+ */
 export async function getAccountTransactions(args: unknown): Promise<AccountTransaction[]> {
   const options = args as {
     accountId: string;
@@ -160,6 +183,12 @@ export async function getAccountTransactions(args: unknown): Promise<AccountTran
   return transactions;
 }
 
+/**
+ * Fetches a list of beneficiaries.
+ * @param _args - Optional arguments (unused)
+ * @returns Beneficiaries data object
+ * @throws {Error} When API call fails
+ */
 export async function getBeneficiaries(_args?: unknown): Promise<BeneficiaryResponse['data']> {
   const api = await initializePbApi(credentials, {} as Options);
   const result = await api.getBeneficiaries();
@@ -168,6 +197,12 @@ export async function getBeneficiaries(_args?: unknown): Promise<BeneficiaryResp
   return beneficiaries;
 }
 
+/**
+ * Transfers money between accounts.
+ * @param args - Arguments object containing accountId, beneficiaryAccountId, amount, myReference, and theirReference
+ * @returns Array of transfer response objects
+ * @throws {Error} When required arguments are missing or transfer fails
+ */
 export async function transferMultiple(args: unknown): Promise<Transfer[]> {
   const options = args as {
     accountId: string;

@@ -9,6 +9,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Uploads code to a card without publishing it.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
+ */
 export async function uploadCommand(options: Options) {
   try {
     try {

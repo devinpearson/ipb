@@ -2,6 +2,11 @@ import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializeApi, printTable } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
+/**
+ * Fetches and displays a list of merchants.
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
 export async function merchantsCommand(options: CommonOptions) {
   try {
     printTitleBox();

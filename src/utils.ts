@@ -1,6 +1,12 @@
 import chalk from 'chalk';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 
+/**
+ * Handles and displays CLI errors with optional verbose output.
+ * @param error - The error to handle (can be any type)
+ * @param options - Options including verbose flag
+ * @param context - Context string describing what operation failed
+ */
 export function handleCliError(error: unknown, options: { verbose?: boolean }, context: string) {
   const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
   console.error(chalk.redBright(`Failed to ${context}:`), errorMessage);
@@ -10,6 +16,10 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   }
 }
 
+/**
+ * Checks the latest version of the package from npm registry.
+ * @returns The latest version string, or null if the check fails
+ */
 export async function checkLatestVersion() {
   try {
     const response = await fetch('https://registry.npmjs.org/investec-ipb', {
@@ -39,6 +49,10 @@ export interface TableRow {
 
 export type TableData = TableRow[];
 
+/**
+ * Prints tabular data to the console in a formatted table.
+ * @param data - Array of row objects to display
+ */
 export function printTable(data: TableData): void {
   if (!data || data.length === 0) {
     console.log('No data to display.');
@@ -67,6 +81,13 @@ export function printTable(data: TableData): void {
   });
 }
 
+/**
+ * Loads credentials from a JSON file and merges them with existing credentials.
+ * @param credentials - Existing credentials object to merge into
+ * @param credentialsFile - Path to the credentials file
+ * @returns Updated credentials object
+ * @throws {Error} When the credentials file cannot be loaded
+ */
 export async function loadCredentialsFile(credentials: Credentials, credentialsFile: string) {
   if (credentialsFile) {
     try {
@@ -98,8 +119,7 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   return credentials;
 }
 
-import { promises as fs } from 'node:fs';
-import { chmod } from 'node:fs/promises';
+import { writeFile, chmod } from 'node:fs/promises';
 import ora from 'ora';
 import { optionCredentials } from './index.js';
 import type { ICardApi } from './mock-card.js';
@@ -114,7 +134,7 @@ export async function writeCredentialsFile(
   filepath: string,
   data: Record<string, string>
 ): Promise<void> {
-  await fs.writeFile(filepath, JSON.stringify(data, null, 2), {
+  await writeFile(filepath, JSON.stringify(data, null, 2), {
     encoding: 'utf8',
     flag: 'w',
   });
@@ -129,7 +149,12 @@ export interface Spinner {
   text?: string;
 }
 
-// Default spinner factory (uses ora)
+/**
+ * Creates a spinner instance for displaying loading indicators.
+ * @param enabled - Whether the spinner should be enabled (animated) or disabled (no-op)
+ * @param text - Initial text to display
+ * @returns A Spinner instance
+ */
 export function createSpinner(enabled: boolean, text: string): Spinner {
   if (!enabled) {
     // No-op spinner: logs start/stop messages but does not animate
@@ -147,6 +172,14 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
   // Real spinner
   return ora(text);
 }
+
+/**
+ * Initializes the Programmable Banking API client.
+ * @param credentials - API credentials
+ * @param options - Basic options including credential overrides
+ * @returns Initialized IPbApi instance
+ * @throws {Error} When API initialization fails
+ */
 export async function initializePbApi(
   credentials: Credentials,
   options: BasicOptions
@@ -173,6 +206,14 @@ export async function initializePbApi(
   await api.getAccessToken();
   return api;
 }
+
+/**
+ * Initializes the Card API client.
+ * @param credentials - API credentials
+ * @param options - Basic options including credential overrides
+ * @returns Initialized ICardApi instance
+ * @throws {Error} When API initialization fails
+ */
 export async function initializeApi(
   credentials: Credentials,
   options: BasicOptions

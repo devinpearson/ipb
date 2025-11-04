@@ -9,6 +9,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetches published code from a card and saves it to a file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When card key is missing or API call fails
+ */
 export async function publishedCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === '') {

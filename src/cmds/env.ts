@@ -9,6 +9,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Downloads environment variables from a card and saves them to a file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When card key is missing or API call fails
+ */
 export async function envCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === '') {

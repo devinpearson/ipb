@@ -11,6 +11,12 @@ interface Options {
   sandboxKey: string;
   verbose: boolean;
 }
+
+/**
+ * Sets authentication credentials and saves them securely.
+ * @param options - CLI options for credentials (API key, client ID, client secret, card key, OpenAI key, sandbox key)
+ * @throws {Error} When file operations fail
+ */
 export async function configCommand(options: Options) {
   try {
     let cred = {

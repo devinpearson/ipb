@@ -7,6 +7,11 @@ interface Options extends CommonOptions {
   cardKey: number;
 }
 
+/**
+ * Disables code on a programmable card.
+ * @param options - CLI options including card key and API credentials
+ * @throws {CliError} When card key is missing or API call fails
+ */
 export async function disableCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === '') {

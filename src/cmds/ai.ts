@@ -85,6 +85,12 @@ interface Options {
 // node . 'send a notification after transaction via twilio sms'
 // node . 'limit transactions to only Woolworths, Checkers and Spar'
 // node . 'allow transactions that USD or ZAR'
+/**
+ * Generates card code using an LLM based on a prompt.
+ * @param prompt - The prompt describing what the code should do
+ * @param options - CLI options including filename and verbose flag
+ * @throws {Error} When code generation fails or file operations fail
+ */
 export async function aiCommand(prompt: string, options: Options) {
   try {
     const envFilename = '.env.ai';

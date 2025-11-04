@@ -2,6 +2,12 @@ import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
+/**
+ * Fetches and displays account balances for a specific account.
+ * @param accountId - The account ID to fetch balances for
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
 export async function balancesCommand(accountId: string, options: CommonOptions) {
   try {
     printTitleBox();

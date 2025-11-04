@@ -3,6 +3,15 @@ import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
+/**
+ * Transfers money between accounts.
+ * @param accountId - The account ID to transfer from
+ * @param beneficiaryAccountId - The beneficiary account ID to transfer to
+ * @param amount - Amount to transfer in rands (e.g. 100.00)
+ * @param reference - Reference for the transfer
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or transfer fails
+ */
 export async function transferCommand(
   accountId: string,
   beneficiaryAccountId: string,

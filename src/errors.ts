@@ -24,12 +24,20 @@ export const ERROR_CODES = {
   // Add more as needed
 };
 
-// Helper to throw a custom error
+/**
+ * Helper function to throw a custom CLI error.
+ * @param code - Error code from ERROR_CODES
+ * @param message - Error message
+ * @throws {CliError} Always throws a CliError
+ */
 export function throwCliError(code: string, message: string): never {
   throw new CliError(code, message);
 }
 
-// Helper to format error output (for use in catch blocks)
+/**
+ * Helper function to format and print error output.
+ * @param error - The error to print (can be any type)
+ */
 export function printCliError(error: unknown) {
   if (error instanceof CliError) {
     console.error(error.message);

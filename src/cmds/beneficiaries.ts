@@ -2,6 +2,11 @@ import { credentials, printTitleBox } from '../index.js';
 import { createSpinner, handleCliError, initializePbApi, printTable } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
+/**
+ * Fetches and displays a list of beneficiaries.
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
 export async function beneficiariesCommand(options: CommonOptions) {
   try {
     printTitleBox();

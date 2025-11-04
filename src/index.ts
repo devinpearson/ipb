@@ -56,8 +56,9 @@ export const credentialLocation = {
   filename: `${homedir()}/.ipb/.credentials.json`,
 };
 
-// Print CLI title (used in some commands)
-// Currently unused - kept for potential future use
+/**
+ * Prints CLI title (currently unused, kept for potential future use).
+ */
 export async function printTitleBox() {
   // Function intentionally empty - can be implemented if needed
 }
@@ -283,6 +284,12 @@ async function main() {
   }
 }
 
+/**
+ * Merges CLI options with credentials, applying option overrides.
+ * @param options - Basic options that may contain credential overrides
+ * @param credentials - Base credentials object
+ * @returns Updated credentials object with option overrides applied
+ */
 export async function optionCredentials(
   options: BasicOptions,
   credentials: Credentials

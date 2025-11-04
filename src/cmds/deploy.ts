@@ -11,6 +11,11 @@ interface Options extends CommonOptions {
   env: string;
 }
 
+/**
+ * Deploys code to a programmable card.
+ * @param options - CLI options including card key, filename, optional env file, and API credentials
+ * @throws {CliError} When card key is missing, files don't exist, or deployment fails
+ */
 export async function deployCommand(options: Options) {
   try {
     printTitleBox();

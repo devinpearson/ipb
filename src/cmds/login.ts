@@ -24,6 +24,11 @@ interface LoginResponse {
   created_at: number;
 }
 
+/**
+ * Logs in with the server for LLM generation and saves the access token.
+ * @param options - CLI options including email and password
+ * @throws {CliError} When email/password are missing, login fails, or file operations fail
+ */
 export async function loginCommand(options: Options) {
   try {
     printTitleBox();

@@ -8,6 +8,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetches saved code from a card and saves it to a file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {Error} When card key is missing, API doesn't support fetching, or file operations fail
+ */
 export async function fetchCommand(options: Options) {
   if (options.cardKey === undefined) {
     if (credentials.cardKey === '') {

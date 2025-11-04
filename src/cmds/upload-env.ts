@@ -9,6 +9,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Uploads environment variables to a card from a JSON file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
+ */
 export async function uploadEnvCommand(options: Options) {
   try {
     await fsPromises.access(options.filename);

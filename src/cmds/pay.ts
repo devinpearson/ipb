@@ -3,6 +3,15 @@ import { credentials, printTitleBox } from '../index.js';
 import { handleCliError, initializePbApi } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
+/**
+ * Pays a beneficiary from an account.
+ * @param accountId - The account ID to transfer from
+ * @param beneficiaryId - The beneficiary ID to pay
+ * @param amount - Amount to transfer in rands (e.g. 100.00)
+ * @param reference - Reference for the payment
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid, payment fails, or confirmation is not provided
+ */
 export async function payCommand(
   accountId: string,
   beneficiaryId: string,

@@ -21,6 +21,12 @@ interface Options {
   verbose: boolean;
 }
 
+/**
+ * Uses an LLM to interact with the bank API by calling available functions.
+ * @param prompt - The prompt describing what banking operation to perform
+ * @param options - CLI options including verbose flag
+ * @throws {Error} When LLM interaction fails or API calls fail
+ */
 export async function bankCommand(prompt: string, options: Options) {
   try {
     printTitleBox();

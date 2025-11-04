@@ -9,6 +9,11 @@ interface Options extends CommonOptions {
   filename: string;
 }
 
+/**
+ * Fetches execution logs from a card and saves them to a file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When card key is missing, filename is missing, or API call fails
+ */
 export async function logsCommand(options: Options) {
   try {
     if (options.cardKey === undefined) {

@@ -10,6 +10,11 @@ interface Options extends CommonOptions {
   codeId: string;
 }
 
+/**
+ * Publishes code to a card using a saved code ID.
+ * @param options - CLI options including card key, filename, code ID, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or publishing fails
+ */
 export async function publishCommand(options: Options) {
   try {
     try {

@@ -14,6 +14,11 @@ interface Options extends CommonOptions {
   password: string;
 }
 
+/**
+ * Registers a new account with the server for LLM generation.
+ * @param options - CLI options including email and password
+ * @throws {CliError} When email/password are missing or registration fails
+ */
 export async function registerCommand(options: Options) {
   try {
     printTitleBox();
