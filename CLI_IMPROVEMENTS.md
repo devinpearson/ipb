@@ -208,25 +208,19 @@ program
 
 ---
 
-### 7. Configuration File Validation
+### 7. Configuration File Validation - **✅ Fully Implemented**
 
-**Current State**: Credentials file is read but not fully validated.
+**Current State**: ✅ Credentials are now validated before API initialization.
 
-**Recommendations**:
-```typescript
-// Validate credential file structure
-export function validateCredentialsFile(creds: Record<string, string>): void {
-  const requiredFields = ['clientId', 'clientSecret', 'apiKey'];
-  const missing = requiredFields.filter(field => !creds[field] || creds[field].trim() === '');
-  
-  if (missing.length > 0) {
-    throw new CliError(
-      ERROR_CODES.INVALID_CREDENTIALS,
-      `Missing required fields: ${missing.join(', ')}`
-    );
-  }
-}
-```
+**Implementation**:
+- ✅ Created `validateCredentialsFile` function in `src/utils.ts`
+- ✅ Validates required fields: `clientId`, `clientSecret`, `apiKey`
+- ✅ Integrated into `initializeApi` and `initializePbApi` functions
+- ✅ Provides actionable error message with suggestion to run `ipb config`
+- ✅ Supports custom required fields for different validation scenarios
+
+**Files Updated**:
+- ✅ `src/utils.ts` - Added `validateCredentialsFile` function and integrated into API initialization
 
 ---
 

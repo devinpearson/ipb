@@ -347,6 +347,29 @@ export async function ensureCredentialsDirectory(credentialLocation: {
 }
 
 /**
+ * Validates that required credential fields are present and non-empty.
+ * @param creds - Credentials object to validate
+ * @param requiredFields - Array of required field names (defaults to API credentials)
+ * @throws {CliError} When required fields are missing or empty
+ */
+export function validateCredentialsFile(
+  creds: Credentials | Record<string, string>,
+  requiredFields: string[] = ['clientId', 'clientSecret', 'apiKey']
+): void {
+  const credsRecord = creds as Record<string, string>;
+  const missing = requiredFields.filter(
+    (field) => !credsRecord[field] || (typeof credsRecord[field] === 'string' && credsRecord[field].trim() === '')
+  );
+
+  if (missing.length > 0) {
+    throw new CliError(
+      ERROR_CODES.INVALID_CREDENTIALS,
+      `Missing required credential fields: ${missing.join(', ')}. Run 'ipb config' to set your credentials.`
+    );
+  }
+}
+
+/**
  * Loads credentials from a JSON file and merges them with existing credentials.
  * @param credentials - Existing credentials object to merge into
  * @param credentialsFile - Path to the credentials file
@@ -450,6 +473,8 @@ export async function initializePbApi(
   options: BasicOptions
 ): Promise<IPbApi> {
   credentials = await optionCredentials(options, credentials);
+  // Validate required credentials before initializing API
+  validateCredentialsFile(credentials);
   let api: IPbApi;
   if (process.env.DEBUG === 'true') {
     const { PbApi } = await import('./mock-pb.js');
@@ -512,6 +537,8 @@ export async function initializeApi(
   options: BasicOptions
 ): Promise<ICardApi> {
   credentials = await optionCredentials(options, credentials);
+  // Validate required credentials before initializing API
+  validateCredentialsFile(credentials);
   let api: ICardApi;
   if (process.env.DEBUG === 'true') {
     const { CardApi } = await import('./mock-card.js');
