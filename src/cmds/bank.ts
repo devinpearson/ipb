@@ -49,24 +49,12 @@ export async function bankCommand(prompt: string, options: Options) {
     if (!openai) {
       throw new Error('OpenAI client is not initialized');
     }
-    // if (!credentials.openaiKey) {
-    //   throw new Error("OPENAI_API_KEY is not set");
-    // }
-    // if (!fs.existsSync("./instructions.txt")) {
-    //   throw new Error("instructions.txt does not exist");
-    // }
 
-    // tell the user we are loading the instructions
-    console.log(chalk.blueBright('Loading instructions from instructions.txt'));
-    // read the instructions from the file
-
-    //const instructions = fs.readFileSync("./instructions.txt").toString();
     console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
     console.log(chalk.blueBright('Prompt:'));
     console.log(prompt);
 
     const response = await generateResponse(prompt, instructions);
-    // mention calling open ai with the prompt and instructions
     if (options.verbose) {
       console.log('');
       console.log(chalk.blueBright('Response from OpenAI:'));
@@ -74,7 +62,6 @@ export async function bankCommand(prompt: string, options: Options) {
     } else {
       console.log('');
       console.log(chalk.blueBright('Response from OpenAI:'));
-      //console.log(chalk.blueBright("Description:"));
       console.log(response);
     }
   } catch (error: unknown) {
@@ -84,8 +71,6 @@ export async function bankCommand(prompt: string, options: Options) {
 
 async function generateResponse(prompt: string, instructions: string): Promise<string | null> {
   try {
-    // Use OpenAI chat completions API correctly
-
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: 'system', content: instructions },
       { role: 'user', content: prompt },
@@ -101,9 +86,6 @@ async function generateResponse(prompt: string, instructions: string): Promise<s
       messages,
       tools,
     });
-    //console.log("OpenAI response received");
-    //console.log(completion.choices)
-    // Defensive: check completion.choices[0] and .message
     const message = completion.choices?.[0]?.message ? completion.choices[0].message : undefined;
     if (!message) throw new Error('No message returned from OpenAI');
 
@@ -129,9 +111,6 @@ async function secondCall(
   if (!openai) {
     throw new Error('OpenAI client is not initialized');
   }
-  // Compose the correct message sequence for tool call follow-up
-  // Only include the original system/user messages, then the assistant message with tool_calls, then the tool message
-  // Ensure the tool_call_id in the tool message matches the tool_call_id in the assistant message's tool_calls array
   const followupMessages: OpenAI.ChatCompletionMessageParam[] = [
     messages[0] as OpenAI.ChatCompletionMessageParam, // system
     messages[1] as OpenAI.ChatCompletionMessageParam, // user
@@ -167,7 +146,6 @@ async function secondCall(
   return null;
 }
 
-// Fix: toolCall should be async and return Promise<string | null>
 async function toolCall(
   message: OpenAI.ChatCompletionMessage,
   tools: OpenAI.ChatCompletionTool[],

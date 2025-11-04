@@ -70,8 +70,6 @@ const outputSchema = z.object({
         .describe('Merchant object'),
     })
     .describe('Example transaction'),
-  // instructions: z.array(z.string()).describe("Step-by-step instructions"),
-  // prepTime: z.string().optional().describe("Preparation time (optional)"),
 });
 
 type Output = z.infer<typeof outputSchema>;
@@ -99,24 +97,12 @@ export async function aiCommand(prompt: string, options: Options) {
     if (!prompt) {
       prompt = await input({ message: 'Enter your AI code prompt:' });
     }
-    // if (!credentials.openaiKey) {
-    //   throw new Error("OPENAI_API_KEY is not set");
-    // }
-    // if (!fs.existsSync("./instructions.txt")) {
-    //   throw new Error("instructions.txt does not exist");
-    // }
 
-    // tell the user we are loading the instructions
-    console.log(chalk.blueBright('Loading instructions from instructions.txt'));
-    // read the instructions from the file
-
-    //const instructions = fs.readFileSync("./instructions.txt").toString();
     console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
     console.log(chalk.blueBright('Prompt:'));
     console.log(prompt);
 
     const response = await generateCode(prompt, instructions);
-    // mention calling open ai with the prompt and instructions
     if (options.verbose) {
       console.log('');
       console.log(chalk.blueBright('Response from OpenAI:'));
@@ -129,14 +115,9 @@ export async function aiCommand(prompt: string, options: Options) {
     }
     console.log('');
     const output = response?.code as string;
-    // remove ```javascript // seems to only be needed if its not structured output
-    // output = output.replace(/```javascript/g, "");
-    // remove ```
-    // output = output.replace(/```/g, "");
     console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
     await fsPromises.writeFile(options.filename, output, 'utf8');
     console.log('🎉 generated code saved to file');
-    // write the env variables to a file
     if (response?.env_variables) {
       console.log('');
       console.log(`💾 saving env variables to file: ${chalk.greenBright(envFilename)}`);
@@ -147,7 +128,6 @@ export async function aiCommand(prompt: string, options: Options) {
       envFile.end();
       console.log('🎉 env variables saved to file');
     }
-    // show example call to ipb rub with example transaction
     if (response?.example_transaction) {
       console.log('');
       console.log(chalk.blueBright('To test locally run:'));

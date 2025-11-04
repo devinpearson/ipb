@@ -17,7 +17,6 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
 
     const result = await api.getAccountBalances(accountId);
     spinner.stop();
-    //console.table(accounts)
     if (options.json) {
       console.log(JSON.stringify(result.data, null, 2));
       return;
