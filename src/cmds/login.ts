@@ -1,10 +1,14 @@
-import fs, { promises as fsPromises } from 'node:fs';
 import https from 'node:https';
 import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation, printTitleBox } from '../index.js';
-import { handleCliError, writeCredentialsFile } from '../utils.js';
+import {
+  ensureCredentialsDirectory,
+  handleCliError,
+  readCredentialsFile,
+  writeCredentialsFile,
+} from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -66,21 +70,10 @@ export async function loginCommand(options: Options) {
     }
     const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
     console.log('Login successful');
-    let cred = {
-      clientId: '',
-      clientSecret: '',
-      apiKey: '',
-      cardKey: '',
-      openaiKey: '',
-      sandboxKey: '',
-    };
-    if (fs.existsSync(credentialLocation.filename)) {
-      const data = await fsPromises.readFile(credentialLocation.filename, 'utf8');
-      cred = JSON.parse(data);
-    } else {
-      if (!fs.existsSync(credentialLocation.folder)) {
-        await fsPromises.mkdir(credentialLocation.folder, { recursive: true });
-      }
+    let cred = await readCredentialsFile(credentialLocation);
+    if (Object.values(cred).every((v) => v === '')) {
+      // File doesn't exist, ensure directory exists before creating
+      await ensureCredentialsDirectory(credentialLocation);
       await writeCredentialsFile(credentialLocation.filename, cred);
     }
     cred.sandboxKey = loginResponse.access_token;

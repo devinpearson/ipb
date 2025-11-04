@@ -1,6 +1,10 @@
-import fs, { promises as fsPromises } from 'node:fs';
 import { credentialLocation } from '../index.js';
-import { handleCliError, writeCredentialsFile } from '../utils.js';
+import {
+  ensureCredentialsDirectory,
+  handleCliError,
+  readCredentialsFile,
+  writeCredentialsFile,
+} from '../utils.js';
 
 interface Options {
   clientId: string;
@@ -19,21 +23,10 @@ interface Options {
  */
 export async function configCommand(options: Options) {
   try {
-    let cred = {
-      clientId: '',
-      clientSecret: '',
-      apiKey: '',
-      cardKey: '',
-      openaiKey: '',
-      sandboxKey: '',
-    };
-    if (fs.existsSync(credentialLocation.filename)) {
-      const data = await fsPromises.readFile(credentialLocation.filename, 'utf8');
-      cred = JSON.parse(data);
-    } else {
-      if (!fs.existsSync(credentialLocation.folder)) {
-        await fsPromises.mkdir(credentialLocation.folder, { recursive: true });
-      }
+    let cred = await readCredentialsFile(credentialLocation);
+    if (Object.values(cred).every((v) => v === '')) {
+      // File doesn't exist, ensure directory exists
+      await ensureCredentialsDirectory(credentialLocation);
     }
 
     if (options.clientId) {

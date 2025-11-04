@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import { readFile, mkdir } from 'node:fs/promises';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
@@ -80,6 +82,49 @@ export function printTable(data: TableData): void {
       .join(' | ');
     console.log(dataRow);
   });
+}
+
+/**
+ * Reads credentials from the default credentials file location.
+ * @param credentialLocation - The credential location object with filename and folder
+ * @returns Credentials object with values from file, or empty strings if file doesn't exist
+ * @throws {Error} When the credentials file exists but cannot be parsed
+ */
+export async function readCredentialsFile(credentialLocation: {
+  filename: string;
+  folder: string;
+}): Promise<Record<string, string>> {
+  const defaultCreds = {
+    clientId: '',
+    clientSecret: '',
+    apiKey: '',
+    cardKey: '',
+    openaiKey: '',
+    sandboxKey: '',
+  };
+
+  try {
+    if (fs.existsSync(credentialLocation.filename)) {
+      const data = await readFile(credentialLocation.filename, 'utf8');
+      return { ...defaultCreds, ...JSON.parse(data) };
+    }
+    return defaultCreds;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to read credentials file: ${message}`);
+  }
+}
+
+/**
+ * Ensures the credentials directory exists, creating it if necessary.
+ * @param credentialLocation - The credential location object with folder path
+ */
+export async function ensureCredentialsDirectory(credentialLocation: {
+  folder: string;
+}): Promise<void> {
+  if (!fs.existsSync(credentialLocation.folder)) {
+    await mkdir(credentialLocation.folder, { recursive: true });
+  }
 }
 
 /**
