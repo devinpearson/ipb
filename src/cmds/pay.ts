@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { initializePbApi } from '../utils.js';
+import { initializePbApi, validateAmount, validateAccountId } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -23,16 +23,22 @@ export async function payCommand(
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
+  validateAccountId(accountId);
+  
   if (!beneficiaryId) {
     beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
   }
+  // Beneficiary ID validation (similar format to account ID)
+  if (!beneficiaryId || beneficiaryId.trim().length === 0) {
+    throw new Error('Beneficiary ID is required');
+  }
+  
   if (!amount) {
     const amt = await input({ message: 'Enter amount (in rands):' });
     amount = parseFloat(amt);
-    if (Number.isNaN(amount) || amount <= 0) {
-      throw new Error('Amount must be a positive number');
-    }
   }
+  validateAmount(amount);
+  
   if (!reference) {
     reference = await input({ message: 'Enter reference for the payment:' });
   }

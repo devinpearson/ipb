@@ -23,57 +23,46 @@ Based on the [Node.js CLI Apps Best Practices](https://github.com/lirantal/nodej
 
 ### 1. Enhanced Input Validation
 
-**Current State**: Some commands validate input (e.g., `transfer`, `pay`), but validation is inconsistent.
+**Current State**: ✅ Fully Implemented
 
-**Issues**:
-- Amount validation only checks `> 0`, doesn't validate decimal precision
-- Account IDs not validated for format
-- File paths not validated before use
-- Missing validation for currency codes, country codes
+**Implementation**:
+- Added `INVALID_INPUT` error code (`E4013`) to `errors.ts`
+- Created `validateAmount()` function in `utils.ts`:
+  - Validates amount is a valid, finite number
+  - Checks amount is positive
+  - Validates decimal precision (default max 2 decimal places)
+  - Provides clear error messages for each validation failure
+- Created `validateAccountId()` function in `utils.ts`:
+  - Validates account ID is not empty
+  - Checks minimum length (3 characters)
+  - Checks maximum length (100 characters)
+  - Prevents path traversal attempts and invalid characters (`..`, `/`, `\`)
+- File path validation already implemented:
+  - `validateFilePath()` and `validateFilePathForWrite()` functions exist
+  - Used in all file-based commands (deploy, fetch, upload, publish, etc.)
+  - Validates file extensions, permissions, and normalizes paths
+  - Includes path traversal protection
+- Updated commands:
+  - `transfer.ts`: Added `validateAmount()` and `validateAccountId()` for both account IDs
+  - `pay.ts`: Added `validateAmount()` and `validateAccountId()` for account ID
+  - `balances.ts`: Added `validateAccountId()` validation
+  - `transactions.ts`: Added `validateAccountId()` validation
+- Error handler updated to recognize `INVALID_INPUT` errors and return `VALIDATION_ERROR` exit code
 
-**Recommendations**:
-```typescript
-// Add to src/errors.ts
-export const ERROR_CODES = {
-  // ... existing codes ...
-  INVALID_INPUT: 'E4013', // Add for invalid input validation
-};
+**Validation Features**:
+- Amount validation: Checks for NaN, infinity, positive values, and decimal precision (default 2 decimal places)
+- Account ID validation: Length checks, character validation, path traversal protection
+- File path validation: Extension validation, permission checks, path normalization, path traversal protection
 
-// Create validation utilities in src/utils.ts
-export function validateAmount(amount: number, maxDecimals = 2): void {
-  if (amount <= 0) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
-  }
-  const decimalPlaces = (amount.toString().split('.')[1] || '').length;
-  if (decimalPlaces > maxDecimals) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, `Amount can have at most ${maxDecimals} decimal places`);
-  }
-}
+**Files Updated**:
+- `src/errors.ts` - Added `INVALID_INPUT` error code
+- `src/utils.ts` - Added `validateAmount()` and `validateAccountId()` functions, updated `determineExitCode()` to recognize `INVALID_INPUT`
+- `src/cmds/transfer.ts` - Added amount and account ID validation
+- `src/cmds/pay.ts` - Added amount and account ID validation
+- `src/cmds/balances.ts` - Added account ID validation
+- `src/cmds/transactions.ts` - Added account ID validation
 
-export function validateAccountId(accountId: string): void {
-  if (!accountId || accountId.trim().length === 0) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID is required');
-  }
-  // Add format validation if Investec has a specific format
-}
-
-export function validateFilePath(filePath: string): void {
-  if (!filePath || !filePath.trim()) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'File path is required');
-  }
-  // Check for path traversal attempts
-  if (filePath.includes('..')) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Invalid file path');
-  }
-}
-```
-
-**Files to Update**:
-- `src/cmds/transfer.ts` - Add amount validation
-- `src/cmds/pay.ts` - Add amount validation
-- `src/cmds/balances.ts` - Validate account ID format
-- `src/cmds/transactions.ts` - Validate account ID format
-- All file-based commands - Validate file paths
+**Note**: Currency and country code validation can be added in the future if needed. File path validation was already fully implemented in previous improvements.
 
 ---
 

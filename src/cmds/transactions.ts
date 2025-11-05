@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi, validateAccountId } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -47,6 +47,9 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
     const { CliError, ERROR_CODES } = await import('../errors.js');
     throw new CliError(ERROR_CODES.MISSING_ACCOUNT_ID, 'Account ID is required. Provide it as an argument or via stdin.');
   }
+  
+  // Validate account ID format
+  validateAccountId(accountId);
   
   if (!isPiped) {
     printTitleBox();

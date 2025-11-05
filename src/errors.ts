@@ -34,6 +34,7 @@ export const ERROR_CODES = {
   FILE_NOT_FOUND: 'E4010',
   MISSING_EMAIL_OR_PASSWORD: 'E4011', // Added for register command
   MISSING_ACCOUNT_ID: 'E4012', // Added for balances command
+  INVALID_INPUT: 'E4013', // Added for input validation errors
   // Add more as needed
 };
 

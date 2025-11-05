@@ -23,6 +23,7 @@ function determineExitCode(error: unknown, errorCode: string | undefined, errorM
     errorCode === ERROR_CODES.MISSING_ACCOUNT_ID ||
     errorCode === ERROR_CODES.MISSING_EMAIL_OR_PASSWORD ||
     errorCode === ERROR_CODES.INVALID_PROJECT_NAME ||
+    errorCode === ERROR_CODES.INVALID_INPUT ||
     lowerMessage.includes('received undefined') ||
     lowerMessage.includes('required') ||
     lowerMessage.includes('invalid')
@@ -920,6 +921,63 @@ export async function validateFilePathForWrite(
   await checkFilePermissions(normalizedPath, 'write');
   
   return normalizedPath;
+}
+
+/**
+ * Validates an amount value for financial transactions.
+ * @param amount - The amount to validate
+ * @param maxDecimals - Maximum number of decimal places allowed (default: 2)
+ * @throws {CliError} When amount is invalid (not positive, NaN, or has too many decimals)
+ */
+export function validateAmount(amount: number, maxDecimals = 2): void {
+  if (Number.isNaN(amount)) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a valid number');
+  }
+  
+  if (amount <= 0) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
+  }
+  
+  if (!Number.isFinite(amount)) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a finite number');
+  }
+  
+  // Check decimal precision
+  const decimalPlaces = (amount.toString().split('.')[1] || '').length;
+  if (decimalPlaces > maxDecimals) {
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      `Amount can have at most ${maxDecimals} decimal place${maxDecimals === 1 ? '' : 's'}. Found ${decimalPlaces} decimal place${decimalPlaces === 1 ? '' : 's'}.`
+    );
+  }
+}
+
+/**
+ * Validates an account ID format.
+ * @param accountId - The account ID to validate
+ * @throws {CliError} When account ID is invalid (empty, whitespace only, or invalid format)
+ */
+export function validateAccountId(accountId: string): void {
+  if (!accountId || accountId.trim().length === 0) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID is required and cannot be empty');
+  }
+  
+  // Basic format validation: account IDs should not contain certain characters
+  // and should have reasonable length (typically 6-50 characters)
+  const trimmedId = accountId.trim();
+  
+  if (trimmedId.length < 3) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID must be at least 3 characters long');
+  }
+  
+  if (trimmedId.length > 100) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID cannot exceed 100 characters');
+  }
+  
+  // Check for path traversal attempts or other suspicious patterns
+  if (trimmedId.includes('..') || trimmedId.includes('/') || trimmedId.includes('\\')) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID contains invalid characters');
+  }
 }
 
 /**

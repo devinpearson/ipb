@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi } from '../utils.js';
+import { createSpinner, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -23,18 +23,21 @@ export async function transferCommand(
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
+  validateAccountId(accountId);
+  
   if (!beneficiaryAccountId) {
     beneficiaryAccountId = await input({
       message: 'Enter beneficiary account ID:',
     });
   }
+  validateAccountId(beneficiaryAccountId);
+  
   if (!amount) {
     const amt = await input({ message: 'Enter amount (in rands):' });
     amount = parseFloat(amt);
-    if (Number.isNaN(amount) || amount <= 0) {
-      throw new Error('Please enter a valid positive amount');
-    }
   }
+  validateAmount(amount);
+  
   if (!reference) {
     reference = await input({ message: 'Enter reference for the transfer:' });
   }
