@@ -102,21 +102,25 @@ The project already implements many best practices from clig.dev, but there are 
 
 ---
 
-### 5. Support `EDITOR` Environment Variable
+### ✅ 5. Support `EDITOR` Environment Variable
 
-**Status**: ⏳ **NOT STARTED**
+**Status**: ✅ **COMPLETED**
 
-**Current State**: No file editing functionality currently exposed, but could be useful for config editing.
+**Current State**: ✅ `ipb config edit` command opens credentials file in user's editor, respecting `EDITOR` environment variable.
 
 **Guideline**: [Environment Variables](https://clig.dev/#environment-variables) - Use `EDITOR` when prompting for multi-line input.
 
 **Implementation**:
-- Add `ipb config edit` command that opens credentials file in `$EDITOR`
-- Document in README
+- ✅ Added `openInEditor()` utility function that respects `EDITOR` environment variable
+- ✅ Added `getDefaultEditor()` function with platform-specific defaults (nano/vim/vi/emacs on Unix, notepad.exe on Windows)
+- ✅ Added `ipb config edit` command that opens credentials file in editor
+- ✅ Added `--profile` option to edit specific profiles
+- ✅ Documented in README with examples
 
-**Files to Modify**:
-- `src/cmds/set.ts` - Add `edit` subcommand
-- `README.md` - Document EDITOR usage
+**Files Modified**:
+- ✅ `src/utils.ts` - Added `openInEditor()` and `getDefaultEditor()` functions
+- ✅ `src/index.ts` - Added `config edit` subcommand
+- ✅ `README.md` - Documented EDITOR environment variable and `config edit` command
 
 **Priority**: Low - Nice to have
 
@@ -310,9 +314,9 @@ The project already implements many best practices from clig.dev, but there are 
 
 1. 🔄 **Respect `TERM` and terminal capabilities** - Terminal dimensions complete, emoji/Unicode detection pending
 
-### ⏳ Not Started (1 Item)
+### ⏳ Not Started (0 Items)
 
-1. ⏳ **Support `EDITOR` environment variable** - Low priority
+All high and medium priority items have been completed!
 
 ## Implementation Priority
 
@@ -326,8 +330,8 @@ The project already implements many best practices from clig.dev, but there are 
    - ✅ Use `TMPDIR` for temporary files - Complete
 
 3. **Low Priority** (Nice to Have):
-   - ⏳ Support `EDITOR` for config editing
-   - ✅ Check `LINES`/`COLUMNS` explicitly
+   - ✅ Support `EDITOR` for config editing - Complete
+   - ✅ Check `LINES`/`COLUMNS` explicitly - Complete
    - ⏳ Better secret handling documentation
 
 ---

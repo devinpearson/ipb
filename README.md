@@ -175,6 +175,13 @@ The CLI follows standard CLI conventions and respects these environment variable
   ```
   Note: The CLI uses Node.js `os.tmpdir()` which automatically respects `TMPDIR`. Atomic file operations (like credential writes) use the same directory as the target file to ensure atomicity.
 
+- **`EDITOR`**: Editor to use for editing configuration files. Defaults to `nano` on Unix, `notepad.exe` on Windows.
+  ```sh
+  EDITOR=vim ipb config edit
+  EDITOR="code --wait" ipb config edit  # VS Code
+  ```
+  Used by `ipb config edit` command to open credentials files in your preferred editor.
+
 You can also get structured output:
 ```sh
 ipb env-list --json
@@ -706,6 +713,30 @@ ipb config profile show
 
 # Delete a profile
 ipb config profile delete staging
+
+# Edit credentials in your editor
+ipb config edit
+ipb config edit --profile production
+```
+
+**Editing Credentials:**
+
+You can edit credentials files directly in your preferred editor using the `edit` subcommand:
+
+```sh
+# Edit default credentials
+ipb config edit
+
+# Edit a specific profile
+ipb config edit --profile production
+```
+
+The command respects the `EDITOR` environment variable. If not set, it defaults to `nano` on Unix systems and `notepad.exe` on Windows.
+
+```sh
+# Use a specific editor
+EDITOR=vim ipb config edit
+EDITOR="code --wait" ipb config edit  # VS Code
 ```
 
 For more details, see the [Configuration Profiles](#configuration-profiles) section above.

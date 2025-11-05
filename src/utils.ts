@@ -122,6 +122,101 @@ export function getTempDir(): string {
   return tmpdir();
 }
 
+/**
+ * Opens a file in the user's editor, respecting the EDITOR environment variable.
+ * According to clig.dev guidelines, should check EDITOR when prompting for multi-line input.
+ * 
+ * @param filepath - Path to the file to open
+ * @param options - Options including editor override
+ * @throws {CliError} When editor is not available or file cannot be opened
+ * 
+ * @example
+ * ```typescript
+ * await openInEditor('/path/to/file.json');
+ * // Uses $EDITOR or defaults to sensible defaults
+ * ```
+ */
+export async function openInEditor(
+  filepath: string,
+  options: { editor?: string } = {}
+): Promise<void> {
+  // Check for editor in options, then environment variable, then defaults
+  const editor = options.editor || process.env.EDITOR || getDefaultEditor();
+  
+  if (!editor) {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'No editor available. Set EDITOR environment variable (e.g., export EDITOR=nano)'
+    );
+  }
+  
+  // Ensure file exists or create it
+  const dir = path.dirname(filepath);
+  if (!fs.existsSync(dir)) {
+    await mkdir(dir, { recursive: true });
+  }
+  
+  // Split editor command (handles "editor --flag" format)
+  const editorParts = editor.split(/\s+/);
+  const editorCommand = editorParts[0];
+  const editorArgs = [...editorParts.slice(1), filepath];
+  
+  // Ensure editor command is not undefined
+  if (!editorCommand) {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      'Invalid editor command. Set EDITOR environment variable to a valid editor.'
+    );
+  }
+  
+  return new Promise<void>((resolve, reject) => {
+    const editorProcess = spawn(editorCommand, editorArgs, {
+      stdio: 'inherit',
+    });
+    
+    editorProcess.on('error', (error: Error) => {
+      reject(
+        new CliError(
+          ERROR_CODES.FILE_NOT_FOUND,
+          `Failed to open editor "${editorCommand}": ${error.message}. Set EDITOR environment variable to a valid editor.`
+        )
+      );
+    });
+    
+    editorProcess.on('exit', (code: number | null) => {
+      if (code === 0 || code === null) {
+        resolve();
+      } else {
+        reject(
+          new CliError(
+            ERROR_CODES.FILE_NOT_FOUND,
+            `Editor "${editorCommand}" exited with code ${code}`
+          )
+        );
+      }
+    });
+  });
+}
+
+/**
+ * Gets the default editor based on the platform.
+ * @returns Default editor command or null if none available
+ */
+function getDefaultEditor(): string | null {
+  // Platform-specific defaults
+  if (process.platform === 'win32') {
+    // Windows: try common editors
+    return 'notepad.exe';
+  }
+  
+  // Unix-like: try common editors in order of preference
+  // These are typically available on most systems
+  const unixEditors = ['nano', 'vim', 'vi', 'emacs'];
+  // Note: We can't actually check if they're available without spawning
+  // So we'll just return the first one and let spawn handle the error
+  return unixEditors[0] || null;
+}
+
 // Configure chalk at module load time
 configureChalk();
 

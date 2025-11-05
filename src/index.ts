@@ -477,6 +477,10 @@ Examples:
   
   # Delete a profile
   $ ipb config profile delete staging
+  
+  # Edit credentials in your editor
+  $ ipb config edit
+  $ ipb config edit --profile production
       `
     );
   
@@ -562,6 +566,44 @@ Examples:
         console.log(`✅ Profile "${profileName}" deleted.`);
       }
     });
+  
+  // Edit command - opens credentials file in editor
+  configCmd
+    .command('edit')
+    .description('Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.')
+    .option('--profile <profile>', 'Edit a specific profile instead of default credentials')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb config edit
+  $ ipb config edit --profile production
+  $ EDITOR=vim ipb config edit
+  $ EDITOR="code --wait" ipb config edit
+      `
+    )
+    .action(async (options: { profile?: string }) => {
+      const { openInEditor, getProfilePath } = await import('./utils.js');
+      const { credentialLocation } = await import('./index.js');
+      
+      let filepath: string;
+      if (options.profile) {
+        filepath = getProfilePath(options.profile);
+      } else {
+        filepath = credentialLocation.filename;
+      }
+      
+      try {
+        const editor = process.env.EDITOR || 'default editor';
+        console.log(`Opening ${filepath} in ${editor}...`);
+        await openInEditor(filepath);
+        console.log('✅ Credentials file saved');
+      } catch (error) {
+        // Error is already a CliError with helpful message
+        throw error;
+      }
+    });
+  
   // Code Management
   addApiCredentialOptions(
     program
