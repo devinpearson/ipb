@@ -393,6 +393,130 @@ export function safeLog(message: string, ...args: unknown[]): void {
   console.log(safeMessage, ...args);
 }
 
+/**
+ * Secret fields that should not be read from environment variables for security reasons.
+ * According to clig.dev guidelines, secrets should be stored in credential files, not environment variables.
+ */
+const SECRET_ENV_VARS = [
+  'INVESTEC_CLIENT_SECRET',
+  'INVESTEC_API_KEY',
+  'INVESTEC_CARD_KEY',
+  'OPENAI_API_KEY',
+  'SANDBOX_KEY',
+] as const;
+
+/**
+ * Detects if secrets are being loaded from environment variables.
+ * Returns information about which secrets are being loaded from env vars.
+ * 
+ * @returns Object containing information about secret usage from environment variables
+ */
+export function detectSecretUsageFromEnv(): {
+  secretsFromEnv: string[];
+  hasSecretsFromEnv: boolean;
+} {
+  const secretsFromEnv: string[] = [];
+  
+  for (const envVar of SECRET_ENV_VARS) {
+    if (process.env[envVar] !== undefined && process.env[envVar] !== '') {
+      secretsFromEnv.push(envVar);
+    }
+  }
+  
+  return {
+    secretsFromEnv,
+    hasSecretsFromEnv: secretsFromEnv.length > 0,
+  };
+}
+
+/**
+ * Checks if the CLI is running in a non-interactive environment (script, CI/CD, etc.).
+ * This helps determine when to show security warnings.
+ * 
+ * @returns True if running in a non-interactive environment
+ */
+export function isNonInteractiveEnvironment(): boolean {
+  // Check if stdout is not a TTY (piped or redirected)
+  if (!process.stdout.isTTY) {
+    return true;
+  }
+  
+  // Check for common CI/CD environment variables
+  const ciEnvVars = [
+    'CI',
+    'CONTINUOUS_INTEGRATION',
+    'GITHUB_ACTIONS',
+    'GITLAB_CI',
+    'JENKINS_URL',
+    'TRAVIS',
+    'CIRCLECI',
+    'BUILDKITE',
+    'TEAMCITY_VERSION',
+  ];
+  
+  for (const envVar of ciEnvVars) {
+    if (process.env[envVar] !== undefined && process.env[envVar] !== '') {
+      return true;
+    }
+  }
+  
+  // Check if running in a script (non-interactive shell)
+  // This is a heuristic - scripts often have TERM=dumb or no TERM
+  const term = process.env.TERM;
+  if (term === 'dumb' || term === undefined) {
+    // But only if we're not in a TTY (already checked above)
+    // This case is mainly for when TERM is set but we're actually in a script
+    return false; // We already checked isTTY above
+  }
+  
+  return false;
+}
+
+/**
+ * Warns about secret usage from environment variables.
+ * According to clig.dev guidelines, secrets should not be read from environment variables
+ * because they can be leaked in process lists, logs, or CI/CD configurations.
+ * 
+ * @param options - Options including verbose mode and whether to show warnings
+ * @returns True if warnings were shown
+ */
+export function warnAboutSecretUsage(options: { verbose?: boolean; force?: boolean } = {}): boolean {
+  const { secretsFromEnv, hasSecretsFromEnv } = detectSecretUsageFromEnv();
+  
+  if (!hasSecretsFromEnv) {
+    return false;
+  }
+  
+  // Only warn in verbose mode or if forced, or if in non-interactive environment
+  const shouldWarn = options.force || 
+                     options.verbose || 
+                     isDebugEnabled() ||
+                     isNonInteractiveEnvironment();
+  
+  if (!shouldWarn) {
+    return false;
+  }
+  
+  const warningText = getSafeText(`⚠️  Security Warning: Secrets are being loaded from environment variables:`);
+  console.warn(chalk.yellow(warningText));
+  
+  for (const envVar of secretsFromEnv) {
+    console.warn(chalk.yellow(`   - ${envVar}`));
+  }
+  
+  console.warn(chalk.yellow('\n   For better security, store secrets in credential files instead:'));
+  console.warn(chalk.yellow('   - Run: ipb config --client-id <id> --client-secret <secret> --api-key <key>'));
+  console.warn(chalk.yellow('   - Or use profiles: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'));
+  console.warn(chalk.yellow('\n   Environment variables can be leaked in:'));
+  console.warn(chalk.yellow('   - Process lists (ps, top)'));
+  console.warn(chalk.yellow('   - System logs'));
+  console.warn(chalk.yellow('   - CI/CD configuration files'));
+  console.warn(chalk.yellow('   - Shell history'));
+  console.warn('');
+  
+  return true;
+}
+
 // Configure chalk at module load time
 configureChalk();
 

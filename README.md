@@ -118,11 +118,15 @@ To configure the CLI, run the following command:
 ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
 ```
 
+**⚠️ Security Note:** While the CLI supports environment variables, it's recommended to use credential files for secrets (see [Security Best Practices](#security-best-practices) below). Environment variables can be leaked in process lists, logs, and CI/CD configurations.
+
 If you want to set up specific environments for your code, you can set the environment variables in a `.env` file in the root of your project:
 
 ```env
 INVESTEC_HOST=https://openapi.investec.com
 INVESTEC_CLIENT_ID=your-client-id
+# ⚠️ SECURITY WARNING: Secrets in .env files can be leaked
+# Consider using credential files instead: ipb config --client-secret <secret> --api-key <key>
 INVESTEC_CLIENT_SECRET=your-client-secret
 INVESTEC_API_KEY=your-api-key
 ```
@@ -194,6 +198,44 @@ You can also get structured output:
 ipb env-list --json
 ipb env-list --yaml --output env-vars.yaml
 ```
+
+### Security Best Practices
+
+**⚠️ Important: Secret Handling**
+
+For security reasons, the CLI **recommends storing secrets in credential files rather than environment variables**. While the CLI supports environment variables for convenience, they pose security risks:
+
+**Why credential files are more secure:**
+- Environment variables can be leaked in:
+  - Process lists (`ps`, `top`, `htop`)
+  - System logs
+  - CI/CD configuration files (GitHub Actions, GitLab CI, etc.)
+  - Shell history files
+  - Debug output and error messages
+- Credential files are stored with restricted permissions (`600`) and in a secure location (`~/.ipb/.credentials.json`)
+
+**The CLI will automatically warn you if:**
+- Secrets are detected in environment variables AND
+- You're running in verbose mode (`--verbose` or `DEBUG=1`) OR
+- You're in a non-interactive environment (CI/CD, scripts, etc.)
+
+**Recommended approach:**
+```sh
+# Store secrets in credential files (recommended)
+ipb config --client-id <id> --client-secret <secret> --api-key <key>
+
+# Or use profiles for multiple environments
+ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
+ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
+ipb config profile set production  # Set active profile
+```
+
+**When environment variables are acceptable:**
+- Development/testing environments (with awareness of risks)
+- Temporary use cases where credential files are not practical
+- When you understand the security implications
+
+**Note:** The CLI still supports environment variables for backward compatibility, but you should be aware of the security implications. The CLI follows [clig.dev](https://clig.dev/) guidelines which recommend against reading secrets from environment variables.
 
 **Priority Order** (highest to lowest):
 1. Command line options (e.g., `--client-id`, `--api-key`)

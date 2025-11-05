@@ -52,6 +52,7 @@ import {
   logCommandHistory,
   readCredentialsFileSync,
   showUpdateNotification,
+  warnAboutSecretUsage,
   withCommandContext,
 } from './utils.js';
 
@@ -1164,6 +1165,14 @@ Examples:
   });
   
   try {
+    // Check for secret usage from environment variables before executing command
+    // We need to check verbose mode from raw args since we haven't parsed yet
+    const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
+    const verbose = getVerboseMode(hasVerboseFlag);
+    
+    // Warn about secret usage (will only show if verbose or in non-interactive environment)
+    warnAboutSecretUsage({ verbose });
+    
     // Parse arguments to execute commands
     await program.parseAsync(process.argv);
     

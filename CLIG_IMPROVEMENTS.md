@@ -238,20 +238,36 @@ The CLI automatically replaces emojis with ASCII equivalents when terminal doesn
 
 ---
 
-### 13. Better Secret Handling
+### ✅ 13. Better Secret Handling
 
-**Current State**: Secrets are stored in credentials files (good), but could warn about environment variable usage.
+**Status**: ✅ **COMPLETED**
+
+**Current State**: ✅ Fully implemented secret detection and warnings with comprehensive security documentation.
 
 **Guideline**: [Environment Variables](https://clig.dev/#environment-variables) - Do not read secrets from environment variables.
 
 **Implementation**:
-- Add warning if user tries to use `--api-key` via environment variable in a script
-- Document that secrets should be in credential files, not environment variables
-- Note: Current implementation allows env vars for convenience, but should document security implications
+- ✅ Added `detectSecretUsageFromEnv()` function to detect secrets loaded from environment variables
+- ✅ Added `isNonInteractiveEnvironment()` function to detect CI/CD and script environments
+- ✅ Added `warnAboutSecretUsage()` function that warns when secrets are detected in env vars
+- ✅ Warnings shown automatically when:
+  - Running in verbose mode (`--verbose` or `DEBUG=1`)
+  - Running in non-interactive environments (CI/CD, scripts)
+  - Force flag is set
+- ✅ Comprehensive security documentation added to README.md
+- ✅ Security warnings added to `.env` file examples
 
-**Files to Modify**:
-- `README.md` - Add security section about secrets
-- `src/index.ts` - Consider adding warning in verbose mode
+**Files Modified**:
+- ✅ `src/utils.ts` - Added secret detection and warning functions
+- ✅ `src/index.ts` - Integrated secret warnings into main execution flow
+- ✅ `README.md` - Added "Security Best Practices" section with detailed guidance
+- ✅ `README.md` - Added security warnings to environment variable examples
+
+**Security Features**:
+- Detects secrets in: `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`, `OPENAI_API_KEY`, `SANDBOX_KEY`
+- Warns about security risks: process lists, logs, CI/CD configs, shell history
+- Provides actionable guidance: recommends credential files and profiles
+- Non-intrusive: only shows warnings when appropriate (verbose/non-interactive)
 
 **Priority**: Low - Current approach is acceptable, just needs documentation
 
@@ -325,6 +341,15 @@ The CLI automatically replaces emojis with ASCII equivalents when terminal doesn
    - Added emoji fallback mapping (e.g., `💳` → `[CARD]`)
    - Status: Complete
 
+7. **✅ Better Secret Handling**
+   - Implemented: `detectSecretUsageFromEnv()`, `isNonInteractiveEnvironment()`, `warnAboutSecretUsage()` functions
+   - Automatically detects when secrets are loaded from environment variables
+   - Shows security warnings in verbose mode or non-interactive environments
+   - Comprehensive security documentation added to README.md
+   - Warns about risks: process lists, logs, CI/CD configs, shell history
+   - Provides actionable guidance for secure credential storage
+   - Status: Complete
+
 ## Implementation Summary
 
 ### ✅ Completed (All High Priority Items)
@@ -358,7 +383,7 @@ All high and medium priority items have been completed!
 3. **Low Priority** (Nice to Have):
    - ✅ Support `EDITOR` for config editing - Complete
    - ✅ Check `LINES`/`COLUMNS` explicitly - Complete
-   - ⏳ Better secret handling documentation
+   - ✅ Better secret handling - Complete
 
 ---
 
