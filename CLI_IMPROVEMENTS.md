@@ -79,27 +79,28 @@ export function validateFilePath(filePath: string): void {
 
 ### 2. Improved Command Descriptions
 
-**Current State**: Some command descriptions are too brief (e.g., "deploy code to card").
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-```typescript
-// Better descriptions with examples
-program
-  .command('deploy')
-  .description('Deploy code to a programmable card. Uploads code and environment variables, then publishes it.')
-  .addHelpText('after', `
-Examples:
-  $ ipb deploy -f main.js -e production -c card-123
-  $ ipb deploy -f main.js --env dev --card-key card-456
-  `)
-  .option('-f,--filename <filename>', 'JavaScript file to deploy')
-  .option('-e,--env <env>', 'Environment name (uses .env.<env> file)')
-  .option('-c,--card-key <cardKey>', 'Card identifier');
-```
+**Implementation**:
+- Enhanced all 30 command descriptions to be more action-oriented and informative
+- Descriptions now start with imperative verbs (List, Get, Deploy, Upload, etc.)
+- Added context about what each command does and when to use it
+- Improved clarity by explaining the purpose and outcome of each command
+- All commands already have examples in their help text (via `addHelpText('after', ...)`)
+- Descriptions follow CLI best practices:
+  - Start with action verb (imperative mood)
+  - Explain what the command does
+  - Provide context about when/why to use it
+  - Include key details about behavior (e.g., "requires confirmation", "prompts interactively")
 
-**Files to Update**:
-- `src/index.ts` - Enhance all command descriptions
-- Add examples to help text for complex commands
+**Examples of improvements**:
+- `cards`: "List all programmable cards. Shows card keys, numbers, and activation status for each card."
+- `deploy`: "Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active."
+- `run`: "Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card."
+- `config`: "Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations."
+
+**Files Updated**:
+- `src/index.ts` - Enhanced all command descriptions with more detailed, action-oriented descriptions
 
 ---
 

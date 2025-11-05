@@ -406,7 +406,7 @@ For more information about a specific command, use:
   addApiCredentialOptions(
     program
       .command('cards')
-      .description('List all your programmable cards with card keys, numbers, and status')
+      .description('List all programmable cards. Shows card keys, numbers, and activation status for each card.')
       .addHelpText(
         'after',
         `
@@ -423,7 +423,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('config')
-      .description('Configure authentication credentials for the CLI')
+      .description('Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations.')
       .addHelpText(
         'after',
         `
@@ -442,7 +442,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('deploy')
-      .description('Deploy JavaScript code to a programmable card. Uploads code, optional environment variables, and publishes it.')
+      .description('Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active.')
       .addHelpText(
         'after',
         `
@@ -460,7 +460,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('logs')
-      .description('Fetch execution logs from a card and save to a JSON file')
+      .description('Fetch execution logs from a card. Retrieves transaction execution logs and saves them to a JSON file.')
       .addHelpText(
         'after',
         `
@@ -475,7 +475,7 @@ Examples:
     .action(withCommandContext('logs', logsCommand));
   program
     .command('run')
-    .description('Run card code locally using the emulator. Test code without deploying to a card.')
+    .description('Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.')
     .addHelpText(
       'after',
       `
@@ -497,7 +497,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('fetch')
-      .description('Fetch saved code from a card and save it to a local file')
+      .description('Fetch saved code from a card. Downloads the code currently saved on a card and saves it to a local file.')
       .addHelpText(
         'after',
         `
@@ -513,7 +513,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('upload')
-      .description('Upload code to a card without publishing it. Code is saved but not activated.')
+      .description('Upload code to a card without publishing. Saves JavaScript code to a card but does not activate it. Use publish command to activate.')
       .addHelpText(
         'after',
         `
@@ -530,7 +530,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('env')
-      .description('Download environment variables from a card and save to a local JSON file')
+      .description('Download environment variables from a card. Retrieves all environment variables configured on a card and saves them to a JSON file.')
       .addHelpText(
         'after',
         `
@@ -546,7 +546,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('env-list')
-      .description('List all supported environment variables with descriptions and usage examples')
+      .description('List all supported environment variables. Shows available environment variables with descriptions, usage examples, and default values.')
       .addHelpText(
         'after',
         `
@@ -560,7 +560,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('upload-env')
-      .description('Upload environment variables from a JSON file to a card')
+      .description('Upload environment variables to a card. Reads environment variables from a JSON file and uploads them to a card.')
       .addHelpText(
         'after',
         `
@@ -576,7 +576,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('published')
-      .description('Download the currently published (active) code from a card to a local file')
+      .description('Download the currently published code from a card. Retrieves the active code currently running on a card and saves it to a local file.')
       .addHelpText(
         'after',
         `
@@ -592,7 +592,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('publish')
-      .description('Publish previously uploaded code to make it active on the card. Requires code ID from upload command.')
+      .description('Publish previously uploaded code to make it active. Activates code that was uploaded using the upload command. Requires code ID from upload.')
       .addHelpText(
         'after',
         `
@@ -608,7 +608,7 @@ Examples:
     .action(withCommandContext('publish', publishCommand));
   program
     .command('simulate')
-    .description('Test code using the online simulator. Similar to run but uses Investec cloud environment.')
+    .description('Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.')
     .addHelpText(
       'after',
       `
@@ -631,7 +631,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('enable')
-      .description('Enable programmable code on a card. Code must be deployed first.')
+      .description('Enable programmable code on a card. Activates programmable card functionality. Code must be deployed and published first.')
       .addHelpText(
         'after',
         `
@@ -646,7 +646,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('disable')
-      .description('Disable programmable code on a card. Code remains deployed but inactive.')
+      .description('Disable programmable code on a card. Deactivates programmable card functionality. Code remains deployed but will not execute on transactions.')
       .addHelpText(
         'after',
         `
@@ -662,7 +662,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('currencies')
-      .description('List all supported currency codes (ISO 4217) for use in transactions')
+      .description('List all supported currency codes. Shows ISO 4217 currency codes and names available for use in transaction simulations and operations.')
       .addHelpText(
         'after',
         `
@@ -677,7 +677,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('countries')
-      .description('List all supported country codes (ISO 3166-1 alpha-2) for use in transactions')
+      .description('List all supported country codes. Shows ISO 3166-1 alpha-2 country codes and names available for use in transaction simulations.')
       .addHelpText(
         'after',
         `
@@ -692,7 +692,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('merchants')
-      .description('List merchant categories and codes (MCC) for use in transaction simulations')
+      .description('List merchant categories and codes. Shows merchant category codes (MCC) with descriptions for use in transaction simulations.')
       .addHelpText(
         'after',
         `
@@ -708,7 +708,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('accounts')
-      .description('List all your Investec accounts with account IDs, numbers, and product information')
+      .description('List all Investec accounts. Shows account IDs, account numbers, product names, and reference names for all linked accounts.')
       .addHelpText(
         'after',
         `
@@ -723,7 +723,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('balances')
-      .description('Get account balance information including current, available, and budget balances')
+      .description('Get account balance information. Retrieves current balance, available balance, and budget balance for a specific account.')
       .addHelpText(
         'after',
         `
@@ -741,7 +741,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('transfer')
-      .description('Transfer money between your own accounts. Prompts for missing information interactively.')
+      .description('Transfer money between your own accounts. Moves funds from one account to another. Prompts interactively for missing information.')
       .addHelpText(
         'after',
         `
@@ -759,7 +759,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('pay')
-      .description('Pay a beneficiary from your account. Requires confirmation before executing.')
+      .description('Pay a beneficiary from your account. Makes a payment to a registered beneficiary. Requires confirmation before executing.')
       .addHelpText(
         'after',
         `
@@ -777,7 +777,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('transactions')
-      .description('Get transaction history for an account. Shows recent transactions with details.')
+      .description('Get transaction history for an account. Retrieves and displays recent transactions with full details including amounts, dates, and merchants.')
       .addHelpText(
         'after',
         `
@@ -794,7 +794,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('beneficiaries')
-      .description('List all beneficiaries linked to your Investec profile')
+      .description('List all beneficiaries. Shows all registered beneficiaries linked to your Investec profile with their IDs and details.')
       .addHelpText(
         'after',
         `
@@ -809,7 +809,7 @@ Examples:
   // AI & Code Generation
   program
     .command('new')
-    .description('Create a new project with scaffolding. Sets up directory structure and template files.')
+    .description('Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.')
     .addHelpText(
       'after',
       `
@@ -830,7 +830,7 @@ Examples:
     .action(withCommandContext('new', newCommand));
   program
     .command('ai')
-    .description('Generate programmable card code using AI. Uses OpenAI or sandbox service to create code from natural language prompts.')
+    .description('Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.')
     .addHelpText(
       'after',
       `
@@ -847,7 +847,7 @@ Examples:
     .action(withCommandContext('ai', generateCommand));
   program
     .command('bank')
-    .description('Use AI to interact with your bank account using natural language. Performs banking operations based on your prompt.')
+    .description('Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.')
     .addHelpText(
       'after',
       `
@@ -863,7 +863,7 @@ Examples:
   // Authentication
   program
     .command('register')
-    .description('Register for the sandbox AI service. Allows using AI generation without your own OpenAI API key.')
+    .description('Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.')
     .addHelpText(
       'after',
       `
@@ -879,7 +879,7 @@ Note: After registration, message in #12_sandbox-playground with your email to a
     .action(withCommandContext('register', registerCommand));
   program
     .command('login')
-    .description('Login to the sandbox AI service. Saves access token for AI generation commands.')
+    .description('Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.')
     .addHelpText(
       'after',
       `
@@ -894,7 +894,7 @@ Examples:
   // Utilities
   program
     .command('completion')
-    .description('Generate shell completion script for bash or zsh')
+    .description('Generate shell completion script. Creates autocomplete scripts for bash or zsh to enable tab completion for commands and options.')
     .addHelpText(
       'after',
       `
