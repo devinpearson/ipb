@@ -441,12 +441,41 @@ ipb
 
 ### 15. Command Documentation Generation
 
-**Current State**: README is manually maintained.
+**Status**: ✅ Fully Implemented
 
-**Recommendations**:
-- Auto-generate command documentation from Commander.js definitions
-- Keep README in sync with actual commands
-- Generate markdown from command help
+**Implementation Details**:
+- Added `docs` command to generate markdown documentation from Commander.js command definitions
+- Created `src/cmds/docs.ts` with:
+  - `extractCommandInfo()` - Extracts command metadata (name, aliases, description, arguments, options, examples, subcommands) from Commander.js commands
+  - `formatCommandAsMarkdown()` - Formats command information as markdown with proper headings, usage syntax, arguments, options, and examples
+  - `generateCommandDocumentation()` - Generates complete markdown documentation from Commander.js program instance
+  - `docsCommand()` - Main command function that generates and writes documentation to file
+- Documentation includes:
+  - Table of contents with links to all commands
+  - Command name and aliases
+  - Description
+  - Usage syntax (with required/optional arguments)
+  - Arguments list (with descriptions and required status)
+  - Options list (with descriptions and required status)
+  - Examples extracted from help text
+  - Subcommands (for nested commands like `config profile`)
+  - Global options section
+- Command supports `--output` option to specify custom output file (default: `GENERATED_README.md`)
+- Documentation is automatically generated from the actual command definitions, ensuring it stays in sync
+- Uses Commander.js internal API to extract command metadata programmatically
+
+**Usage**:
+```bash
+# Generate documentation to GENERATED_README.md
+$ ipb docs
+
+# Generate to custom file
+$ ipb docs --output COMMANDS.md
+```
+
+**Files Updated**:
+- ✅ `src/cmds/docs.ts` - New command documentation generation module
+- ✅ `src/index.ts` - Added `docs` command to CLI
 
 ---
 

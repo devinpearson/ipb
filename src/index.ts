@@ -1057,6 +1057,24 @@ Examples:
         process.exit(exitCode);
       }
     });
+  
+  // Documentation generation command
+  program
+    .command('docs')
+    .description('Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb docs
+  $ ipb docs --output COMMANDS.md
+      `
+    )
+    .option('--output <file>', 'Output file path (default: GENERATED_README.md)')
+    .action(async (options: { output?: string }) => {
+      const { docsCommand } = await import('./cmds/docs.js');
+      await docsCommand(options.output || 'GENERATED_README.md', program);
+    });
 
   // Check for --check-updates flag in raw arguments
   const hasCheckUpdatesFlag = process.argv.includes('--check-updates');
