@@ -18,6 +18,7 @@ vi.mock('../../src/utils.ts', async () => {
     createSpinner: vi.fn(() => ({
       start: vi.fn(function() { return this; }),
       stop: vi.fn(),
+      text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
     validateFilePath: vi.fn(async (path) => {
@@ -25,12 +26,22 @@ vi.mock('../../src/utils.ts', async () => {
       const { resolve } = await import('node:path');
       return resolve(path);
     }),
+    formatFileSize: vi.fn((bytes) => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }),
+    getFileSize: vi.fn(async (path) => {
+      // Mock file size - return size based on path
+      return 1024; // 1 KB
+    }),
   };
 });
 
 const mockFsPromises = vi.hoisted(() => ({
   access: vi.fn(),
   readFile: vi.fn(),
+  stat: vi.fn(),
 }));
 
 vi.mock('node:fs', () => ({
@@ -75,6 +86,7 @@ describe('uploadCommand', () => {
     };
 
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockResolvedValue(mockResult);
 
     await uploadCommand(options);
@@ -131,6 +143,7 @@ describe('uploadCommand', () => {
     const { validateFilePath } = await import('../../src/utils.ts');
     (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockResolvedValue(mockResult);
 
     await uploadCommand(options);
@@ -156,6 +169,7 @@ describe('uploadCommand', () => {
     const { validateFilePath } = await import('../../src/utils.ts');
     (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockRejectedValue(apiError);
 
     await expect(uploadCommand(options)).rejects.toThrow('Upload failed');

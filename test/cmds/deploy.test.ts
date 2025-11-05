@@ -26,12 +26,24 @@ vi.mock('../../src/utils.ts', async () => {
       const { resolve } = await import('node:path');
       return resolve(path);
     }),
+    confirmDestructiveOperation: vi.fn(async () => true),
+    formatFileSize: vi.fn((bytes) => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }),
+    getFileSize: vi.fn(async (path) => {
+      // Mock file size - return size based on path
+      return 1024; // 1 KB
+    }),
+    withRetry: vi.fn(async (fn) => fn()),
   };
 });
 
 const mockFsPromises = vi.hoisted(() => ({
   access: vi.fn(),
   readFile: vi.fn(),
+  stat: vi.fn(),
 }));
 
 vi.mock('node:fs', () => ({
@@ -93,6 +105,7 @@ describe('deployCommand', () => {
     };
 
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
 
@@ -137,6 +150,9 @@ describe('deployCommand', () => {
     mockFsPromises.readFile
       .mockResolvedValueOnce(mockEnvContent)
       .mockResolvedValueOnce(mockCode);
+    mockFsPromises.stat
+      .mockResolvedValueOnce({ size: Buffer.byteLength(mockEnvContent, 'utf8') })
+      .mockResolvedValueOnce({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadEnv.mockResolvedValue({});
     mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
@@ -167,8 +183,9 @@ describe('deployCommand', () => {
       verbose: false,
     };
 
-    const { validateFilePath } = await import('../../src/utils.ts');
+    const { validateFilePath, confirmDestructiveOperation } = await import('../../src/utils.ts');
     const { resolve } = await import('node:path');
+    (confirmDestructiveOperation as vi.Mock).mockResolvedValue(true);
     (validateFilePath as vi.Mock)
       .mockResolvedValueOnce(resolve('test.js')) // First call for test.js succeeds
       .mockRejectedValueOnce( // Second call for .env.missing fails
@@ -200,9 +217,11 @@ describe('deployCommand', () => {
       },
     };
 
-    const { validateFilePath } = await import('../../src/utils.ts');
+    const { validateFilePath, confirmDestructiveOperation } = await import('../../src/utils.ts');
+    (confirmDestructiveOperation as vi.Mock).mockResolvedValue(true);
     (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockResolvedValue(mockResult);
     mockApi.uploadPublishedCode.mockResolvedValue(mockResult);
 
@@ -223,12 +242,15 @@ describe('deployCommand', () => {
       verbose: false,
     };
 
+    const { confirmDestructiveOperation } = await import('../../src/utils.ts');
+    (confirmDestructiveOperation as vi.Mock).mockResolvedValue(true);
     const mockCode = 'console.log("test");';
     const apiError = new Error('API connection failed');
 
     const { validateFilePath } = await import('../../src/utils.ts');
     (validateFilePath as vi.Mock).mockResolvedValue((await import('node:path')).resolve('test.js'));
     mockFsPromises.readFile.mockResolvedValue(mockCode);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
     mockApi.uploadCode.mockRejectedValue(apiError);
 
     await expect(deployCommand(options)).rejects.toThrow('API connection failed');

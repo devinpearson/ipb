@@ -25,11 +25,21 @@ vi.mock('../../src/utils.ts', async () => {
       const { resolve } = await import('node:path');
       return resolve(path);
     }),
+    formatFileSize: vi.fn((bytes) => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }),
+    getFileSize: vi.fn(async (path) => {
+      // Mock file size - return size based on path
+      return 1024; // 1 KB
+    }),
   };
 });
 
 const mockFsPromises = vi.hoisted(() => ({
   writeFile: vi.fn(),
+  stat: vi.fn(),
 }));
 
 vi.mock('node:fs', () => ({
@@ -73,6 +83,7 @@ describe('fetchCommand', () => {
 
     mockApi.getSavedCode.mockResolvedValue(mockResult);
     mockFsPromises.writeFile.mockResolvedValue(undefined);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
 
     await fetchCommand(options);
 
@@ -80,8 +91,7 @@ describe('fetchCommand', () => {
     const { resolve } = await import('node:path');
     const expectedPath = resolve('fetched.js');
     expect(mockFsPromises.writeFile).toHaveBeenCalledWith(expectedPath, mockCode, 'utf8');
-    expect(console.log).toHaveBeenCalledWith(`💾 saving to file: ${expectedPath}`);
-    expect(console.log).toHaveBeenCalledWith('🎉 code saved to file');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('🎉 code saved to file'));
   });
 
   it('should throw CliError when API does not support getSavedCode', async () => {
@@ -146,6 +156,7 @@ describe('fetchCommand', () => {
 
     mockApi.getSavedCode.mockResolvedValue(mockResult);
     mockFsPromises.writeFile.mockResolvedValue(undefined);
+    mockFsPromises.stat.mockResolvedValue({ size: Buffer.byteLength(mockCode, 'utf8') });
 
     await fetchCommand(options);
 
