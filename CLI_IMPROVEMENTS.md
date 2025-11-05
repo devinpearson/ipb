@@ -186,25 +186,27 @@ program
 
 ### 6. Better Help Text Organization
 
-**Current State**: Help text is functional but could be better organized.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Group commands by category (Accounts, Code Management, Configuration, etc.)
-- Add command categories to help output
-- Include more examples in help text
+**Implementation**:
+- Added command category organization to help output
+- Commands are grouped into 10 logical categories:
+  - Card Management (cards, enable, disable)
+  - Code Management (deploy, fetch, upload, publish, published, logs, run, simulate)
+  - Environment Management (env, env-list, upload-env)
+  - Account Management (accounts, balances, transactions, beneficiaries)
+  - Payments (transfer, pay)
+  - Configuration (config)
+  - AI & Code Generation (ai, bank, new)
+  - Authentication (login, register)
+  - Reference Data (currencies, countries, merchants)
+  - Utilities (completion)
+- Category reference added to main help output using `addHelpText('afterAll', ...)`
+- All commands already have examples in their help text (via `addHelpText('after', ...)`)
+- Commands are organized in code with category comments for maintainability
 
-```typescript
-// Group commands
-program
-  .command('accounts')
-  .description('List your Investec accounts')
-  .addHelpText('group', 'Account Management');
-
-program
-  .command('deploy')
-  .description('Deploy code to card')
-  .addHelpText('group', 'Code Management');
-```
+**Files Updated**:
+- `src/index.ts` - Added category organization comments and help text with command categories
 
 ---
 

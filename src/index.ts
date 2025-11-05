@@ -381,8 +381,28 @@ async function main() {
   // Add global options
   program.option('--check-updates', 'Check for available updates');
   program.option('--no-history', 'Disable command history logging');
+  
+  // Add help text with command categories
+  program.addHelpText('afterAll', `
+Command Categories:
+  Card Management        cards, enable, disable
+  Code Management        deploy, fetch, upload, publish, published, logs, run, simulate
+  Environment Management env, env-list, upload-env
+  Account Management     accounts, balances, transactions, beneficiaries
+  Payments              transfer, pay
+  Configuration         config
+  AI & Code Generation  ai, bank, new
+  Authentication        login, register
+  Reference Data        currencies, countries, merchants
+  Utilities             completion
+
+For more information about a specific command, use:
+  $ ipb <command> --help
+`);
 
   // Use shared options for most commands
+  
+  // Card Management
   addApiCredentialOptions(
     program
       .command('cards')
@@ -399,6 +419,7 @@ Examples:
       `
       )
   ).action(withCommandContext('cards', cardsCommand));
+  // Configuration
   addApiCredentialOptions(
     program
       .command('config')
@@ -417,6 +438,7 @@ Examples:
     .option('--openai-key <openaiKey>', 'Set your OpenAI API key for AI code generation')
     .option('--sandbox-key <sandboxKey>', 'Set your sandbox key for AI generation')
     .action(withCommandContext('config', configCommand));
+  // Code Management
   addApiCredentialOptions(
     program
       .command('deploy')
@@ -504,6 +526,7 @@ Examples:
     .requiredOption('-f,--filename <filename>', 'JavaScript file to upload')
     .option('-c,--card-key <cardKey>', 'Card identifier to upload code to')
     .action(withCommandContext('upload', uploadCommand));
+  // Environment Management
   addApiCredentialOptions(
     program
       .command('env')
@@ -635,6 +658,7 @@ Examples:
   )
     .option('-c,--card-key <cardKey>', 'Card identifier to disable code on')
     .action(withCommandContext('disable', disableCommand));
+  // Reference Data
   addApiCredentialOptions(
     program
       .command('currencies')
@@ -680,6 +704,7 @@ Examples:
       `
       )
   ).action(withCommandContext('merchants', merchantsCommand));
+  // Account Management
   addApiCredentialOptions(
     program
       .command('accounts')
@@ -712,6 +737,7 @@ Examples:
   )
     .argument('accountId', 'Account ID to fetch balances for')
     .action(withCommandContext('balances', balancesCommand));
+  // Payments
   addApiCredentialOptions(
     program
       .command('transfer')
@@ -780,6 +806,7 @@ Examples:
       `
       )
   ).action(withCommandContext('beneficiaries', beneficiariesCommand));
+  // AI & Code Generation
   program
     .command('new')
     .description('Create a new project with scaffolding. Sets up directory structure and template files.')
@@ -833,6 +860,7 @@ Examples:
     .argument('prompt', 'Natural language description of the banking operation to perform')
     .option('-v,--verbose', 'Show detailed AI interaction and function calls')
     .action(withCommandContext('bank', bankCommand));
+  // Authentication
   program
     .command('register')
     .description('Register for the sandbox AI service. Allows using AI generation without your own OpenAI API key.')
@@ -863,6 +891,7 @@ Examples:
     .option('-e,--email <email>', 'Your registered email address')
     .option('-p,--password <password>', 'Your account password')
     .action(withCommandContext('login', loginCommand));
+  // Utilities
   program
     .command('completion')
     .description('Generate shell completion script for bash or zsh')
