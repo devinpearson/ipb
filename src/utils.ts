@@ -981,6 +981,44 @@ export function validateAccountId(accountId: string): void {
 }
 
 /**
+ * Prompts for user confirmation before executing a destructive operation.
+ * @param message - The confirmation message to display
+ * @param options - Options including `yes` flag to skip confirmation
+ * @returns Promise that resolves to true if confirmed, false otherwise
+ */
+export async function confirmDestructiveOperation(
+  message: string,
+  options: { yes?: boolean } = {}
+): Promise<boolean> {
+  // Skip confirmation if --yes flag is set
+  if (options.yes === true) {
+    return true;
+  }
+
+  // Only prompt if stdout is a TTY (interactive terminal)
+  // Check if stdout is a TTY directly to avoid circular import
+  const isPiped = !process.stdout.isTTY;
+  if (isPiped) {
+    // In non-interactive mode, require --yes flag
+    return false;
+  }
+
+  // Use dynamic import to avoid loading @inquirer/prompts for all commands
+  const { confirm } = await import('@inquirer/prompts');
+  
+  try {
+    const confirmed = await confirm({
+      message,
+      default: false,
+    });
+    return confirmed;
+  } catch {
+    // If confirmation fails (e.g., user cancels), return false
+    return false;
+  }
+}
+
+/**
  * Default credentials structure with all fields initialized to empty strings.
  */
 const defaultCreds = {

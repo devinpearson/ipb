@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
+  confirmDestructiveOperation,
   createSpinner,
   initializeApi,
   normalizeCardKey,
@@ -28,11 +29,22 @@ export async function deployCommand(options: Options) {
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
   
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  
+  // Require confirmation before deploying (overwrites existing code)
+  const confirmed = await confirmDestructiveOperation(
+    `This will deploy code to card ${cardKey} and overwrite any existing code. Continue?`,
+    { yes: options.yes }
+  );
+  
+  if (!confirmed) {
+    console.log('Deployment cancelled.');
+    return;
+  }
+  
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '💳 starting deployment...').start();
   let envObject = {};
-  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-
   const api = await initializeApi(credentials, options);
 
   if (options.env) {

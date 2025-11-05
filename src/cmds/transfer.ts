@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
+import { confirmDestructiveOperation, createSpinner, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -41,7 +41,26 @@ export async function transferCommand(
   if (!reference) {
     reference = await input({ message: 'Enter reference for the transfer:' });
   }
+  
+  // Show transfer summary and require confirmation
   printTitleBox();
+  console.log(`\nTransfer Summary:`);
+  console.log('-------------------------');
+  console.log(`From Account: ${accountId}`);
+  console.log(`To Account: ${beneficiaryAccountId}`);
+  console.log(`Amount: R${amount.toFixed(2)}`);
+  console.log(`Reference: ${reference}\n`);
+
+  const confirmed = await confirmDestructiveOperation(
+    'This will transfer money between your accounts. Continue?',
+    { yes: options.yes }
+  );
+  
+  if (!confirmed) {
+    console.log('Transfer cancelled.');
+    return;
+  }
+  
   const disableSpinner = options.spinner === true;
   const spinner = createSpinner(!disableSpinner, '💳 transfering...');
   const api = await initializePbApi(credentials, options);

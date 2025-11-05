@@ -10,6 +10,7 @@ export interface CommonOptions {
   json?: boolean; // output in JSON format
   yaml?: boolean; // output in YAML format
   output?: string; // output file path for JSON/YAML
+  yes?: boolean; // skip confirmation prompts for destructive operations
 }
 
 export interface Credentials {

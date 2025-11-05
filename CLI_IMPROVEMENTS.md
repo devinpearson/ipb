@@ -261,31 +261,48 @@ const spinner = createSpinner(!disableSpinner, `Uploading ${filename} (${fileSiz
 
 ### 10. Interactive Confirmation for Destructive Operations
 
-**Current State**: `pay` command has confirmation, but other destructive operations don't.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Add confirmation for `deploy` (overwrites existing code)
-- Add confirmation for `transfer` (sends money)
-- Add `--yes` flag to skip confirmation in CI/CD
+**Implementation**:
+- Created `confirmDestructiveOperation()` utility function in `utils.ts`:
+  - Uses `@inquirer/prompts` `confirm` for interactive prompts
+  - Automatically skips confirmation when `--yes` flag is set
+  - Automatically skips confirmation in non-interactive mode (piped output)
+  - Defaults to `false` (requires explicit confirmation)
+  - Handles user cancellation gracefully
+- Added confirmation to 5 destructive operations:
+  - `pay`: Payment confirmation (replaced custom "CONFIRM" input with standard confirmation)
+  - `transfer`: Transfer confirmation with summary display
+  - `deploy`: Deployment confirmation (warns about overwriting existing code)
+  - `publish`: Publishing confirmation (warns about activating code)
+  - `disable`: Disable confirmation (warns about deactivating code)
+- Added `--yes` flag to all destructive commands:
+  - `pay`, `transfer`, `deploy`, `publish`, `disable`
+  - Allows skipping confirmation in CI/CD pipelines
+  - Updated help text examples to show `--yes` usage
+- Enhanced confirmation messages:
+  - Show operation summary (account IDs, amounts, card keys, etc.)
+  - Clear, descriptive confirmation prompts
+  - Context-specific messages for each operation type
+- Updated `CommonOptions` interface to include `yes?: boolean` option
+- Updated completion script generation to include `--yes` flag for destructive commands
 
-```typescript
-import { confirm } from '@inquirer/prompts';
+**Features**:
+- Interactive confirmation prompts for destructive operations
+- `--yes` flag to skip confirmation (useful for automation)
+- Non-interactive mode detection (requires `--yes` when piped)
+- Clear, context-specific confirmation messages
+- Graceful handling of cancellation
 
-if (!options.force) {
-  const confirmed = await confirm({
-    message: 'This will overwrite existing code on the card. Continue?',
-    default: false,
-  });
-  if (!confirmed) {
-    console.log('Operation cancelled.');
-    return;
-  }
-}
-```
-
-**Files to Update**:
-- `src/cmds/deploy.ts` - Add confirmation
-- `src/cmds/transfer.ts` - Add confirmation (or enhance existing)
+**Files Updated**:
+- `src/utils.ts` - Added `confirmDestructiveOperation()` utility function
+- `src/cmds/types.ts` - Added `yes?: boolean` to `CommonOptions` interface
+- `src/cmds/pay.ts` - Replaced custom confirmation with `confirmDestructiveOperation()`
+- `src/cmds/transfer.ts` - Added confirmation with summary display
+- `src/cmds/deploy.ts` - Added confirmation before deployment
+- `src/cmds/publish.ts` - Added confirmation before publishing
+- `src/cmds/disable.ts` - Added confirmation before disabling
+- `src/index.ts` - Added `--yes` option to destructive commands, updated help text and completion scripts
 
 ---
 

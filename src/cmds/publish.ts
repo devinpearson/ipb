@@ -2,6 +2,7 @@ import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
+  confirmDestructiveOperation,
   createSpinner,
   initializeApi,
   normalizeCardKey,
@@ -33,7 +34,19 @@ export async function publishCommand(options: Options) {
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
   
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  
+  // Require confirmation before publishing (activates code)
   printTitleBox();
+  const confirmed = await confirmDestructiveOperation(
+    `This will publish code (codeId: ${options.codeId}) to card ${cardKey} and make it active. Continue?`,
+    { yes: options.yes }
+  );
+  
+  if (!confirmed) {
+    console.log('Publish cancelled.');
+    return;
+  }
+  
   const disableSpinner = options.spinner === true;
   const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
   const api = await initializeApi(credentials, options);

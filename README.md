@@ -18,6 +18,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+  - [Confirmation for Destructive Operations](#confirmation-for-destructive-operations)
   - [Cards](#cards)
   - [Deploy](#deploy)
   - [Fetching Execution Logs](#fetching-execution-logs)
@@ -178,6 +179,31 @@ The card ID is optional and can be set when calling each command. If you specify
 
 ## Usage
 
+### Confirmation for Destructive Operations
+
+Several commands that perform destructive operations (deploy, publish, disable, transfer, pay) require interactive confirmation before execution. This helps prevent accidental operations that could affect your code or financial transactions.
+
+**Commands requiring confirmation:**
+- `deploy` - Overwrites existing code on a card
+- `publish` - Activates code on a card
+- `disable` - Deactivates code on a card
+- `transfer` - Transfers money between accounts
+- `pay` - Makes a payment to a beneficiary
+
+**Skip confirmation with `--yes` flag:**
+
+For automation and CI/CD pipelines, you can use the `--yes` flag to skip confirmation prompts:
+
+```sh
+ipb deploy -f main.js -c card-123 --yes
+ipb publish -f app.js --code-id code-123 -c card-456 --yes
+ipb transfer acc-123 acc-456 100.50 "Payment" --yes
+ipb pay acc-123 ben-456 250.00 "Payment" --yes
+ipb disable -c card-123 --yes
+```
+
+**Note:** In non-interactive environments (when output is piped), the `--yes` flag is required for destructive operations to proceed.
+
 ### Cards
 
 To get a list of your cards with card keys, card number, and whether the card is enabled for card code, run the following command:
@@ -194,10 +220,18 @@ This command retrieves detailed information about your cards, including their un
 
 Deploy your code directly to your card. This command allows you to specify environment variables and target a specific card for deployment. For environment variables, you can set them in a `.env` file in the root of your project. Name your environments such as `.env.prod` or `.env.dev` and specify the environment when running the command.
 
+**⚠️ This command requires confirmation** as it will overwrite any existing code on the card.
+
 To deploy code to your card, run the following command:
 
 ```sh
 ipb deploy -f <filename> -e <environment> -c <card-id>
+```
+
+You will be prompted to confirm before the deployment proceeds. To skip the confirmation prompt (useful for automation), use the `--yes` flag:
+
+```sh
+ipb deploy -f <filename> -e <environment> -c <card-id> --yes
 ```
 
 This command ensures that your code is uploaded securely to the specified card. It also supports environment-specific configurations to avoid accidental uploads of sensitive data.
@@ -256,8 +290,16 @@ ipb enable -c <card-id>
 
 Disable code:
 
+**⚠️ This command requires confirmation** as it will deactivate the programmable code on your card.
+
 ```sh
 ipb disable -c <card-id>
+```
+
+You will be prompted to confirm before disabling the code. To skip the confirmation prompt, use the `--yes` flag:
+
+```sh
+ipb disable -c <card-id> --yes
 ```
 
 These commands allow you to control whether the programmable code is active on your card. This is useful for testing or temporarily disabling functionality.
@@ -384,10 +426,20 @@ This command downloads the published version of the code from the card to a loca
 
 ### Publish Code
 
-To publish code to the card, you will need the `codeId` returned when saving the code using the upload command. Run the following command:
+To publish code to the card, you will need the `codeId` returned when saving the code using the upload command.
+
+**⚠️ This command requires confirmation** as it will activate the code on your card.
+
+Run the following command:
 
 ```sh
 ipb publish -f <filename> --code-id <code-id> -c <card-id>
+```
+
+You will be prompted to confirm before publishing. To skip the confirmation prompt, use the `--yes` flag:
+
+```sh
+ipb publish -f <filename> --code-id <code-id> -c <card-id> --yes
 ```
 
 This command publishes the uploaded code, making it the active version on the card.
@@ -430,8 +482,16 @@ This command fetches the balance for the given account ID.
 
 Transfer between your accounts:
 
+**⚠️ This command requires confirmation** as it will transfer money between your accounts.
+
 ```sh
 ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
+```
+
+A summary of the transfer will be displayed, and you will be prompted to confirm before proceeding. To skip the confirmation prompt, use the `--yes` flag:
+
+```sh
+ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference> --yes
 ```
 
 Transfers the specified amount (in rands, e.g. 100.00) from one account to another with a reference.
@@ -440,8 +500,16 @@ Transfers the specified amount (in rands, e.g. 100.00) from one account to anoth
 
 Pay a beneficiary from your account:
 
+**⚠️ This command requires confirmation** as it will make a payment from your account.
+
 ```sh
 ipb pay <accountId> <beneficiaryId> <amount> <reference>
+```
+
+A summary of the payment will be displayed, and you will be prompted to confirm before proceeding. To skip the confirmation prompt, use the `--yes` flag:
+
+```sh
+ipb pay <accountId> <beneficiaryId> <amount> <reference> --yes
 ```
 
 Pays a beneficiary from your account with the specified amount and reference.

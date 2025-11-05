@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { initializePbApi, validateAmount, validateAccountId } from '../utils.js';
+import { confirmDestructiveOperation, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -53,10 +53,12 @@ export async function payCommand(
   console.log(`Amount: R${amount.toFixed(2)}`);
   console.log(`Reference: ${reference}\n`);
 
-  const confirmPayment = await input({
-    message: "Type 'CONFIRM' to proceed with this payment:",
-  });
-  if (confirmPayment !== 'CONFIRM') {
+  const confirmed = await confirmDestructiveOperation(
+    'This will make a payment from your account. Continue?',
+    { yes: options.yes }
+  );
+  
+  if (!confirmed) {
     console.log('Payment cancelled.');
     return;
   }

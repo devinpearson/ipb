@@ -1,6 +1,7 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
+  confirmDestructiveOperation,
   createSpinner,
   initializeApi,
   normalizeCardKey,
@@ -19,6 +20,18 @@ interface Options extends CommonOptions {
 export async function disableCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
+  
+  // Require confirmation before disabling (deactivates code)
+  const confirmed = await confirmDestructiveOperation(
+    `This will disable programmable code on card ${cardKey}. Code will remain deployed but inactive. Continue?`,
+    { yes: options.yes }
+  );
+  
+  if (!confirmed) {
+    console.log('Disable cancelled.');
+    return;
+  }
+  
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '🍄 disabling code on card...').start();
   const api = await initializeApi(credentials, options);

@@ -192,9 +192,9 @@ function generateCompletionScript(shell: string): string {
     cfg: ['--card-key', '--openai-key', '--sandbox-key'], // alias for config
     countries: ['--json', '--yaml', '--output'],
     currencies: ['--json', '--yaml', '--output'],
-    deploy: ['--filename', '--env', '--card-key'],
-    d: ['--filename', '--env', '--card-key'], // alias for deploy
-    disable: ['--card-key'],
+    deploy: ['--filename', '--env', '--card-key', '--yes'],
+    d: ['--filename', '--env', '--card-key', '--yes'], // alias for deploy
+    disable: ['--card-key', '--yes'],
     enable: ['--card-key'],
     env: ['--filename', '--card-key'],
     'env-list': ['--json', '--yaml', '--output'],
@@ -205,15 +205,15 @@ function generateCompletionScript(shell: string): string {
     log: ['--filename', '--card-key'], // alias for logs
     merchants: ['--json', '--yaml', '--output'],
     new: ['--template', '--force', '--verbose'],
-    pay: [],
-    publish: ['--filename', '--code-id', '--card-key'],
-    pub: ['--filename', '--code-id', '--card-key'], // alias for publish
+    pay: ['--yes'],
+    publish: ['--filename', '--code-id', '--card-key', '--yes'],
+    pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
     published: ['--filename', '--card-key'],
     register: ['--email', '--password'],
     run: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
     r: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'], // alias for run
     simulate: ['--filename', '--card-key', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
-    transfer: [],
+    transfer: ['--yes'],
     transactions: ['--json', '--yaml', '--output'],
     tx: ['--json', '--yaml', '--output'], // alias for transactions
     upload: ['--filename', '--card-key'],
@@ -475,12 +475,14 @@ Examples:
   $ ipb deploy -f main.js -e production -c card-123
   $ ipb deploy -f app.js --env dev --card-key card-456
   $ ipb deploy -f main.js -c card-789  # Deploy without environment variables
+  $ ipb deploy -f main.js -c card-123 --yes  # Skip confirmation prompt
       `
       )
   )
     .requiredOption('-f,--filename <filename>', 'JavaScript file to deploy')
     .option('-e,--env <env>', 'Environment name (loads variables from .env.<env> file)')
     .option('-c,--card-key <cardKey>', 'Card identifier to deploy to')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('deploy', deployCommand));
   addApiCredentialOptions(
     program
@@ -629,12 +631,14 @@ Examples:
 Examples:
   $ ipb publish -f main.js --code-id code-123 -c card-456
   $ ipb publish -f app.js -i code-789 --card-key card-123
+  $ ipb publish -f main.js --code-id code-123 -c card-456 --yes  # Skip confirmation
       `
       )
   )
     .requiredOption('-f,--filename <filename>', 'JavaScript file to publish (must match uploaded code)')
     .requiredOption('-i,--code-id <codeId>', 'Code ID from previous upload command')
     .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('publish', publishCommand));
   program
     .command('simulate')
@@ -683,10 +687,12 @@ Examples:
 Examples:
   $ ipb disable -c card-123
   $ ipb disable --card-key card-456
+  $ ipb disable -c card-123 --yes  # Skip confirmation
       `
       )
   )
     .option('-c,--card-key <cardKey>', 'Card identifier to disable code on')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('disable', disableCommand));
   // Reference Data
   addApiCredentialOptions(
@@ -780,6 +786,7 @@ Examples:
 Examples:
   $ ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
   $ ipb transfer acc-123 acc-456 100.50 "Payment for services"
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes  # Skip confirmation
       `
       )
   )
@@ -787,6 +794,7 @@ Examples:
     .argument('beneficiaryAccountId', 'Beneficiary account ID to transfer to')
     .argument('amount', 'Amount to transfer in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('transfer', transferCommand));
   addApiCredentialOptions(
     program
@@ -798,6 +806,7 @@ Examples:
 Examples:
   $ ipb pay <accountId> <beneficiaryId> <amount> <reference>
   $ ipb pay acc-123 ben-456 250.00 "Monthly subscription"
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --yes  # Skip confirmation
       `
       )
   )
@@ -805,6 +814,7 @@ Examples:
     .argument('beneficiaryId', 'Beneficiary ID to pay to')
     .argument('amount', 'Amount to pay in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('pay', payCommand));
   addApiCredentialOptions(
     program
