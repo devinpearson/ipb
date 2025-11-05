@@ -3,12 +3,99 @@ import { readFile, mkdir, access, constants } from 'node:fs/promises';
 import path from 'node:path';
 import { homedir } from 'node:os';
 import chalk from 'chalk';
-import { CliError, ERROR_CODES } from './errors.js';
+import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 
 /**
+ * Determines the appropriate exit code based on error type.
+ * @param error - The error to analyze
+ * @param errorCode - Optional error code from CliError
+ * @param errorMessage - The error message
+ * @returns Exit code from ExitCode enum
+ */
+function determineExitCode(error: unknown, errorCode: string | undefined, errorMessage: string): ExitCode {
+  const lowerMessage = errorMessage.toLowerCase();
+
+  // Validation errors (invalid input, missing required fields)
+  if (
+    errorCode === ERROR_CODES.MISSING_CARD_KEY ||
+    errorCode === ERROR_CODES.MISSING_ENV_FILE ||
+    errorCode === ERROR_CODES.MISSING_ACCOUNT_ID ||
+    errorCode === ERROR_CODES.MISSING_EMAIL_OR_PASSWORD ||
+    errorCode === ERROR_CODES.INVALID_PROJECT_NAME ||
+    lowerMessage.includes('received undefined') ||
+    lowerMessage.includes('required') ||
+    lowerMessage.includes('invalid')
+  ) {
+    return ExitCode.VALIDATION_ERROR;
+  }
+
+  // Authentication/authorization errors
+  if (
+    errorCode === ERROR_CODES.INVALID_CREDENTIALS ||
+    errorCode === ERROR_CODES.MISSING_API_TOKEN ||
+    lowerMessage.includes('credentials') ||
+    lowerMessage.includes('authentication') ||
+    lowerMessage.includes('unauthorized') ||
+    lowerMessage.includes('401') ||
+    lowerMessage.includes('403') ||
+    lowerMessage.includes('invalid token')
+  ) {
+    return ExitCode.AUTH_ERROR;
+  }
+
+  // File system errors
+  if (
+    errorCode === ERROR_CODES.FILE_NOT_FOUND ||
+    errorCode === ERROR_CODES.TEMPLATE_NOT_FOUND ||
+    errorCode === ERROR_CODES.PROJECT_EXISTS ||
+    lowerMessage.includes('file does not exist') ||
+    lowerMessage.includes('enoent') ||
+    lowerMessage.includes('no such file or directory')
+  ) {
+    return ExitCode.FILE_ERROR;
+  }
+
+  // Permission errors
+  if (
+    lowerMessage.includes('permission') ||
+    lowerMessage.includes('eacces') ||
+    lowerMessage.includes('access denied') ||
+    lowerMessage.includes('eperm')
+  ) {
+    return ExitCode.PERMISSION_ERROR;
+  }
+
+  // Network-specific errors (connection issues) - check before API errors
+  if (
+    lowerMessage.includes('econnrefused') ||
+    lowerMessage.includes('enotfound') ||
+    lowerMessage.includes('timeout') ||
+    lowerMessage.includes('network') ||
+    lowerMessage.includes('fetch failed')
+  ) {
+    return ExitCode.NETWORK_ERROR;
+  }
+
+  // API errors (server errors, deployment failures)
+  if (
+    errorCode === ERROR_CODES.DEPLOY_FAILED ||
+    lowerMessage.includes('api') ||
+    lowerMessage.includes('500') ||
+    lowerMessage.includes('502') ||
+    lowerMessage.includes('503') ||
+    lowerMessage.includes('504')
+  ) {
+    return ExitCode.API_ERROR;
+  }
+
+  // Default to general error
+  return ExitCode.GENERAL_ERROR;
+}
+
+/**
  * Handles and displays CLI errors with optional verbose output and actionable suggestions.
- * Exits the process with code 1 after displaying the error.
+ * Exits the process with a specific exit code based on error type.
  * @param error - The error to handle (can be any type)
  * @param options - Options including verbose flag
  * @param context - Context string describing what operation failed
@@ -21,6 +108,9 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   if (error instanceof CliError) {
     errorCode = error.code;
   }
+
+  // Determine appropriate exit code
+  const exitCode = determineExitCode(error, errorCode, errorMessage);
   
   // Generate actionable suggestions based on error type and message
   let suggestion = '';
@@ -120,7 +210,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   if (options.verbose) {
     console.error(error);
   }
-  process.exit(1);
+  process.exit(exitCode);
 }
 
 /**

@@ -242,23 +242,29 @@ const spinner = createSpinner(!disableSpinner, `Uploading ${filename} (${fileSiz
 
 ### 9. Command Exit Codes
 
-**Current State**: Commands exit with code 1 on error (good), but could be more specific.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Use specific exit codes for different error types
-- Document exit codes in README
+**Implementation**:
+- Added `ExitCode` enum with 8 exit codes (0-7) following Unix conventions
+- `determineExitCode()` function maps error types to appropriate exit codes
+- Updated `handleCliError()` to use specific exit codes based on error type
+- Exit codes are documented in README with examples and usage in scripts
 
-```typescript
-// Enhanced exit codes
-export enum ExitCode {
-  SUCCESS = 0,
-  GENERAL_ERROR = 1,
-  VALIDATION_ERROR = 2,
-  AUTH_ERROR = 3,
-  FILE_ERROR = 4,
-  API_ERROR = 5,
-}
-```
+**Exit Codes**:
+- `0` - Success
+- `1` - General Error
+- `2` - Validation Error (invalid input, missing required fields)
+- `3` - Authentication Error (invalid credentials, auth failures)
+- `4` - File Error (file not found, file system errors)
+- `5` - API Error (API request failures, server errors)
+- `6` - Network Error (connection issues, timeouts)
+- `7` - Permission Error (file permission errors)
+
+**Files Updated**:
+- `src/errors.ts` - Added `ExitCode` enum
+- `src/utils.ts` - Added `determineExitCode()` function and updated `handleCliError()` to use specific exit codes
+- `src/index.ts` - Updated completion command error handling to use appropriate exit codes
+- `README.md` - Added "Exit Codes" section with reference table, examples, and script usage patterns
 
 ---
 

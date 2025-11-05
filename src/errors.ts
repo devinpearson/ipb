@@ -8,6 +8,19 @@ export class CliError extends Error {
   }
 }
 
+// Exit codes for different error types
+// Following Unix conventions: 0 = success, 1-255 = error
+export enum ExitCode {
+  SUCCESS = 0,
+  GENERAL_ERROR = 1,
+  VALIDATION_ERROR = 2,
+  AUTH_ERROR = 3,
+  FILE_ERROR = 4,
+  API_ERROR = 5,
+  NETWORK_ERROR = 6,
+  PERMISSION_ERROR = 7,
+}
+
 // Example error codes and messages
 export const ERROR_CODES = {
   MISSING_API_TOKEN: 'E4002',

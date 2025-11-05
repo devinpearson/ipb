@@ -488,6 +488,69 @@ This command uses AI to interpret your prompt and interact with your bank data.
 
 ---
 
+## Exit Codes
+
+The CLI uses specific exit codes to indicate different types of errors, making it easier to handle errors in scripts and automation. All commands exit with code `0` on success.
+
+### Exit Code Reference
+
+| Exit Code | Meaning | Description |
+|------------|---------|-------------|
+| `0` | Success | Command completed successfully |
+| `1` | General Error | Generic error that doesn't fit other categories |
+| `2` | Validation Error | Invalid input, missing required fields, or invalid arguments |
+| `3` | Authentication Error | Invalid or missing credentials, authentication failures |
+| `4` | File Error | File not found, file system errors, template issues |
+| `5` | API Error | API request failures, server errors (5xx), deployment failures |
+| `6` | Network Error | Network connection issues, timeouts, DNS failures |
+| `7` | Permission Error | File permission errors, access denied |
+
+### Examples
+
+```bash
+# Success - exits with code 0
+ipb cards
+echo $?  # Output: 0
+
+# Validation error - exits with code 2
+ipb deploy -f missing.js
+echo $?  # Output: 2
+
+# Authentication error - exits with code 3
+ipb accounts  # With invalid credentials
+echo $?  # Output: 3
+
+# File error - exits with code 4
+ipb deploy -f nonexistent.js
+echo $?  # Output: 4
+```
+
+### Using Exit Codes in Scripts
+
+You can use exit codes in shell scripts to handle different error types:
+
+```bash
+#!/bin/bash
+
+if ipb deploy -f main.js; then
+  echo "Deployment successful!"
+else
+  exit_code=$?
+  case $exit_code in
+    2) echo "Validation error - check your input" ;;
+    3) echo "Authentication error - check your credentials" ;;
+    4) echo "File error - check file paths" ;;
+    5) echo "API error - check API status" ;;
+    6) echo "Network error - check your connection" ;;
+    7) echo "Permission error - check file permissions" ;;
+    *) echo "Unknown error (code: $exit_code)" ;;
+  esac
+  exit $exit_code
+fi
+```
+
+---
+
 ## Error Codes
 
 The CLI uses standardized error codes to help identify and troubleshoot issues. When an error occurs, you'll see a message in the format: `Error (E####): [message]`

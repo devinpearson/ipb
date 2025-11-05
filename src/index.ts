@@ -41,6 +41,7 @@ import { simulateCommand } from './cmds/simulate.js';
 import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
+import { ExitCode } from './errors.js';
 import {
   checkForUpdates,
   handleCliError,
@@ -882,7 +883,11 @@ Examples:
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(chalk.red(`Error generating completion script: ${errorMessage}`));
-        process.exit(1);
+        // Use validation error for unsupported shell, general error for other issues
+        const exitCode = errorMessage.includes('Unsupported shell') 
+          ? ExitCode.VALIDATION_ERROR 
+          : ExitCode.GENERAL_ERROR;
+        process.exit(exitCode);
       }
     });
 
