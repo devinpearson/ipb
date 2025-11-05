@@ -169,6 +169,12 @@ The CLI follows standard CLI conventions and respects these environment variable
 
 - **`LINES`** and **`COLUMNS`**: Terminal dimensions for table formatting (automatically detected if not set).
 
+- **`TMPDIR`**: Temporary directory for temporary files. Defaults to system temp directory (`/tmp` on Unix, `%TEMP%` on Windows) if not set.
+  ```sh
+  TMPDIR=/custom/tmp ipb <command>
+  ```
+  Note: The CLI uses Node.js `os.tmpdir()` which automatically respects `TMPDIR`. Atomic file operations (like credential writes) use the same directory as the target file to ensure atomicity.
+
 You can also get structured output:
 ```sh
 ipb env-list --json

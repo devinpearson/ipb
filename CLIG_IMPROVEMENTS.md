@@ -122,24 +122,26 @@ The project already implements many best practices from clig.dev, but there are 
 
 ---
 
-### 6. Use `TMPDIR` for Temporary Files
+### ✅ 6. Use `TMPDIR` for Temporary Files
 
-**Status**: ⏳ **NOT STARTED** (Low priority - Node.js handles this by default)
+**Status**: ✅ **COMPLETED**
 
-**Current State**: May create temporary files without explicitly checking `TMPDIR` (though Node.js `os.tmpdir()` respects it).
+**Current State**: ✅ Explicitly uses `getTempDir()` utility that respects `TMPDIR` via Node.js `os.tmpdir()`.
 
 **Guideline**: [Environment Variables](https://clig.dev/#environment-variables) - Use `TMPDIR` for temporary files.
 
 **Implementation**:
-- Check `process.env.TMPDIR` when creating temporary files
-- Fall back to OS default (`/tmp` on Unix, `%TEMP%` on Windows)
-- Note: Node.js `os.tmpdir()` already respects `TMPDIR`, so this may not be needed
+- ✅ Added `getTempDir()` utility function that uses `os.tmpdir()` (which respects `TMPDIR`)
+- ✅ Documented that `writeFileAtomic()` correctly uses same directory for atomic operations
+- ✅ Added documentation in README about TMPDIR support
+- ✅ Note: Node.js `os.tmpdir()` already respects `TMPDIR`, so implementation uses it directly
 
-**Files to Modify**:
-- `src/utils.ts` - Add explicit temp directory utility (if needed)
-- Any command that creates temporary files
+**Files Modified**:
+- ✅ `src/utils.ts` - Added `getTempDir()` function
+- ✅ `src/utils.ts` - Updated `writeFileAtomic()` documentation to clarify temp file location
+- ✅ `README.md` - Documented TMPDIR environment variable
 
-**Priority**: Low - Mostly covered by Node.js defaults
+**Priority**: Low - Mostly covered by Node.js defaults, but now explicitly documented and available
 
 ---
 
@@ -308,10 +310,9 @@ The project already implements many best practices from clig.dev, but there are 
 
 1. 🔄 **Respect `TERM` and terminal capabilities** - Terminal dimensions complete, emoji/Unicode detection pending
 
-### ⏳ Not Started (2 Items)
+### ⏳ Not Started (1 Item)
 
 1. ⏳ **Support `EDITOR` environment variable** - Low priority
-2. ⏳ **Use `TMPDIR` for temporary files** - Low priority (Node.js handles by default)
 
 ## Implementation Priority
 
@@ -322,7 +323,7 @@ The project already implements many best practices from clig.dev, but there are 
 
 2. **Medium Priority** (Consider):
    - 🔄 Respect `TERM` and terminal capabilities (partial)
-   - ⏳ Use `TMPDIR` for temporary files (low priority)
+   - ✅ Use `TMPDIR` for temporary files - Complete
 
 3. **Low Priority** (Nice to Have):
    - ⏳ Support `EDITOR` for config editing

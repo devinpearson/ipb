@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { readFile, mkdir, access, constants, readdir, unlink, writeFile, chmod, rename, open } from 'node:fs/promises';
 import path from 'node:path';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
@@ -101,6 +101,25 @@ export function getTerminalDimensions(): { lines: number; columns: number } | nu
   }
   
   return null;
+}
+
+/**
+ * Gets the temporary directory path, respecting TMPDIR environment variable.
+ * According to clig.dev guidelines, should check TMPDIR for temporary files.
+ * Node.js os.tmpdir() already respects TMPDIR, so we use it directly.
+ * 
+ * @returns Path to the temporary directory
+ * 
+ * @example
+ * ```typescript
+ * const tempDir = getTempDir();
+ * const tempFile = path.join(tempDir, 'my-temp-file.txt');
+ * ```
+ */
+export function getTempDir(): string {
+  // os.tmpdir() automatically respects TMPDIR environment variable
+  // Falls back to OS default (/tmp on Unix, %TEMP% on Windows) if not set
+  return tmpdir();
 }
 
 // Configure chalk at module load time
@@ -1291,6 +1310,14 @@ import type { IPbApi } from './mock-pb.js';
  * Writes a file atomically using a temporary file and rename.
  * This ensures the file is either completely written or not written at all,
  * preventing corruption from crashes or interruptions.
+ * 
+ * Note: The temporary file is created in the same directory as the target file
+ * (not in the system temp directory) because atomic rename operations only work
+ * on the same filesystem. This is the correct approach for atomic file writes.
+ * 
+ * For general temporary files that don't require atomic operations, use `getTempDir()`
+ * which respects the TMPDIR environment variable.
+ * 
  * @param filepath - Target file path
  * @param data - Data to write (string or Buffer)
  * @param options - Write options including permissions
@@ -1303,6 +1330,8 @@ export async function writeFileAtomic(
 ): Promise<void> {
   const dir = path.dirname(filepath);
   const filename = path.basename(filepath);
+  // Note: Temp file is in same directory as target (required for atomic rename)
+  // For general temp files, use getTempDir() instead
   const tempPath = path.join(dir, `.${filename}.tmp`);
   
   try {
