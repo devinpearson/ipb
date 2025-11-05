@@ -121,34 +121,45 @@ function generateCompletionScript(shell: string): string {
 
   const commands = [
     'accounts',
+    'acc', // alias for accounts
     'ai',
     'balances',
+    'bal', // alias for balances
     'bank',
     'beneficiaries',
     'cards',
+    'c', // alias for cards
     'completion',
     'config',
+    'cfg', // alias for config
     'countries',
     'currencies',
     'deploy',
+    'd', // alias for deploy
     'disable',
     'enable',
     'env',
     'env-list',
     'fetch',
+    'f', // alias for fetch
     'login',
     'logs',
+    'log', // alias for logs
     'merchants',
     'new',
     'pay',
     'publish',
+    'pub', // alias for publish
     'published',
     'register',
     'run',
+    'r', // alias for run
     'simulate',
     'transfer',
     'transactions',
+    'tx', // alias for transactions
     'upload',
+    'up', // alias for upload
     'upload-env',
   ];
 
@@ -169,33 +180,44 @@ function generateCompletionScript(shell: string): string {
 
   const commandOptions: Record<string, string[]> = {
     accounts: ['--json', '--yaml', '--output'],
+    acc: ['--json', '--yaml', '--output'], // alias for accounts
     ai: ['--filename', '--force', '--verbose'],
     balances: ['--json', '--yaml', '--output'],
+    bal: ['--json', '--yaml', '--output'], // alias for balances
     bank: ['--verbose'],
     beneficiaries: ['--json', '--yaml', '--output'],
     cards: ['--json', '--yaml', '--output'],
+    c: ['--json', '--yaml', '--output'], // alias for cards
     config: ['--card-key', '--openai-key', '--sandbox-key'],
+    cfg: ['--card-key', '--openai-key', '--sandbox-key'], // alias for config
     countries: ['--json', '--yaml', '--output'],
     currencies: ['--json', '--yaml', '--output'],
     deploy: ['--filename', '--env', '--card-key'],
+    d: ['--filename', '--env', '--card-key'], // alias for deploy
     disable: ['--card-key'],
     enable: ['--card-key'],
     env: ['--filename', '--card-key'],
     'env-list': ['--json', '--yaml', '--output'],
     fetch: ['--filename', '--card-key'],
+    f: ['--filename', '--card-key'], // alias for fetch
     login: ['--email', '--password'],
     logs: ['--filename', '--card-key'],
+    log: ['--filename', '--card-key'], // alias for logs
     merchants: ['--json', '--yaml', '--output'],
     new: ['--template', '--force', '--verbose'],
     pay: [],
     publish: ['--filename', '--code-id', '--card-key'],
+    pub: ['--filename', '--code-id', '--card-key'], // alias for publish
     published: ['--filename', '--card-key'],
     register: ['--email', '--password'],
     run: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
+    r: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'], // alias for run
     simulate: ['--filename', '--card-key', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
     transfer: [],
     transactions: ['--json', '--yaml', '--output'],
+    tx: ['--json', '--yaml', '--output'], // alias for transactions
     upload: ['--filename', '--card-key'],
+    up: ['--filename', '--card-key'], // alias for upload
     'upload-env': ['--filename', '--card-key'],
   };
 
@@ -406,6 +428,7 @@ For more information about a specific command, use:
   addApiCredentialOptions(
     program
       .command('cards')
+      .alias('c')
       .description('List all programmable cards. Shows card keys, numbers, and activation status for each card.')
       .addHelpText(
         'after',
@@ -423,6 +446,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('config')
+      .alias('cfg')
       .description('Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations.')
       .addHelpText(
         'after',
@@ -442,6 +466,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('deploy')
+      .alias('d')
       .description('Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active.')
       .addHelpText(
         'after',
@@ -460,6 +485,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('logs')
+      .alias('log')
       .description('Fetch execution logs from a card. Retrieves transaction execution logs and saves them to a JSON file.')
       .addHelpText(
         'after',
@@ -475,6 +501,7 @@ Examples:
     .action(withCommandContext('logs', logsCommand));
   program
     .command('run')
+    .alias('r')
     .description('Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.')
     .addHelpText(
       'after',
@@ -497,6 +524,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('fetch')
+      .alias('f')
       .description('Fetch saved code from a card. Downloads the code currently saved on a card and saves it to a local file.')
       .addHelpText(
         'after',
@@ -513,6 +541,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('upload')
+      .alias('up')
       .description('Upload code to a card without publishing. Saves JavaScript code to a card but does not activate it. Use publish command to activate.')
       .addHelpText(
         'after',
@@ -592,6 +621,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('publish')
+      .alias('pub')
       .description('Publish previously uploaded code to make it active. Activates code that was uploaded using the upload command. Requires code ID from upload.')
       .addHelpText(
         'after',
@@ -708,6 +738,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('accounts')
+      .alias('acc')
       .description('List all Investec accounts. Shows account IDs, account numbers, product names, and reference names for all linked accounts.')
       .addHelpText(
         'after',
@@ -723,6 +754,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('balances')
+      .alias('bal')
       .description('Get account balance information. Retrieves current balance, available balance, and budget balance for a specific account.')
       .addHelpText(
         'after',
@@ -777,6 +809,7 @@ Examples:
   addApiCredentialOptions(
     program
       .command('transactions')
+      .alias('tx')
       .description('Get transaction history for an account. Retrieves and displays recent transactions with full details including amounts, dates, and merchants.')
       .addHelpText(
         'after',

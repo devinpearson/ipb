@@ -146,29 +146,28 @@ Based on the [Node.js CLI Apps Best Practices](https://github.com/lirantal/nodej
 
 ### 5. Command Aliases for Common Operations
 
-**Current State**: No aliases defined for commands.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-```typescript
-// Add aliases for common commands
-program
-  .command('deploy')
-  .alias('d')  // Short alias
-  .description('Deploy code to card');
+**Implementation**:
+- Added aliases for 11 commonly used commands:
+  - `accounts` → `acc`
+  - `balances` → `bal`
+  - `cards` → `c`
+  - `config` → `cfg`
+  - `deploy` → `d`
+  - `fetch` → `f`
+  - `logs` → `log`
+  - `publish` → `pub`
+  - `run` → `r`
+  - `transactions` → `tx`
+  - `upload` → `up`
+- Aliases are displayed in help text (e.g., `cards|c [options]`)
+- Updated shell completion script generation to include all aliases
+- Completion scripts now support tab completion for both full command names and aliases
+- Aliases work identically to their full command counterparts
 
-program
-  .command('fetch')
-  .alias('f')
-  .description('Fetch saved code from card');
-
-program
-  .command('accounts')
-  .alias('acc')
-  .description('List accounts');
-```
-
-**Files to Update**:
-- `src/index.ts` - Add aliases to frequently used commands
+**Files Updated**:
+- `src/index.ts` - Added `.alias()` calls to 11 frequently used commands, updated completion script generation to include aliases
 
 ---
 
