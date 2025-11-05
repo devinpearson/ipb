@@ -44,6 +44,8 @@ import type { BasicOptions, Credentials } from './cmds/types.js';
 import { ExitCode } from './errors.js';
 import {
   checkForUpdates,
+  configureChalk,
+  getVerboseMode,
   handleCliError,
   loadCredentialsFile,
   logCommandHistory,
@@ -51,6 +53,9 @@ import {
   showUpdateNotification,
   withCommandContext,
 } from './utils.js';
+
+// Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
+configureChalk();
 
 const version = '0.8.3';
 const program = new Command();

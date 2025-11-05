@@ -7,6 +7,7 @@ import {
   createSpinner,
   formatFileSize,
   getFileSize,
+  getVerboseMode,
   initializeApi,
   normalizeCardKey,
   validateFilePath,
@@ -61,11 +62,12 @@ export async function deployCommand(options: Options) {
       spinner.text = `📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`;
 
       // Use retry logic with rate limit handling
+      const verbose = getVerboseMode(options.verbose);
       await withRetry(
         () => api.uploadEnv(cardKey, { variables: envObject }),
         {
           maxRetries: 3,
-          verbose: options.verbose,
+          verbose,
         }
       );
       spinner.text = '📦 env uploaded';
@@ -89,11 +91,12 @@ export async function deployCommand(options: Options) {
   spinner.text = `🚀 deploying code (${formatFileSize(codeSize)})...`;
   
   // Use retry logic with rate limit handling for API calls
+  const verbose = getVerboseMode(options.verbose);
   const saveResult = await withRetry(
     () => api.uploadCode(cardKey, raw),
     {
       maxRetries: 3,
-      verbose: options.verbose,
+      verbose,
     }
   );
   
@@ -101,7 +104,7 @@ export async function deployCommand(options: Options) {
     () => api.uploadPublishedCode(cardKey, saveResult.data.result.codeId, code),
     {
       maxRetries: 3,
-      verbose: options.verbose,
+      verbose,
     }
   );
   spinner.stop();

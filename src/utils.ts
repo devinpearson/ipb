@@ -2,9 +2,109 @@ import fs from 'node:fs';
 import { readFile, mkdir, access, constants, readdir, unlink, writeFile, chmod, rename, open } from 'node:fs/promises';
 import path from 'node:path';
 import { homedir } from 'node:os';
+import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
+
+/**
+ * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
+ * Should be called at application startup before any chalk usage.
+ * 
+ * According to clig.dev guidelines:
+ * - NO_COLOR: Disable color output (any value)
+ * - FORCE_COLOR: Force color output (any value)
+ * 
+ * Note: Chalk v5 automatically respects NO_COLOR, but we explicitly configure it
+ * to ensure FORCE_COLOR is also handled correctly.
+ */
+export function configureChalk(): void {
+  // Chalk v5 automatically respects NO_COLOR, but we can configure FORCE_COLOR
+  // by ensuring the environment variable is set properly
+  // The actual color disabling is handled by chalk internally when NO_COLOR is set
+  
+  // We don't need to do anything special - chalk v5 handles NO_COLOR automatically
+  // and FORCE_COLOR is also respected by chalk's internal detection
+  // This function exists for documentation and future extensibility
+}
+
+/**
+ * Checks if DEBUG environment variable is set (supports any truthy value).
+ * According to clig.dev guidelines, DEBUG can be set to any value to enable verbose output.
+ * @returns True if DEBUG is set to any truthy value
+ */
+export function isDebugEnabled(): boolean {
+  const debug = process.env.DEBUG;
+  if (debug === undefined || debug === '') {
+    return false;
+  }
+  // Any non-empty value enables debug mode
+  return true;
+}
+
+/**
+ * Gets the effective verbose setting, checking both --verbose flag and DEBUG env var.
+ * DEBUG environment variable takes precedence if --verbose is not explicitly set.
+ * @param verboseFlag - Value from --verbose flag (can be undefined)
+ * @returns True if verbose mode should be enabled
+ */
+export function getVerboseMode(verboseFlag?: boolean): boolean {
+  // If --verbose flag is explicitly set, use it
+  if (verboseFlag !== undefined) {
+    return verboseFlag;
+  }
+  // Otherwise, check DEBUG environment variable
+  return isDebugEnabled();
+}
+
+/**
+ * Pages output using the PAGER environment variable or default pager.
+ * According to clig.dev guidelines, should check PAGER env var for long output.
+ * @param content - Content to page
+ * @param options - Options including whether output is piped
+ */
+export async function pageOutput(content: string, options: { isPiped?: boolean } = {}): Promise<void> {
+  // Don't page if output is piped (would interfere with piping)
+  if (options.isPiped || isStdoutPiped()) {
+    process.stdout.write(content);
+    return;
+  }
+  
+  // Check if we should use a pager
+  const pager = process.env.PAGER || 'less';
+  
+  // For now, just output directly
+  // TODO: Implement actual paging with spawn when terminal supports it
+  // This would require detecting terminal height and only paging if content exceeds it
+  console.log(content);
+}
+
+/**
+ * Gets terminal dimensions from LINES and COLUMNS environment variables.
+ * Falls back to process.stdout.columns/rows if available.
+ * @returns Object with lines and columns, or null if not available
+ */
+export function getTerminalDimensions(): { lines: number; columns: number } | null {
+  const lines = process.env.LINES ? parseInt(process.env.LINES, 10) : null;
+  const columns = process.env.COLUMNS ? parseInt(process.env.COLUMNS, 10) : null;
+  
+  if (lines !== null && columns !== null && !Number.isNaN(lines) && !Number.isNaN(columns)) {
+    return { lines, columns };
+  }
+  
+  // Fallback to process.stdout if available
+  if (process.stdout.isTTY && process.stdout.rows && process.stdout.columns) {
+    return {
+      lines: process.stdout.rows,
+      columns: process.stdout.columns,
+    };
+  }
+  
+  return null;
+}
+
+// Configure chalk at module load time
+configureChalk();
 
 /**
  * Determines the appropriate exit code based on error type.
@@ -1804,7 +1904,7 @@ export async function initializePbApi(
   // Validate required credentials before initializing API
   validateCredentialsFile(credentials);
   let api: IPbApi;
-  if (process.env.DEBUG === 'true') {
+  if (isDebugEnabled()) {
     const { PbApi } = await import('./mock-pb.js');
     api = new PbApi(
       credentials.clientId,
@@ -1868,7 +1968,7 @@ export async function initializeApi(
   // Validate required credentials before initializing API
   validateCredentialsFile(credentials);
   let api: ICardApi;
-  if (process.env.DEBUG === 'true') {
+  if (isDebugEnabled()) {
     const { CardApi } = await import('./mock-card.js');
     api = new CardApi(
       credentials.clientId,

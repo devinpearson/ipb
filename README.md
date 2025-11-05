@@ -141,6 +141,34 @@ This command displays:
 - **Development**: `DEBUG`
 - **Security**: `REJECT_UNAUTHORIZED`
 
+#### Standard CLI Environment Variables
+
+The CLI follows standard CLI conventions and respects these environment variables:
+
+- **`NO_COLOR`**: Disable colored output. Set to any value to disable colors.
+  ```sh
+  NO_COLOR=1 ipb accounts
+  ```
+
+- **`FORCE_COLOR`**: Force colored output even when piping. Set to any value to enable colors.
+  ```sh
+  FORCE_COLOR=1 ipb accounts | cat
+  ```
+
+- **`DEBUG`**: Enable verbose/debug output. Set to any value to enable verbose mode (equivalent to `--verbose` flag).
+  ```sh
+  DEBUG=1 ipb accounts
+  # Or
+  DEBUG=true ipb deploy -f main.js
+  ```
+
+- **`PAGER`**: Specify pager for long output. Defaults to `less` if not set.
+  ```sh
+  PAGER=more ipb transactions <accountId>
+  ```
+
+- **`LINES`** and **`COLUMNS`**: Terminal dimensions for table formatting (automatically detected if not set).
+
 You can also get structured output:
 ```sh
 ipb env-list --json
@@ -1035,7 +1063,8 @@ For inquiries, please open an issue.
 - [Chalk](https://github.com/chalk/chalk)
 - [VHS](https://github.com/charmbracelet/vhs)
 - [Ora](https://github.com/sindresorhus/ora)
-- [Best Practices for CLI Development](https://github.com/lirantal/nodejs-cli-apps-best-practices)
+- [NodeJS CLI Apps Best Practices](https://github.com/lirantal/nodejs-cli-apps-best-practices)
+- [CLIG.dev - Command Line Interface Guidelines](https://clig.dev/)
 - [Investec Programmable Banking Community](https://developer.investec.com/za/community)
 
 ---

@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializeApi, withRetry } from '../utils.js';
+import { createSpinner, formatOutput, getVerboseMode, initializeApi, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -19,11 +19,12 @@ export async function cardsCommand(options: CommonOptions) {
   const api = await initializeApi(credentials, options);
 
   // Use retry logic with rate limit handling
+  const verbose = getVerboseMode(options.verbose);
   const result = await withRetry(
     () => api.getCards(),
     {
       maxRetries: 3,
-      verbose: options.verbose,
+      verbose,
     }
   );
   const cards = result.data.cards;
