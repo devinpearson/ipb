@@ -5,6 +5,7 @@ export interface CommonOptions {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  profile?: string; // configuration profile name
   verbose: boolean;
   spinner?: boolean; // allow disabling spinner
   json?: boolean; // output in JSON format

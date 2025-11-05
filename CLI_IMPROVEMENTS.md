@@ -547,13 +547,69 @@ ipb accounts --json | ipb balances  # balances will read accountId from stdin
 
 ### 20. Configuration Profiles
 
-**Current State**: Single credentials file.
+**Current State**: ✅ Fully Implemented
 
-**Recommendations**:
-- Support multiple credential profiles
-- `ipb config --profile production`
-- `ipb deploy --profile production`
-- Easier switching between environments
+**Implementation**:
+- Created profile management system in `utils.ts`:
+  - `getProfilesDirectory()`: Returns `~/.ipb/profiles/` directory path
+  - `getProfilePath(profileName)`: Returns path to a specific profile file
+  - `listProfiles()`: Lists all available profiles
+  - `readProfile(profileName)`: Reads a profile file
+  - `writeProfile(profileName, data)`: Writes/updates a profile file
+  - `deleteProfile(profileName)`: Deletes a profile file
+  - `getActiveProfile()`: Gets the currently active profile name
+  - `setActiveProfile(profileName)`: Sets the active profile (used when `--profile` is not specified)
+  - `loadProfile(credentials, profileName)`: Loads credentials from a profile
+- Updated `config` command to support profiles:
+  - `ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>`: Save credentials to a profile
+  - `ipb config profile list`: List all profiles (shows active profile)
+  - `ipb config profile set <name>`: Set the active profile
+  - `ipb config profile show`: Show the currently active profile
+  - `ipb config profile delete <name>`: Delete a profile
+- Added `--profile <name>` option to all commands via `addApiCredentialOptions()`:
+  - Allows using a specific profile for any command (e.g., `ipb deploy --profile production`)
+  - Profile takes precedence over default credentials
+  - Command-line options override profile values
+- Updated `optionCredentials()` to:
+  - Check for `--profile` option first
+  - Fall back to active profile if no `--profile` specified
+  - Fall back to credentials file if no active profile
+  - Command-line options always override profile/credentials file values
+- Profile storage:
+  - Profiles stored in `~/.ipb/profiles/<name>.json`
+  - Active profile stored in `~/.ipb/active-profile.json`
+  - All profile files use secure permissions (0o600)
+  - Profiles can contain: `clientId`, `clientSecret`, `apiKey`, `cardKey`, `openaiKey`, `sandboxKey`, `host`
+
+**Features**:
+- Multiple credential profiles for different environments (production, staging, development, etc.)
+- Active profile system (default profile used when `--profile` not specified)
+- Profile management commands (list, set, show, delete)
+- Easy switching between environments
+- Command-line option overrides for flexibility
+
+**Usage Examples**:
+```sh
+# Create profiles
+ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
+ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
+
+# Use profiles
+ipb deploy --profile production -f main.js -c card-123
+ipb cards --profile staging
+
+# Manage profiles
+ipb config profile list
+ipb config profile set production
+ipb config profile show
+ipb config profile delete staging
+```
+
+**Files Updated**:
+- `src/utils.ts` - Added profile management functions
+- `src/cmds/types.ts` - Added `profile?: string` to `CommonOptions`
+- `src/cmds/set.ts` - Updated `configCommand` to support profile creation/management
+- `src/index.ts` - Added `--profile` option, profile subcommands, updated `optionCredentials()` to load profiles
 
 ---
 

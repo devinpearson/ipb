@@ -17,6 +17,8 @@ This repository is crafted with ❤️ by our talented community members. It's a
 
 - [Installation](#installation)
 - [Configuration](#configuration)
+  - [Environment Variables](#environment-variables)
+  - [Configuration Profiles](#configuration-profiles)
 - [Usage](#usage)
   - [Confirmation for Destructive Operations](#confirmation-for-destructive-operations)
   - [Cards](#cards)
@@ -147,8 +149,9 @@ ipb env-list --yaml --output env-vars.yaml
 
 **Priority Order** (highest to lowest):
 1. Command line options (e.g., `--client-id`, `--api-key`)
-2. Environment variables
-3. Credentials file (`~/.ipb/credentials.json`)
+2. Configuration profile (if `--profile` is specified or active profile is set)
+3. Environment variables
+4. Credentials file (`~/.ipb/.credentials.json`)
 
 You also have the option to specify the host, client ID, client secret, API key, and card ID when calling each command. These will override the configuration set in the `.env` file and your credential file:
 
@@ -174,6 +177,111 @@ ipb cards --credentials-file <path-to-credentials-file>
 ```
 
 The card ID is optional and can be set when calling each command. If you specify a card when calling a command, it will override the card ID set in the configuration.
+
+### Configuration Profiles
+
+The CLI supports multiple configuration profiles, making it easy to switch between different environments (production, staging, development, etc.) without manually changing credentials.
+
+**Creating Profiles:**
+
+Save credentials to a specific profile:
+
+```sh
+# Create a production profile
+ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
+
+# Create a staging profile
+ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
+
+# Update an existing profile (adds or updates only the specified fields)
+ipb config --profile production --card-key <card-key>
+```
+
+**Using Profiles:**
+
+Use a profile with any command using the `--profile` option:
+
+```sh
+# Deploy to production
+ipb deploy --profile production -f main.js -c card-123
+
+# List cards from staging
+ipb cards --profile staging
+
+# Check balances using a specific profile
+ipb balances acc-123 --profile production
+```
+
+**Managing Profiles:**
+
+List all available profiles:
+
+```sh
+ipb config profile list
+```
+
+This shows all profiles with the active profile marked:
+
+```
+Available profiles:
+  - development
+  - production (active)
+  - staging
+```
+
+Set a default active profile (used when `--profile` is not specified):
+
+```sh
+ipb config profile set production
+```
+
+Show the currently active profile:
+
+```sh
+ipb config profile show
+```
+
+Delete a profile:
+
+```sh
+ipb config profile delete staging
+```
+
+**Profile Storage:**
+
+- Profiles are stored in `~/.ipb/profiles/<profile-name>.json`
+- The active profile is stored in `~/.ipb/active-profile.json`
+- All profile files use secure permissions (read/write for owner only)
+- Profiles can contain: `clientId`, `clientSecret`, `apiKey`, `cardKey`, `openaiKey`, `sandboxKey`, `host`
+
+**Profile Priority:**
+
+When using `--profile`, the profile credentials are loaded first, then command-line options override specific values:
+
+```sh
+# Profile credentials are loaded, but --api-key overrides the profile's API key
+ipb deploy --profile production --api-key different-key -f main.js
+```
+
+**Example Workflow:**
+
+```sh
+# 1. Set up profiles for different environments
+ipb config --profile production --client-id prod-id --client-secret prod-secret --api-key prod-key
+ipb config --profile staging --client-id stage-id --client-secret stage-secret --api-key stage-key
+
+# 2. Set production as default
+ipb config profile set production
+
+# 3. Use default profile (production)
+ipb deploy -f main.js -c card-123
+
+# 4. Use staging profile explicitly
+ipb deploy --profile staging -f main.js -c card-456
+
+# 5. Override a specific credential
+ipb deploy --profile production --card-key different-card -f main.js
+```
 
 ---
 
@@ -539,10 +647,34 @@ Lists all beneficiaries linked to your Investec profile.
 Set authentication credentials for the CLI:
 
 ```sh
+# Save to default credentials
 ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
+
+# Save to a profile
+ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
 ```
 
 You can also set card key, OpenAI key, and sandbox key using additional options.
+
+**Profile Management:**
+
+The `config` command also supports managing configuration profiles:
+
+```sh
+# List all profiles
+ipb config profile list
+
+# Set active profile
+ipb config profile set production
+
+# Show active profile
+ipb config profile show
+
+# Delete a profile
+ipb config profile delete staging
+```
+
+For more details, see the [Configuration Profiles](#configuration-profiles) section above.
 
 ### Bank
 

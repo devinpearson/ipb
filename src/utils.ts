@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { readFile, mkdir, access, constants } from 'node:fs/promises';
+import { readFile, mkdir, access, constants, readdir, unlink, writeFile, chmod, rename, open } from 'node:fs/promises';
 import path from 'node:path';
 import { homedir } from 'node:os';
 import chalk from 'chalk';
@@ -292,9 +292,10 @@ export function readCommandHistory(): CommandHistoryEntry[] {
 
 /**
  * Writes command history to the history file.
+ * Uses atomic writes to prevent corruption.
  * @param history - Array of command history entries
  */
-function writeCommandHistory(history: CommandHistoryEntry[]): void {
+async function writeCommandHistory(history: CommandHistoryEntry[]): Promise<void> {
   try {
     const historyPath = getHistoryFilePath();
     const dir = path.dirname(historyPath);
@@ -303,7 +304,9 @@ function writeCommandHistory(history: CommandHistoryEntry[]): void {
     }
     // Keep only the last 1000 entries to prevent file from growing too large
     const trimmedHistory = history.slice(-1000);
-    fs.writeFileSync(historyPath, JSON.stringify(trimmedHistory, null, 2), 'utf8');
+    // Use atomic write for history file (less critical than credentials, but still good practice)
+    const jsonData = JSON.stringify(trimmedHistory, null, 2);
+    await writeFileAtomic(historyPath, jsonData);
   } catch {
     // Ignore errors writing history
   }
@@ -377,13 +380,13 @@ function sanitizeArgs(args: string[]): string[] {
  * @param exitCode - Exit code (0 for success, non-zero for errors)
  * @param duration - Optional command execution duration in milliseconds
  */
-export function logCommandHistory(
+export async function logCommandHistory(
   command: string,
   args: string[],
   options: Record<string, unknown>,
   exitCode: number,
   duration?: number
-): void {
+): Promise<void> {
   try {
     const history = readCommandHistory();
     const entry: CommandHistoryEntry = {
@@ -395,7 +398,7 @@ export function logCommandHistory(
       duration,
     };
     history.push(entry);
-    writeCommandHistory(history);
+    await writeCommandHistory(history);
   } catch {
     // Silent failure - don't break command execution if history logging fails
   }
@@ -420,15 +423,18 @@ function getLastUpdateCheck(): number | null {
 
 /**
  * Updates the timestamp of the last update check.
+ * Uses atomic writes to prevent corruption.
  */
-function setLastUpdateCheck(): void {
+async function setLastUpdateCheck(): Promise<void> {
   try {
     const cachePath = getUpdateCheckCachePath();
     const dir = path.dirname(cachePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(cachePath, JSON.stringify({ lastCheck: Date.now() }, null, 2), 'utf8');
+    // Use atomic write for cache file
+    const jsonData = JSON.stringify({ lastCheck: Date.now() }, null, 2);
+    await writeFileAtomic(cachePath, jsonData);
   } catch {
     // Ignore errors writing cache
   }
@@ -479,8 +485,10 @@ export async function checkForUpdates(currentVersion: string, force = false): Pr
   try {
     const latest = await checkLatestVersion();
     
-    // Update cache timestamp (even if check failed)
-    setLastUpdateCheck();
+    // Update cache timestamp (even if check failed) - non-blocking
+    setLastUpdateCheck().catch(() => {
+      // Ignore errors
+    });
     
     if (latest && latest !== currentVersion) {
       return latest;
@@ -1149,27 +1157,292 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   return credentials;
 }
 
-import { writeFile, chmod } from 'node:fs/promises';
 import ora from 'ora';
 import { optionCredentials } from './index.js';
 import type { ICardApi } from './mock-card.js';
 import type { IPbApi } from './mock-pb.js';
 
 /**
- * Write credentials file with secure permissions (read/write for owner only)
+ * Writes a file atomically using a temporary file and rename.
+ * This ensures the file is either completely written or not written at all,
+ * preventing corruption from crashes or interruptions.
+ * @param filepath - Target file path
+ * @param data - Data to write (string or Buffer)
+ * @param options - Write options including permissions
+ * @throws {Error} When file operations fail
+ */
+export async function writeFileAtomic(
+  filepath: string,
+  data: string | Buffer,
+  options: { permissions?: number } = {}
+): Promise<void> {
+  const dir = path.dirname(filepath);
+  const filename = path.basename(filepath);
+  const tempPath = path.join(dir, `.${filename}.tmp`);
+  
+  try {
+    // Ensure directory exists
+    await ensureCredentialsDirectory({ folder: dir });
+    
+    // Write to temp file
+    await writeFile(tempPath, data, { encoding: 'utf8', flag: 'w' });
+    
+    // Ensure data is flushed to disk before renaming
+    const fd = await open(tempPath, 'r+');
+    try {
+      await fd.sync();
+    } finally {
+      await fd.close();
+    }
+    
+    // Set permissions on temp file (if specified)
+    if (options.permissions !== undefined) {
+      await chmod(tempPath, options.permissions);
+    }
+    
+    // Atomically rename temp file to target (rename is atomic on most filesystems)
+    await rename(tempPath, filepath);
+  } catch (error) {
+    // Clean up temp file on error
+    try {
+      if (fs.existsSync(tempPath)) {
+        await unlink(tempPath);
+      }
+    } catch {
+      // Ignore cleanup errors - the temp file will be cleaned up later
+    }
+    throw error;
+  }
+}
+
+/**
+ * Cleans up any stale temporary files in a directory.
+ * Removes temporary files that are older than 1 hour (likely from crashed operations).
+ * @param dir - Directory to clean
+ */
+export async function cleanupTempFiles(dir: string): Promise<void> {
+  try {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+    const files = await readdir(dir);
+    const tempFiles = files.filter((f) => f.endsWith('.tmp'));
+    const now = Date.now();
+    
+    for (const file of tempFiles) {
+      const filePath = path.join(dir, file);
+      try {
+        const stats = await fs.promises.stat(filePath);
+        // Remove temp files older than 1 hour (likely stale)
+        if (now - stats.mtimeMs > 3600000) {
+          await unlink(filePath);
+        }
+      } catch {
+        // Ignore errors for individual files
+      }
+    }
+  } catch {
+    // Ignore errors - cleanup is best-effort
+  }
+}
+
+/**
+ * Write credentials file with secure permissions (read/write for owner only).
+ * Uses atomic writes to prevent corruption.
  * @param filepath - Path to the credentials file
  * @param data - Credentials data to write
+ * @throws {Error} When file operations fail
  */
 export async function writeCredentialsFile(
   filepath: string,
   data: Record<string, string>
 ): Promise<void> {
-  await writeFile(filepath, JSON.stringify(data, null, 2), {
-    encoding: 'utf8',
-    flag: 'w',
-  });
-  // Set file permissions to read/write for owner only (0o600)
-  await chmod(filepath, 0o600);
+  const jsonData = JSON.stringify(data, null, 2);
+  await writeFileAtomic(filepath, jsonData, { permissions: 0o600 });
+}
+
+/**
+ * Gets the profiles directory path.
+ * @returns Path to the profiles directory
+ */
+export function getProfilesDirectory(): string {
+  return path.join(homedir(), '.ipb', 'profiles');
+}
+
+/**
+ * Gets the active profile config file path.
+ * @returns Path to the active profile config file
+ */
+export function getActiveProfileConfigPath(): string {
+  return path.join(homedir(), '.ipb', 'active-profile.json');
+}
+
+/**
+ * Gets the file path for a specific profile.
+ * @param profileName - Name of the profile
+ * @returns Path to the profile file
+ */
+export function getProfilePath(profileName: string): string {
+  const profilesDir = getProfilesDirectory();
+  return path.join(profilesDir, `${profileName}.json`);
+}
+
+/**
+ * Lists all available profiles.
+ * @returns Array of profile names
+ */
+export async function listProfiles(): Promise<string[]> {
+  const profilesDir = getProfilesDirectory();
+  if (!fs.existsSync(profilesDir)) {
+    return [];
+  }
+  
+  try {
+    const files = await readdir(profilesDir);
+    return files
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.replace('.json', ''))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Reads a profile file.
+ * @param profileName - Name of the profile to read
+ * @returns Credentials object from the profile, or default empty strings if profile doesn't exist
+ * @throws {Error} When the profile file exists but cannot be parsed
+ */
+export async function readProfile(profileName: string): Promise<Record<string, string>> {
+  const profilePath = getProfilePath(profileName);
+  if (!fs.existsSync(profilePath)) {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `Profile "${profileName}" does not exist. Use 'ipb config profile list' to see available profiles.`
+    );
+  }
+  
+  try {
+    const data = await readFile(profilePath, 'utf8');
+    return { ...defaultCreds, ...JSON.parse(data) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CliError(
+      ERROR_CODES.INVALID_CREDENTIALS,
+      `Failed to read profile "${profileName}": ${message}`
+    );
+  }
+}
+
+/**
+ * Writes a profile file with secure permissions.
+ * @param profileName - Name of the profile to write
+ * @param data - Credentials data to write
+ */
+export async function writeProfile(profileName: string, data: Record<string, string>): Promise<void> {
+  const profilesDir = getProfilesDirectory();
+  await ensureCredentialsDirectory({ folder: profilesDir });
+  
+  const profilePath = getProfilePath(profileName);
+  await writeCredentialsFile(profilePath, data);
+}
+
+/**
+ * Deletes a profile file.
+ * @param profileName - Name of the profile to delete
+ * @throws {Error} When the profile doesn't exist
+ */
+export async function deleteProfile(profileName: string): Promise<void> {
+  const profilePath = getProfilePath(profileName);
+  if (!fs.existsSync(profilePath)) {
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `Profile "${profileName}" does not exist.`
+    );
+  }
+  
+  try {
+    await access(profilePath, constants.F_OK);
+    await unlink(profilePath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CliError(
+      ERROR_CODES.FILE_NOT_FOUND,
+      `Failed to delete profile "${profileName}": ${message}`
+    );
+  }
+}
+
+/**
+ * Gets the currently active profile name.
+ * @returns Active profile name, or null if no profile is set
+ */
+export async function getActiveProfile(): Promise<string | null> {
+  const activeProfilePath = getActiveProfileConfigPath();
+  if (!fs.existsSync(activeProfilePath)) {
+    return null;
+  }
+  
+  try {
+    const data = await readFile(activeProfilePath, 'utf8');
+    const config = JSON.parse(data);
+    return config.profile || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sets the active profile name.
+ * Uses atomic writes to prevent corruption.
+ * @param profileName - Name of the profile to set as active, or null to clear
+ * @throws {Error} When file operations fail
+ */
+export async function setActiveProfile(profileName: string | null): Promise<void> {
+  const activeProfilePath = getActiveProfileConfigPath();
+  const configDir = path.dirname(activeProfilePath);
+  
+  await ensureCredentialsDirectory({ folder: configDir });
+  
+  if (profileName === null) {
+    // Remove active profile config
+    if (fs.existsSync(activeProfilePath)) {
+      await unlink(activeProfilePath);
+    }
+  } else {
+    // Write active profile config using atomic write
+    const jsonData = JSON.stringify({ profile: profileName }, null, 2);
+    await writeFileAtomic(activeProfilePath, jsonData, { permissions: 0o600 });
+  }
+}
+
+/**
+ * Loads credentials from a profile if specified, otherwise uses default credentials.
+ * @param credentials - Base credentials object
+ * @param profileName - Optional profile name to load
+ * @returns Updated credentials object with profile data merged in
+ */
+export async function loadProfile(credentials: Credentials, profileName?: string): Promise<Credentials> {
+  if (!profileName) {
+    return credentials;
+  }
+  
+  try {
+    const profileData = await readProfile(profileName);
+    // Merge profile data into credentials (profile takes precedence over defaults)
+    return {
+      ...credentials,
+      ...profileData,
+    };
+  } catch (error) {
+    // If profile doesn't exist, throw a helpful error
+    if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
+      throw error;
+    }
+    // Otherwise, rethrow the error
+    throw error;
+  }
 }
 
 // Spinner abstraction for testability and control

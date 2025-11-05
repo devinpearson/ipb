@@ -96,6 +96,7 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--client-secret <clientSecret>', 'client secret for the Investec API')
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
+    .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
     .option('-s,--spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
@@ -171,6 +172,7 @@ function generateCompletionScript(shell: string): string {
     '--client-secret',
     '--host',
     '--credentials-file',
+    '--profile',
     '--spinner',
     '--verbose',
     '--json',
@@ -443,25 +445,118 @@ Examples:
       )
   ).action(withCommandContext('cards', cardsCommand));
   // Configuration
-  addApiCredentialOptions(
-    program
-      .command('config')
-      .alias('cfg')
-      .description('Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations.')
-      .addHelpText(
-        'after',
-        `
+  const configCmd = program
+    .command('config')
+    .alias('cfg')
+    .description('Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations. Supports configuration profiles for managing multiple environments.')
+    .addHelpText(
+      'after',
+      `
 Examples:
+  # Save to default credentials
   $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
   $ ipb config --card-key <card-key>
-  $ ipb config --openai-key <key>
+  
+  # Save to a profile
+  $ ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
+  $ ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
+  
+  # List profiles
+  $ ipb config profile list
+  
+  # Set active profile
+  $ ipb config profile set production
+  
+  # Show active profile
+  $ ipb config profile show
+  
+  # Delete a profile
+  $ ipb config profile delete staging
       `
-      )
-  )
+    );
+  
+  addApiCredentialOptions(configCmd)
     .option('--card-key <cardKey>', 'Set your card key for the Investec API')
     .option('--openai-key <openaiKey>', 'Set your OpenAI API key for AI code generation')
     .option('--sandbox-key <sandboxKey>', 'Set your sandbox key for AI generation')
     .action(withCommandContext('config', configCommand));
+  
+  // Profile subcommands
+  const profileCmd = configCmd
+    .command('profile')
+    .description('Manage configuration profiles');
+  
+  profileCmd
+    .command('list')
+    .alias('ls')
+    .description('List all available configuration profiles')
+    .action(async () => {
+      const { listProfiles, getActiveProfile } = await import('./utils.js');
+      const profiles = await listProfiles();
+      if (profiles.length === 0) {
+        console.log('No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>');
+      } else {
+        const activeProfile = await getActiveProfile();
+        console.log('Available profiles:');
+        for (const profile of profiles) {
+          const marker = profile === activeProfile ? ' (active)' : '';
+          console.log(`  - ${profile}${marker}`);
+        }
+      }
+    });
+  
+  profileCmd
+    .command('set')
+    .description('Set the active profile (used when --profile is not specified)')
+    .argument('<profile>', 'Profile name to set as active')
+    .action(async (profileName: string) => {
+      const { readProfile, setActiveProfile } = await import('./utils.js');
+      const { CliError, ERROR_CODES } = await import('./errors.js');
+      try {
+        await readProfile(profileName);
+        await setActiveProfile(profileName);
+        console.log(`✅ Active profile set to: ${profileName}`);
+      } catch (error) {
+        if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
+          throw new CliError(
+            ERROR_CODES.FILE_NOT_FOUND,
+            `Profile "${profileName}" does not exist. Create it first with: ipb config --profile ${profileName} --client-id <id> --client-secret <secret> --api-key <key>`
+          );
+        }
+        throw error;
+      }
+    });
+  
+  profileCmd
+    .command('show')
+    .description('Show the currently active profile')
+    .action(async () => {
+      const { getActiveProfile } = await import('./utils.js');
+      const activeProfile = await getActiveProfile();
+      if (activeProfile) {
+        console.log(`Active profile: ${activeProfile}`);
+      } else {
+        console.log('No active profile set. Using default credentials.');
+      }
+    });
+  
+  profileCmd
+    .command('delete')
+    .alias('rm')
+    .description('Delete a configuration profile')
+    .argument('<profile>', 'Profile name to delete')
+    .action(async (profileName: string) => {
+      const { deleteProfile, getActiveProfile, setActiveProfile } = await import('./utils.js');
+      await deleteProfile(profileName);
+      // If the deleted profile was active, clear the active profile
+      const activeProfile = await getActiveProfile();
+      if (activeProfile === profileName) {
+        await setActiveProfile(null);
+        console.log(`✅ Profile "${profileName}" deleted and cleared from active profile.`);
+      } else {
+        console.log(`✅ Profile "${profileName}" deleted.`);
+      }
+    });
   // Code Management
   addApiCredentialOptions(
     program
@@ -1024,7 +1119,10 @@ Examples:
         // Merge all options (global + command-specific)
         const allOptions = { ...globalOpts, ...commandOptions };
         
-        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration);
+        // Non-blocking: don't await to avoid slowing down command exit
+        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(() => {
+          // Ignore errors
+        });
       }
     } catch {
       // Ignore errors logging history
@@ -1072,12 +1170,28 @@ Examples:
  * @returns Updated credentials object with option overrides applied
  */
 export async function optionCredentials(
-  options: BasicOptions,
+  options: BasicOptions & { profile?: string },
   credentials: Credentials
 ): Promise<Credentials> {
-  if (options.credentialsFile) {
-    credentials = await loadCredentialsFile(credentials, options.credentialsFile);
+  // Load profile if specified (takes precedence over credentials file)
+  if (options.profile) {
+    const { loadProfile } = await import('./utils.js');
+    credentials = await loadProfile(credentials, options.profile);
+  } else {
+    // Check for active profile if no profile specified
+    const { getActiveProfile, loadProfile } = await import('./utils.js');
+    const activeProfile = await getActiveProfile();
+    if (activeProfile) {
+      credentials = await loadProfile(credentials, activeProfile);
+    }
+    
+    // Fall back to credentials file if no profile is active
+    if (options.credentialsFile) {
+      credentials = await loadCredentialsFile(credentials, options.credentialsFile);
+    }
   }
+  
+  // Command-line options always override profile/credentials file
   if (options.apiKey) {
     credentials.apiKey = options.apiKey;
   }
