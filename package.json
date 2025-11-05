@@ -11,15 +11,19 @@
     "clean": "rimraf ./bin",
     "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/ && cp instructions.txt ./bin/instructions.txt",
     "test": "vitest",
+    "test:run": "vitest --run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "type-check": "tsc",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-    "ci": "npm run build && npm run type-check && npm run lint && npm run format:check && npm run test && npm audit",
+    "ci": "npm run build && npm run type-check && npm run lint && npm run format:check && npm run test:run && npm audit",
     "dev": "vitest",
-    "tapes": "./scripts/tapes.sh"
+    "tapes": "./scripts/tapes.sh",
+    "docs": "npm run build && node bin/index.js docs",
+    "docs:source": "node --loader tsx src/cmds/docs.ts",
+    "prepublishOnly": "npm run build && npm run docs"
   },
   "keywords": [
     "investec",
@@ -32,30 +36,41 @@
   "author": "Devin Pearson",
   "license": "MIT",
   "description": "A cli application to manage programmable banking cards",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devinpearson/ipb.git"
+  },
+  "homepage": "https://github.com/devinpearson/ipb#readme",
+  "bugs": {
+    "url": "https://github.com/devinpearson/ipb/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
-    "@inquirer/prompts": "^7.5.3",
-    "@types/js-yaml": "^4.0.9",
-    "chalk": "^4.1.2",
+    "@inquirer/prompts": "^7.9.0",
+    "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
-    "commander": "^13.1.0",
-    "dotenv": "^16.3.1",
-    "investec-card-api": "^0.2.0",
-    "investec-pb-api": "^0.3.6",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "investec-card-api": "^0.2.1",
+    "investec-pb-api": "^0.3.10",
     "js-yaml": "^4.1.0",
     "node-fetch": "^3.3.2",
-    "openai": "^4.96.0",
-    "ora": "^8.2.0",
-    "programmable-card-code-emulator": "^1.4.2",
-    "zod": "^3.23.8"
+    "openai": "^4.104.0",
+    "ora": "^9.0.0",
+    "programmable-card-code-emulator": "^2.0.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.17.2",
+    "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "^2.3.3",
-    "@commander-js/extra-typings": "^13.1.0",
-    "@types/node": "^22.12.0",
-    "rimraf": "^6.0.1",
+    "@commander-js/extra-typings": "^14.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.19.0",
+    "rimraf": "^6.1.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.1.1"
+    "vitest": "^3.2.4"
   },
   "files": [
     "bin"
