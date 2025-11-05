@@ -5,6 +5,8 @@ import { credentials, printTitleBox } from '../index.js';
 import {
   confirmDestructiveOperation,
   createSpinner,
+  formatFileSize,
+  getFileSize,
   initializeApi,
   normalizeCardKey,
   validateFilePath,
@@ -52,9 +54,11 @@ export async function deployCommand(options: Options) {
     const envFilePath = `.env.${options.env}`;
     try {
       const normalizedEnvPath = await validateFilePath(envFilePath);
-      spinner.text = `📦 uploading env from ${envFilePath}`;
+      const envFileSize = await getFileSize(normalizedEnvPath);
+      spinner.text = `📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`;
       const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
       envObject = dotenv.parse(envFileContent);
+      spinner.text = `📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`;
 
       // Use retry logic with rate limit handling
       await withRetry(
@@ -75,11 +79,14 @@ export async function deployCommand(options: Options) {
       throw error;
     }
   }
-  spinner.text = '🚀 deploying code';
+  const codeFileSize = await getFileSize(normalizedFilename);
+  spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
   const raw = { code: '' };
   
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;
+  const codeSize = Buffer.byteLength(code, 'utf8');
+  spinner.text = `🚀 deploying code (${formatFileSize(codeSize)})...`;
   
   // Use retry logic with rate limit handling for API calls
   const saveResult = await withRetry(

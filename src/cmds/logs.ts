@@ -3,6 +3,8 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
+  formatFileSize,
+  getFileSize,
   initializeApi,
   normalizeCardKey,
   validateFilePathForWrite,
@@ -31,12 +33,17 @@ export async function logsCommand(options: Options) {
 
   const result = await api.getExecutions(cardKey);
   spinner.stop();
+  
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
-  console.log(`💾 saving to file: ${normalizedFilename}`);
-  await fsPromises.writeFile(
-    normalizedFilename,
-    JSON.stringify(result.data.result.executionItems, null, 4),
-    'utf8'
-  );
-  console.log('🎉 ' + 'logs saved to file');
+  const logsData = JSON.stringify(result.data.result.executionItems, null, 4);
+  const logsSize = Buffer.byteLength(logsData, 'utf8');
+  
+  // Show progress with file size for write operation
+  const disableSpinnerWrite = options.spinner === true;
+  const writeSpinner = createSpinner(!disableSpinnerWrite, `💾 saving to file: ${normalizedFilename} (${formatFileSize(logsSize)})...`).start();
+  await fsPromises.writeFile(normalizedFilename, logsData, 'utf8');
+  writeSpinner.stop();
+  
+  const finalSize = await getFileSize(normalizedFilename);
+  console.log(`🎉 logs saved to file (${formatFileSize(finalSize)})`);
 }

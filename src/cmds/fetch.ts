@@ -3,6 +3,8 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
+  formatFileSize,
+  getFileSize,
   initializeApi,
   normalizeCardKey,
   validateFilePathForWrite,
@@ -42,10 +44,17 @@ export async function fetchCommand(options: Options) {
   }
 
   const code = result.data.result.code;
+  const codeSize = Buffer.byteLength(code, 'utf8');
 
   spinner.stop();
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
-  console.log(`💾 saving to file: ${normalizedFilename}`);
+  
+  // Show progress with file size for write operation
+  const disableSpinnerWrite = options.spinner === true;
+  const writeSpinner = createSpinner(!disableSpinnerWrite, `💾 saving to file: ${normalizedFilename} (${formatFileSize(codeSize)})...`).start();
   await fsPromises.writeFile(normalizedFilename, code, 'utf8');
-  console.log('🎉 code saved to file');
+  writeSpinner.stop();
+  
+  const finalSize = await getFileSize(normalizedFilename);
+  console.log(`🎉 code saved to file (${formatFileSize(finalSize)})`);
 }

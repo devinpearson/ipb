@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
-import { validateFilePath } from '../utils.js';
+import { createSpinner, formatFileSize, getFileSize, validateFilePath } from '../utils.js';
 
 interface Options {
   filename: string;
@@ -58,14 +58,21 @@ export async function runCommand(options: Options) {
       throw error;
     }
 
+    const envFileSize = await getFileSize(envFilePath);
+    const spinner = createSpinner(true, `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`).start();
     const data = await fsPromises.readFile(envFilePath, 'utf8');
+    spinner.stop();
     const lines = data.split('\n');
 
     environmentvariables = convertToJson(lines);
   }
   // Convert the environmentvariables to a string
   const environmentvariablesString = JSON.stringify(environmentvariables);
+  
+  const codeFileSize = await getFileSize(normalizedFilename);
+  const codeSpinner = createSpinner(true, `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`).start();
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
+  codeSpinner.stop();
   // Run the code
   const executionItems = await run(transaction, code, environmentvariablesString);
   executionItems.forEach((item) => {

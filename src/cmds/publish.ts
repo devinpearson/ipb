@@ -4,6 +4,8 @@ import { credentials, printTitleBox } from '../index.js';
 import {
   confirmDestructiveOperation,
   createSpinner,
+  formatFileSize,
+  getFileSize,
   initializeApi,
   normalizeCardKey,
   validateFilePath,
@@ -48,10 +50,14 @@ export async function publishCommand(options: Options) {
   }
   
   const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '🚀 publishing code...').start();
+  const spinner = createSpinner(!disableSpinner, '🚀 reading code...').start();
   const api = await initializeApi(credentials, options);
 
+  const codeFileSize = await getFileSize(normalizedFilename);
+  spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
+  const codeSize = Buffer.byteLength(code, 'utf8');
+  spinner.text = `🚀 publishing code (${formatFileSize(codeSize)})...`;
   const result = await api.uploadPublishedCode(cardKey, options.codeId, code);
   spinner.stop();
   console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);

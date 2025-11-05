@@ -217,17 +217,37 @@ Based on the [Node.js CLI Apps Best Practices](https://github.com/lirantal/nodej
 
 ### 8. Progress Indicators for File Operations
 
-**Current State**: Some file operations (upload, fetch) don't show progress.
+**Status**: ✅ Fully Implemented
 
-**Recommendations**:
-- Show progress for large file uploads
-- Display file size information
-- Add estimated time remaining for long operations
+**Implementation Details**:
+- Added `formatFileSize()` utility function to format file sizes in human-readable format (B, KB, MB, GB)
+- Added `getFileSize()` utility function to get file size in bytes
+- Enhanced all file read operations to show progress with file size:
+  - `deployCommand` - Shows file size when reading env and code files
+  - `uploadCommand` - Shows file size when reading code file
+  - `publishCommand` - Shows file size when reading code file
+  - `runCommand` - Shows file size when reading env and code files
+- Enhanced all file write operations to show progress with file size:
+  - `fetchCommand` - Shows file size when saving code to file
+  - `logsCommand` - Shows file size when saving logs to file
+  - `aiCommand` - Shows file size when saving generated code and env files
+- Progress indicators display:
+  - File path and size during read operations (e.g., "📖 reading code from file.js (2.5 KB)...")
+  - File path and size during write operations (e.g., "💾 saving to file: output.js (2.5 KB)...")
+  - Final file size after operations complete (e.g., "🎉 code saved to file (2.5 KB)")
+- Spinners update dynamically to show progress through different stages (read → process → write/upload)
+- File sizes are calculated using `Buffer.byteLength()` for accurate size representation
+- All file operations now provide clear visual feedback about the amount of data being processed
 
-```typescript
-// Enhanced spinner with file size info
-const spinner = createSpinner(!disableSpinner, `Uploading ${filename} (${fileSize} bytes)...`);
-```
+**Files Updated**:
+- ✅ `src/utils.ts` - Added `formatFileSize()` and `getFileSize()` utility functions
+- ✅ `src/cmds/fetch.ts` - Added progress indicators for file write operation
+- ✅ `src/cmds/logs.ts` - Added progress indicators for file write operation
+- ✅ `src/cmds/deploy.ts` - Added progress indicators for env and code file read operations
+- ✅ `src/cmds/upload.ts` - Added progress indicators for code file read operation
+- ✅ `src/cmds/publish.ts` - Added progress indicators for code file read operation
+- ✅ `src/cmds/ai.ts` - Added progress indicators for code and env file write operations
+- ✅ `src/cmds/run.ts` - Added progress indicators for env and code file read operations
 
 ---
 
