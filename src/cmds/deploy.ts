@@ -7,6 +7,7 @@ import {
   createSpinner,
   formatFileSize,
   getFileSize,
+  getSafeText,
   getVerboseMode,
   initializeApi,
   normalizeCardKey,
@@ -56,10 +57,10 @@ export async function deployCommand(options: Options) {
     try {
       const normalizedEnvPath = await validateFilePath(envFilePath);
       const envFileSize = await getFileSize(normalizedEnvPath);
-      spinner.text = `📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`;
+      spinner.text = getSafeText(`📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`);
       const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
       envObject = dotenv.parse(envFileContent);
-      spinner.text = `📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`;
+      spinner.text = getSafeText(`📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`);
 
       // Use retry logic with rate limit handling
       const verbose = getVerboseMode(options.verbose);
@@ -70,7 +71,7 @@ export async function deployCommand(options: Options) {
           verbose,
         }
       );
-      spinner.text = '📦 env uploaded';
+      spinner.text = getSafeText('📦 env uploaded');
     } catch (error) {
       if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
         throw new CliError(
@@ -82,13 +83,13 @@ export async function deployCommand(options: Options) {
     }
   }
   const codeFileSize = await getFileSize(normalizedFilename);
-  spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
+  spinner.text = getSafeText(`🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`);
   const raw = { code: '' };
   
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;
   const codeSize = Buffer.byteLength(code, 'utf8');
-  spinner.text = `🚀 deploying code (${formatFileSize(codeSize)})...`;
+  spinner.text = getSafeText(`🚀 deploying code (${formatFileSize(codeSize)})...`);
   
   // Use retry logic with rate limit handling for API calls
   const verbose = getVerboseMode(options.verbose);
@@ -108,5 +109,5 @@ export async function deployCommand(options: Options) {
     }
   );
   spinner.stop();
-  console.log(`🎉 code deployed with codeId: ${saveResult.data.result.codeId}`);
+  console.log(getSafeText(`🎉 code deployed with codeId: ${saveResult.data.result.codeId}`));
 }

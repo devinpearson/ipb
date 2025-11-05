@@ -35,6 +35,11 @@ vi.mock('../../src/utils.ts', async () => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
+    getTerminalCapabilities: vi.fn(() => ({
+      supportsUnicode: true,
+      supportsEmoji: true,
+      termType: 'xterm-256color',
+    })),
   };
 });
 
@@ -95,7 +100,7 @@ describe('uploadCommand', () => {
     const expectedPath = resolve('test.js');
     expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
-    expect(console.log).toHaveBeenCalledWith('🎉 code uploaded with codeId: code-456');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code uploaded with codeId: code-456'));
   });
 
   it('should throw CliError when file does not exist', async () => {

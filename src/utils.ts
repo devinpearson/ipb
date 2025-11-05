@@ -217,6 +217,182 @@ function getDefaultEditor(): string | null {
   return unixEditors[0] || null;
 }
 
+/**
+ * Terminal capability information.
+ */
+interface TerminalCapabilities {
+  supportsUnicode: boolean;
+  supportsEmoji: boolean;
+  termType: string | null;
+}
+
+/**
+ * Detects terminal capabilities based on TERM environment variable and terminal type.
+ * According to clig.dev guidelines, should check TERM and TERMINFO/TERMCAP for terminal capabilities.
+ * 
+ * @returns Terminal capability information
+ */
+export function detectTerminalCapabilities(): TerminalCapabilities {
+  const term = process.env.TERM;
+  const terminfo = process.env.TERMINFO;
+  const termcap = process.env.TERMCAP;
+  
+  // Check if we're in a TTY
+  const isTTY = process.stdout.isTTY === true;
+  
+  // Default: assume limited capabilities if not a TTY
+  if (!isTTY) {
+    return {
+      supportsUnicode: false,
+      supportsEmoji: false,
+      termType: term || null,
+    };
+  }
+  
+  // Check TERM environment variable for terminal type
+  // Common terminals that support Unicode/emoji:
+  // - xterm-256color, xterm-kitty, xterm (modern versions)
+  // - screen-256color, tmux-256color
+  // - iterm2, alacritty, wezterm
+  // - linux, vt220, dumb (usually don't support Unicode well)
+  
+  const termLower = term?.toLowerCase() || '';
+  
+  // Terminals known to NOT support Unicode/emoji well
+  const noUnicodeTerms = ['dumb', 'vt220', 'vt100', 'vt102', 'ansi'];
+  const likelyNoUnicode = noUnicodeTerms.some((t) => termLower.includes(t));
+  
+  // Check for NO_COLOR (if set, probably want plain text anyway)
+  const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+  
+  // Check if terminal explicitly supports Unicode
+  // Modern terminals usually support Unicode if they support 256 colors
+  const supports256Colors = termLower.includes('256color') || 
+                             termLower.includes('truecolor') ||
+                             termLower.includes('kitty') ||
+                             termLower.includes('iterm') ||
+                             termLower.includes('alacritty') ||
+                             termLower.includes('wezterm');
+  
+  // Assume Unicode support if:
+  // - Terminal supports 256 colors
+  // - Not a known problematic terminal
+  // - Not explicitly disabled via NO_COLOR
+  const supportsUnicode = !likelyNoUnicode && !noColor && (supports256Colors || term === undefined);
+  
+  // Emoji support is generally a subset of Unicode support
+  // Some terminals support Unicode but not emoji (e.g., older xterm)
+  // Assume emoji support if Unicode is supported and terminal is modern
+  const modernTerms = ['kitty', 'iterm', 'alacritty', 'wezterm', 'foot', 'rio'];
+  const supportsEmoji = supportsUnicode && (
+    modernTerms.some((t) => termLower.includes(t)) ||
+    termLower.includes('256color') ||
+    term === undefined // Assume modern if TERM not set
+  );
+  
+  return {
+    supportsUnicode,
+    supportsEmoji,
+    termType: term || null,
+  };
+}
+
+/**
+ * Emoji/Unicode mapping with ASCII fallbacks.
+ */
+const EMOJI_FALLBACKS: Record<string, string> = {
+  '💳': '[CARD]',
+  '💎': '[ENV]',
+  '🚀': '[DEPLOY]',
+  '📦': '[UPLOAD]',
+  '🎉': '[OK]',
+  '📖': '[READ]',
+  '💾': '[SAVE]',
+  '🔑': '[KEY]',
+  '✅': '[OK]',
+  '⚠️': '[WARN]',
+  '🙀': '[ERROR]',
+  '💻': '[CODE]',
+  '📂': '[DIR]',
+  '💣': '[ERR]',
+  '📝': '[EDIT]',
+  '🧪': '[TEST]',
+};
+
+/**
+ * Gets a safe version of text with emoji/Unicode, falling back to ASCII if terminal doesn't support it.
+ * 
+ * @param text - Text that may contain emojis/Unicode
+ * @param options - Options including force ASCII
+ * @returns Text with emojis replaced if terminal doesn't support them
+ * 
+ * @example
+ * ```typescript
+ * const text = getSafeText('💳 fetching accounts...');
+ * // Returns '[CARD] fetching accounts...' if terminal doesn't support emoji
+ * ```
+ */
+export function getSafeText(text: string, options: { forceASCII?: boolean } = {}): string {
+  // If NO_COLOR is set, prefer ASCII
+  if (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '') {
+    options.forceASCII = true;
+  }
+  
+  // If forcing ASCII, replace all emojis
+  if (options.forceASCII) {
+    let result = text;
+    for (const [emoji, fallback] of Object.entries(EMOJI_FALLBACKS)) {
+      result = result.replace(new RegExp(emoji, 'g'), fallback);
+    }
+    return result;
+  }
+  
+  // Check terminal capabilities
+  const capabilities = detectTerminalCapabilities();
+  
+  // If terminal doesn't support emoji, replace them
+  if (!capabilities.supportsEmoji) {
+    let result = text;
+    for (const [emoji, fallback] of Object.entries(EMOJI_FALLBACKS)) {
+      result = result.replace(new RegExp(emoji, 'g'), fallback);
+    }
+    return result;
+  }
+  
+  // Terminal supports emoji, return original text
+  return text;
+}
+
+/**
+ * Checks if the terminal supports Unicode characters (including emojis).
+ * Cached for performance - checks once per process.
+ * @returns True if terminal supports Unicode/emoji
+ */
+let terminalCapabilitiesCache: TerminalCapabilities | null = null;
+
+/**
+ * Gets cached terminal capabilities or detects them.
+ * @returns Terminal capability information
+ */
+export function getTerminalCapabilities(): TerminalCapabilities {
+  if (terminalCapabilitiesCache === null) {
+    terminalCapabilitiesCache = detectTerminalCapabilities();
+  }
+  return terminalCapabilitiesCache;
+}
+
+/**
+ * Logs a message with automatic emoji/Unicode fallback based on terminal capabilities.
+ * This is a convenience wrapper around console.log that applies getSafeText automatically.
+ * 
+ * @param message - Message to log (may contain emojis)
+ * @param args - Additional arguments to pass to console.log
+ */
+export function safeLog(message: string, ...args: unknown[]): void {
+  const safeMessage = getSafeText(message);
+  console.log(safeMessage, ...args);
+}
+
 // Configure chalk at module load time
 configureChalk();
 
@@ -745,7 +921,8 @@ export async function checkForUpdates(currentVersion: string, force = false): Pr
  * @param latestVersion - Latest available version
  */
 export function showUpdateNotification(currentVersion: string, latestVersion: string): void {
-  console.log(chalk.yellow(`\n⚠️  New version available: ${latestVersion} (current: ${currentVersion})`));
+  const warningText = getSafeText(`⚠️  New version available: ${latestVersion} (current: ${currentVersion})`);
+  console.log(chalk.yellow(`\n${warningText}`));
   console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
 }
 
@@ -1919,11 +2096,8 @@ export async function withRetry<T>(
           : calculateBackoffDelay(attempt, baseDelay, maxDelay);
 
         if (verbose) {
-          console.log(
-            chalk.yellow(
-              `⚠️  Rate limit exceeded. ${formatRateLimitInfo(rateLimitInfo)}. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`
-            )
-          );
+          const warningText = getSafeText(`⚠️  Rate limit exceeded. ${formatRateLimitInfo(rateLimitInfo)}. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`);
+          console.log(chalk.yellow(warningText));
         }
 
         if (onRetry) {
@@ -1996,6 +2170,9 @@ export interface Spinner {
  * @returns A Spinner instance
  */
 export function createSpinner(enabled: boolean, text: string): Spinner {
+  // Use safe text that respects terminal capabilities
+  const safeText = getSafeText(text);
+  
   if (!enabled) {
     // No-op spinner: does not log anything (for pipe mode)
     return {
@@ -2009,8 +2186,8 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
       },
     };
   }
-  // Real spinner
-  return ora(text);
+  // Real spinner - use safe text that respects terminal capabilities
+  return ora(safeText);
 }
 
 /**

@@ -45,6 +45,7 @@ import { ExitCode } from './errors.js';
 import {
   checkForUpdates,
   configureChalk,
+  getSafeText,
   getVerboseMode,
   handleCliError,
   loadCredentialsFile,
@@ -79,7 +80,8 @@ export async function printTitleBox() {
 
 // Load credentials from file if present (sync for module initialization)
 const cred = readCredentialsFileSync(credentialLocation, (err) => {
-  console.error(chalk.red(`🙀 Invalid credentials file format: ${err.message}`));
+  const errorText = getSafeText(`🙀 Invalid credentials file format: ${err.message}`);
+  console.error(chalk.red(errorText));
   console.log('');
 });
 
@@ -522,9 +524,10 @@ Examples:
       const { readProfile, setActiveProfile } = await import('./utils.js');
       const { CliError, ERROR_CODES } = await import('./errors.js');
       try {
+        const { getSafeText } = await import('./utils.js');
         await readProfile(profileName);
         await setActiveProfile(profileName);
-        console.log(`✅ Active profile set to: ${profileName}`);
+        console.log(getSafeText(`✅ Active profile set to: ${profileName}`));
       } catch (error) {
         if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
           throw new CliError(
@@ -555,15 +558,15 @@ Examples:
     .description('Delete a configuration profile')
     .argument('<profile>', 'Profile name to delete')
     .action(async (profileName: string) => {
-      const { deleteProfile, getActiveProfile, setActiveProfile } = await import('./utils.js');
+      const { deleteProfile, getActiveProfile, getSafeText, setActiveProfile } = await import('./utils.js');
       await deleteProfile(profileName);
       // If the deleted profile was active, clear the active profile
       const activeProfile = await getActiveProfile();
       if (activeProfile === profileName) {
         await setActiveProfile(null);
-        console.log(`✅ Profile "${profileName}" deleted and cleared from active profile.`);
+        console.log(getSafeText(`✅ Profile "${profileName}" deleted and cleared from active profile.`));
       } else {
-        console.log(`✅ Profile "${profileName}" deleted.`);
+        console.log(getSafeText(`✅ Profile "${profileName}" deleted.`));
       }
     });
   
@@ -597,7 +600,8 @@ Examples:
         const editor = process.env.EDITOR || 'default editor';
         console.log(`Opening ${filepath} in ${editor}...`);
         await openInEditor(filepath);
-        console.log('✅ Credentials file saved');
+        const successText = getSafeText('✅ Credentials file saved');
+        console.log(successText);
       } catch (error) {
         // Error is already a CliError with helpful message
         throw error;

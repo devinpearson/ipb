@@ -3,6 +3,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
+import { getSafeText } from '../utils.js';
 
 interface Options {
   template: string;
@@ -19,15 +20,15 @@ interface Options {
 export async function newCommand(name: string, options: Options) {
   printTitleBox();
   const uri = path.join(import.meta.dirname, '/../templates/', options.template);
-  console.log(`📂 Finding template called ${chalk.green(options.template)}`);
+  console.log(getSafeText(`📂 Finding template called ${chalk.green(options.template)}`));
   if (!fs.existsSync(uri)) {
-    throw new CliError(ERROR_CODES.TEMPLATE_NOT_FOUND, '💣 Template does not exist');
+    throw new CliError(ERROR_CODES.TEMPLATE_NOT_FOUND, getSafeText('💣 Template does not exist'));
   }
   // Validate project name
   if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
     throw new CliError(
       ERROR_CODES.INVALID_PROJECT_NAME,
-      '💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.'
+      getSafeText('💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.')
     );
   }
   // Add a force option to the Options interface
@@ -36,14 +37,14 @@ export async function newCommand(name: string, options: Options) {
     // Remove existing directory
     fs.rmSync(name, { recursive: true, force: true });
   } else if (fs.existsSync(name)) {
-    throw new CliError(ERROR_CODES.PROJECT_EXISTS, '💣 Project already exists');
+    throw new CliError(ERROR_CODES.PROJECT_EXISTS, getSafeText('💣 Project already exists'));
   }
   fs.cpSync(uri, name, { recursive: true });
-  console.log(`🚀 Created new project from template ${options.template}`);
+  console.log(getSafeText(`🚀 Created new project from template ${options.template}`));
   console.log('');
   // Provide next steps
   console.log('Next steps:');
-  console.log(`- 📂 Navigate to your project: ${chalk.green(`cd ${name}`)}`);
-  console.log(`- 📝 Edit your code in ${chalk.green(`${name}/main.js`)}`);
-  console.log(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`);
+  console.log(getSafeText(`- 📂 Navigate to your project: ${chalk.green(`cd ${name}`)}`));
+  console.log(getSafeText(`- 📝 Edit your code in ${chalk.green(`${name}/main.js`)}`));
+  console.log(getSafeText(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`));
 }

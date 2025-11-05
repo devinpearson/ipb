@@ -37,6 +37,11 @@ vi.mock('../../src/utils.ts', async () => {
       return 1024; // 1 KB
     }),
     withRetry: vi.fn(async (fn) => fn()),
+    getTerminalCapabilities: vi.fn(() => ({
+      supportsUnicode: true,
+      supportsEmoji: true,
+      termType: 'xterm-256color',
+    })),
   };
 });
 
@@ -116,7 +121,7 @@ describe('deployCommand', () => {
     expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
-    expect(console.log).toHaveBeenCalledWith('🎉 code deployed with codeId: code-123');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code deployed with codeId: code-123'));
   });
 
   it('should deploy code with env file', async () => {
@@ -167,7 +172,7 @@ describe('deployCommand', () => {
       variables: { API_KEY: 'test123', SECRET: 'secret456' },
     });
     expect(mockApi.uploadCode).toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith('🎉 code deployed with codeId: code-123');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code deployed with codeId: code-123'));
   });
 
   it('should throw CliError when env file does not exist', async () => {

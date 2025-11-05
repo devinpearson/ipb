@@ -77,26 +77,42 @@ The project already implements many best practices from clig.dev, but there are 
 
 ---
 
-### 4. Respect `TERM` and Terminal Capabilities
+### ✅ 4. Respect `TERM` and Terminal Capabilities
 
-**Status**: 🔄 **PARTIALLY COMPLETED**
+**Status**: ✅ **COMPLETED**
 
-**Current State**: ✅ Added `getTerminalDimensions()` to check `LINES` and `COLUMNS`. ⚠️ Still uses emoji and colors without checking terminal capabilities.
+**Current State**: ✅ Fully implemented terminal capability detection with automatic ASCII fallbacks for emojis/Unicode.
 
 **Guideline**: [Output](https://clig.dev/#output) - Check terminal capabilities before using advanced features.
 
 **Implementation**:
 - ✅ Check `LINES` and `COLUMNS` environment variables (via `getTerminalDimensions()`)
-- ⚠️ Check `process.env.TERM` and `process.env.TERMINFO`/`TERMCAP` (not yet implemented)
-- ⚠️ Detect if terminal supports Unicode/emoji (not yet implemented)
-- ⚠️ Fall back to ASCII alternatives when needed (not yet implemented)
+- ✅ Check `process.env.TERM` and `process.env.TERMINFO`/`TERMCAP` (via `detectTerminalCapabilities()`)
+- ✅ Detect if terminal supports Unicode/emoji (via `detectTerminalCapabilities()`)
+- ✅ Fall back to ASCII alternatives when needed (via `getSafeText()` with `EMOJI_FALLBACKS` mapping)
 - ✅ Detect terminal width for table formatting (via `getTerminalDimensions()`)
+- ✅ Automatic emoji fallback in `createSpinner()` and `getSafeText()`
+- ✅ Updated key console.log statements to use `getSafeText()`
 
 **Files Modified**:
-- ✅ `src/utils.ts` - Added `getTerminalDimensions()` function
+- ✅ `src/utils.ts` - Added `detectTerminalCapabilities()`, `getTerminalCapabilities()`, `getSafeText()`, and `safeLog()` functions
+- ✅ `src/utils.ts` - Updated `createSpinner()` to automatically apply `getSafeText()`
+- ✅ `src/utils.ts` - Updated `showUpdateNotification()` to use `getSafeText()`
+- ✅ `src/index.ts` - Updated error messages and success messages to use `getSafeText()`
+- ✅ `src/cmds/deploy.ts` - Updated spinner text and console.log to use `getSafeText()`
+- ✅ `src/cmds/new.ts` - Updated all console.log statements to use `getSafeText()`
+- ✅ `src/utils.ts` - Updated rate limit warning to use `getSafeText()`
+- ✅ `README.md` - Documented TERM environment variable support
 
-**Files to Modify** (for full implementation):
-- `src/utils.ts` - Add terminal capability detection for TERM/emoji support
+**Emoji Fallback Mapping**:
+The CLI automatically replaces emojis with ASCII equivalents when terminal doesn't support them:
+- `💳` → `[CARD]`
+- `🚀` → `[DEPLOY]`
+- `📦` → `[UPLOAD]`
+- `🎉` → `[OK]`
+- `✅` → `[OK]`
+- `⚠️` → `[WARN]`
+- And more...
 
 **Priority**: Medium - Better compatibility
 
@@ -297,22 +313,32 @@ The project already implements many best practices from clig.dev, but there are 
 
 5. **✅ Documentation**
    - Added "Standard CLI Environment Variables" section to README.md
-   - Documented `NO_COLOR`, `FORCE_COLOR`, `DEBUG`, `PAGER`, `LINES`, `COLUMNS`
+   - Documented `NO_COLOR`, `FORCE_COLOR`, `DEBUG`, `PAGER`, `LINES`, `COLUMNS`, `TERM`
+   - Status: Complete
+
+6. **✅ Respect `TERM` and Terminal Capabilities**
+   - Implemented: `detectTerminalCapabilities()`, `getTerminalCapabilities()`, `getSafeText()` functions
+   - Checks `TERM`, `TERMINFO`, and `TERMCAP` environment variables
+   - Automatically detects Unicode/emoji support and falls back to ASCII equivalents
+   - Updated `createSpinner()` to automatically apply emoji fallbacks
+   - Updated key console.log statements to use `getSafeText()`
+   - Added emoji fallback mapping (e.g., `💳` → `[CARD]`)
    - Status: Complete
 
 ## Implementation Summary
 
-### ✅ Completed (5/6 High Priority Items)
+### ✅ Completed (All High Priority Items)
 
 1. ✅ **Respect `NO_COLOR` and `FORCE_COLOR` environment variables** - Complete
 2. ✅ **Support `DEBUG` environment variable** - Complete
 3. ✅ **Support `PAGER` for long output** - Basic implementation complete
 4. ✅ **Support `LINES` and `COLUMNS` for table formatting** - Complete
-5. ✅ **Documentation** - Complete
+5. ✅ **Respect `TERM` and terminal capabilities** - Complete
+6. ✅ **Documentation** - Complete
 
-### 🔄 Partially Completed (1 Item)
+### ✅ All High Priority Items Completed!
 
-1. 🔄 **Respect `TERM` and terminal capabilities** - Terminal dimensions complete, emoji/Unicode detection pending
+All high and medium priority items have been completed!
 
 ### ⏳ Not Started (0 Items)
 
@@ -326,7 +352,7 @@ All high and medium priority items have been completed!
    - ✅ Support `PAGER` for long output
 
 2. **Medium Priority** (Consider):
-   - 🔄 Respect `TERM` and terminal capabilities (partial)
+   - ✅ Respect `TERM` and terminal capabilities - Complete
    - ✅ Use `TMPDIR` for temporary files - Complete
 
 3. **Low Priority** (Nice to Have):

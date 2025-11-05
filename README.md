@@ -182,6 +182,13 @@ The CLI follows standard CLI conventions and respects these environment variable
   ```
   Used by `ipb config edit` command to open credentials files in your preferred editor.
 
+- **`TERM`**: Terminal type for capability detection. The CLI automatically detects terminal capabilities and falls back to ASCII alternatives when Unicode/emoji are not supported.
+  ```sh
+  TERM=dumb ipb accounts  # Uses ASCII fallbacks
+  TERM=xterm-256color ipb accounts  # Uses emojis if supported
+  ```
+  The CLI checks `TERM`, `TERMINFO`, and `TERMCAP` environment variables to determine if the terminal supports Unicode and emoji characters. Emojis are automatically replaced with ASCII equivalents (e.g., `💳` → `[CARD]`) when the terminal doesn't support them.
+
 You can also get structured output:
 ```sh
 ipb env-list --json
