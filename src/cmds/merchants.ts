@@ -10,7 +10,7 @@ import type { CommonOptions } from './types.js';
 export async function merchantsCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -33,10 +33,15 @@ export async function merchantsCommand(options: CommonOptions) {
   const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
 
   // Use full merchants data when piped or structured output requested
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? merchants : simpleMerchants;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} merchant(s) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? merchants : simpleMerchants;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} merchant(s) found.`);
+      }
     }
-  });
+  );
 }

@@ -10,7 +10,7 @@ import type { CommonOptions } from './types.js';
 export async function cardsCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -20,13 +20,10 @@ export async function cardsCommand(options: CommonOptions) {
 
   // Use retry logic with rate limit handling
   const verbose = getVerboseMode(options.verbose);
-  const result = await withRetry(
-    () => api.getCards(),
-    {
-      maxRetries: 3,
-      verbose,
-    }
-  );
+  const result = await withRetry(() => api.getCards(), {
+    maxRetries: 3,
+    verbose,
+  });
   const cards = result.data.cards;
   spinner.stop();
   if (!cards) {
@@ -45,10 +42,15 @@ export async function cardsCommand(options: CommonOptions) {
   }));
 
   // Use full cards data when piped or structured output requested
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? cards : simpleCards;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} card(s) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? cards : simpleCards;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} card(s) found.`);
+      }
     }
-  });
+  );
 }

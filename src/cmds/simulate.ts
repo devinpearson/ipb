@@ -1,7 +1,6 @@
-import fs, { promises as fsPromises } from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
-import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials } from '../index.js';
 import { initializeApi, normalizeCardKey, validateFilePath } from '../utils.js';
 
@@ -29,10 +28,10 @@ interface Options {
  */
 export async function simulateCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-  
+
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
-  
+
   const api = await initializeApi(credentials, options);
 
   console.log('🚀 uploading code & running simulation');

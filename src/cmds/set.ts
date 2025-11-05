@@ -1,16 +1,16 @@
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../index.js';
 import {
+  deleteProfile,
   ensureCredentialsDirectory,
+  getActiveProfile,
+  listProfiles,
   readCredentialsFile,
+  readProfile,
+  setActiveProfile,
   writeCredentialsFile,
   writeProfile,
-  readProfile,
-  listProfiles,
-  deleteProfile,
-  getActiveProfile,
-  setActiveProfile,
 } from '../utils.js';
-import { CliError, ERROR_CODES } from '../errors.js';
 
 interface Options {
   clientId: string;
@@ -41,7 +41,9 @@ export async function configCommand(options: Options & ProfileOptions) {
   if (options.list) {
     const profiles = await listProfiles();
     if (profiles.length === 0) {
-      console.log('No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>');
+      console.log(
+        'No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
+      );
     } else {
       const activeProfile = await getActiveProfile();
       console.log('Available profiles:');
@@ -52,7 +54,7 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     return;
   }
-  
+
   if (options.show) {
     const activeProfile = await getActiveProfile();
     if (activeProfile) {
@@ -62,7 +64,7 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     return;
   }
-  
+
   if (options.set) {
     // Verify profile exists
     try {
@@ -80,7 +82,7 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     return;
   }
-  
+
   if (options.delete) {
     await deleteProfile(options.delete);
     // If the deleted profile was active, clear the active profile
@@ -93,12 +95,12 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     return;
   }
-  
+
   // Regular config command - save to profile or default credentials
   if (options.profile) {
     // Save to profile
     const profileData: Record<string, string> = {};
-    
+
     // Read existing profile if it exists
     try {
       const existing = await readProfile(options.profile);
@@ -106,7 +108,7 @@ export async function configCommand(options: Options & ProfileOptions) {
     } catch {
       // Profile doesn't exist yet, start with defaults
     }
-    
+
     // Update with provided values
     if (options.clientId) {
       profileData.clientId = options.clientId;
@@ -126,12 +128,12 @@ export async function configCommand(options: Options & ProfileOptions) {
     if (options.sandboxKey) {
       profileData.sandboxKey = options.sandboxKey;
     }
-    
+
     await writeProfile(options.profile, profileData);
     console.log(`🔑 Profile "${options.profile}" saved`);
   } else {
     // Save to default credentials file
-    let cred = await readCredentialsFile(credentialLocation);
+    const cred = await readCredentialsFile(credentialLocation);
     if (Object.values(cred).every((v) => v === '')) {
       // File doesn't exist, ensure directory exists
       await ensureCredentialsDirectory(credentialLocation);

@@ -1,5 +1,11 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi, validateAccountId, withRetry } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  initializePbApi,
+  validateAccountId,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -21,7 +27,7 @@ type Transaction = {
 export async function transactionsCommand(accountId: string, options: CommonOptions) {
   const { isStdoutPiped, readStdin } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   // If accountId is not provided and stdin has data, try to read from stdin
   if (!accountId || accountId.trim() === '') {
     const stdinData = await readStdin();
@@ -42,15 +48,18 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
       }
     }
   }
-  
+
   if (!accountId || accountId.trim() === '') {
     const { CliError, ERROR_CODES } = await import('../errors.js');
-    throw new CliError(ERROR_CODES.MISSING_ACCOUNT_ID, 'Account ID is required. Provide it as an argument or via stdin.');
+    throw new CliError(
+      ERROR_CODES.MISSING_ACCOUNT_ID,
+      'Account ID is required. Provide it as an argument or via stdin.'
+    );
   }
-  
+
   // Validate account ID format
   validateAccountId(accountId);
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -59,13 +68,10 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   const api = await initializePbApi(credentials, options);
 
   // Use retry logic with rate limit handling
-  const result = await withRetry(
-    () => api.getAccountTransactions(accountId),
-    {
-      maxRetries: 3,
-      verbose: options.verbose,
-    }
-  );
+  const result = await withRetry(() => api.getAccountTransactions(accountId), {
+    maxRetries: 3,
+    verbose: options.verbose,
+  });
   const transactions = result.data.transactions;
   spinner.stop();
   if (!transactions) {
@@ -87,10 +93,15 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   );
 
   // Use raw transactions for structured output, simplified for table
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} transaction(s) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} transaction(s) found.`);
+      }
     }
-  });
+  );
 }

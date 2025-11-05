@@ -29,6 +29,7 @@ export async function fetchCommand(options: Options) {
   const api = await initializeApi(credentials, options);
 
   // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
+  // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
   if (typeof (api as any).getSavedCode !== 'function') {
     spinner.stop();
     throw new CliError(
@@ -36,9 +37,15 @@ export async function fetchCommand(options: Options) {
       'API client does not support fetching saved code (getSavedCode missing)'
     );
   }
+  // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
   const result = await (api as any).getSavedCode(cardKey);
 
-  if (!result || !result.data || !result.data.result || typeof result.data.result.code !== 'string') {
+  if (
+    !result ||
+    !result.data ||
+    !result.data.result ||
+    typeof result.data.result.code !== 'string'
+  ) {
     spinner.stop();
     throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
   }
@@ -48,13 +55,16 @@ export async function fetchCommand(options: Options) {
 
   spinner.stop();
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
-  
+
   // Show progress with file size for write operation
   const disableSpinnerWrite = options.spinner === true;
-  const writeSpinner = createSpinner(!disableSpinnerWrite, `💾 saving to file: ${normalizedFilename} (${formatFileSize(codeSize)})...`).start();
+  const writeSpinner = createSpinner(
+    !disableSpinnerWrite,
+    `💾 saving to file: ${normalizedFilename} (${formatFileSize(codeSize)})...`
+  ).start();
   await fsPromises.writeFile(normalizedFilename, code, 'utf8');
   writeSpinner.stop();
-  
+
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 code saved to file (${formatFileSize(finalSize)})`);
 }

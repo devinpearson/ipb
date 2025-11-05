@@ -6,7 +6,7 @@ import { accountsCommand } from '../../src/cmds/accounts';
 vi.mock('../../src/index.ts', () => ({
   credentials: {},
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -15,7 +15,9 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializePbApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
     })),
     formatOutput: vi.fn(),
@@ -110,4 +112,3 @@ describe('accountsCommand', () => {
     await expect(accountsCommand(options)).rejects.toThrow('API error');
   });
 });
-

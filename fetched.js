@@ -1,1 +1,1 @@
-console.log("fetched code");
+console.log('fetched code');

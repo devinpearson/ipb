@@ -6,7 +6,7 @@ import { transactionsCommand } from '../../src/cmds/transactions';
 vi.mock('../../src/index.ts', () => ({
   credentials: {},
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -15,7 +15,9 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializePbApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
     })),
     formatOutput: vi.fn(),
@@ -45,7 +47,7 @@ describe('transactionsCommand', () => {
     const mockTransactions = [
       {
         transactionId: 'txn-1',
-        amount: 100.00,
+        amount: 100.0,
         description: 'Test transaction',
         date: '2024-01-01',
       },
@@ -75,7 +77,8 @@ describe('transactionsCommand', () => {
     const error = new Error('Failed to fetch transactions');
     mockApi.getAccountTransactions.mockRejectedValue(error);
 
-    await expect(transactionsCommand('acc-123', options)).rejects.toThrow('Failed to fetch transactions');
+    await expect(transactionsCommand('acc-123', options)).rejects.toThrow(
+      'Failed to fetch transactions'
+    );
   });
 });
-

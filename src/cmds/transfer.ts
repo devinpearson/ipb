@@ -1,6 +1,13 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { confirmDestructiveOperation, createSpinner, initializePbApi, validateAmount, validateAccountId, withRetry } from '../utils.js';
+import {
+  confirmDestructiveOperation,
+  createSpinner,
+  initializePbApi,
+  validateAccountId,
+  validateAmount,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -24,24 +31,24 @@ export async function transferCommand(
     accountId = await input({ message: 'Enter your account ID:' });
   }
   validateAccountId(accountId);
-  
+
   if (!beneficiaryAccountId) {
     beneficiaryAccountId = await input({
       message: 'Enter beneficiary account ID:',
     });
   }
   validateAccountId(beneficiaryAccountId);
-  
+
   if (!amount) {
     const amt = await input({ message: 'Enter amount (in rands):' });
     amount = parseFloat(amt);
   }
   validateAmount(amount);
-  
+
   if (!reference) {
     reference = await input({ message: 'Enter reference for the transfer:' });
   }
-  
+
   // Show transfer summary and require confirmation
   printTitleBox();
   console.log(`\nTransfer Summary:`);
@@ -55,26 +62,27 @@ export async function transferCommand(
     'This will transfer money between your accounts. Continue?',
     { yes: options.yes }
   );
-  
+
   if (!confirmed) {
     console.log('Transfer cancelled.');
     return;
   }
-  
+
   const disableSpinner = options.spinner === true;
   const spinner = createSpinner(!disableSpinner, '💳 transfering...');
   const api = await initializePbApi(credentials, options);
 
   // Use retry logic with rate limit handling
   const result = await withRetry(
-    () => api.transferMultiple(accountId, [
-      {
-        beneficiaryAccountId: beneficiaryAccountId,
-        amount: amount.toString(),
-        myReference: reference,
-        theirReference: reference,
-      },
-    ]),
+    () =>
+      api.transferMultiple(accountId, [
+        {
+          beneficiaryAccountId: beneficiaryAccountId,
+          amount: amount.toString(),
+          myReference: reference,
+          theirReference: reference,
+        },
+      ]),
     {
       maxRetries: 3,
       verbose: options.verbose,

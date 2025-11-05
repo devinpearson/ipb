@@ -1,13 +1,13 @@
 /// <reference types="vitest" />
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { publishCommand } from '../../src/cmds/publish';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -16,15 +16,17 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializeApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
-    validateFilePath: vi.fn(async (path) => {
+    validateFilePath: vi.fn(async (_path) => {
       // Return absolute path for testing
       const { resolve } = await import('node:path');
-      return resolve(path);
+      return resolve('test.js');
     }),
     confirmDestructiveOperation: vi.fn(async () => true),
     formatFileSize: vi.fn((bytes) => {
@@ -32,7 +34,7 @@ vi.mock('../../src/utils.ts', async () => {
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }),
-    getFileSize: vi.fn(async (path) => {
+    getFileSize: vi.fn(async (_path) => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
@@ -102,7 +104,9 @@ describe('publishCommand', () => {
     const expectedPath = resolve('test.js');
     expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code published with codeId: code-123'));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('code published with codeId: code-123')
+    );
   });
 
   it('should throw CliError when file does not exist', async () => {
@@ -157,7 +161,11 @@ describe('publishCommand', () => {
 
     await publishCommand(options);
 
-    expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('default-card-key', 'code-456', mockCode);
+    expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith(
+      'default-card-key',
+      'code-456',
+      mockCode
+    );
   });
 
   it('should propagate API errors', async () => {
@@ -185,4 +193,3 @@ describe('publishCommand', () => {
     await expect(publishCommand(options)).rejects.toThrow('Publish failed');
   });
 });
-

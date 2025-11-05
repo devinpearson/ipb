@@ -1,5 +1,4 @@
 import { promises as fsPromises } from 'node:fs';
-import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,

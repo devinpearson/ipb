@@ -6,7 +6,6 @@ import type {
   AuthResponse,
   Beneficiary,
   BeneficiaryResponse,
-  Transfer,
   TransferMultiple,
   TransferResponse,
 } from 'investec-pb-api';
@@ -105,9 +104,9 @@ export class PbApi implements IPbApi {
   }
   async getAccountTransactions(
     accountId: string,
-    fromDate?: string | null,
-    toDate?: string | null,
-    transactionType?: string | null
+    _fromDate?: string | null,
+    _toDate?: string | null,
+    _transactionType?: string | null
   ): Promise<AccountTransactionResponse> {
     const transaction: AccountTransaction = {
       accountId,

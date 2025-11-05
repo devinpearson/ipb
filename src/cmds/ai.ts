@@ -109,17 +109,22 @@ export async function aiCommand(prompt: string, options: Options) {
   }
   console.log('');
   const output = response?.code as string;
-  const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner } = await import('../utils.js');
+  const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner } = await import(
+    '../utils.js'
+  );
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
-  
+
   const outputSize = Buffer.byteLength(output, 'utf8');
-  const spinner = createSpinner(true, `💾 saving to file: ${chalk.greenBright(normalizedFilename)} (${formatFileSize(outputSize)})...`).start();
+  const spinner = createSpinner(
+    true,
+    `💾 saving to file: ${chalk.greenBright(normalizedFilename)} (${formatFileSize(outputSize)})...`
+  ).start();
   await fsPromises.writeFile(normalizedFilename, output, 'utf8');
   spinner.stop();
-  
+
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 generated code saved to file (${formatFileSize(finalSize)})`);
-  
+
   if (response?.env_variables) {
     console.log('');
     const normalizedEnvFilename = await validateFilePathForWrite(envFilename);
@@ -127,10 +132,13 @@ export async function aiCommand(prompt: string, options: Options) {
       .map((envVar) => `${envVar}=${process.env[envVar] ?? ''}\n`)
       .join('');
     const envSize = Buffer.byteLength(envContent, 'utf8');
-    const envSpinner = createSpinner(true, `💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)} (${formatFileSize(envSize)})...`).start();
+    const envSpinner = createSpinner(
+      true,
+      `💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)} (${formatFileSize(envSize)})...`
+    ).start();
     await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
     envSpinner.stop();
-    
+
     const finalEnvSize = await getFileSize(normalizedEnvFilename);
     console.log(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`);
   }

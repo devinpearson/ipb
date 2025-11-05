@@ -1,13 +1,13 @@
 /// <reference types="vitest" />
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { uploadCommand } from '../../src/cmds/upload';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -16,22 +16,24 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializeApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
-    validateFilePath: vi.fn(async (path) => {
+    validateFilePath: vi.fn(async (_path) => {
       // Return absolute path for testing
       const { resolve } = await import('node:path');
-      return resolve(path);
+      return resolve('test.js');
     }),
     formatFileSize: vi.fn((bytes) => {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }),
-    getFileSize: vi.fn(async (path) => {
+    getFileSize: vi.fn(async (_path) => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
@@ -100,7 +102,9 @@ describe('uploadCommand', () => {
     const expectedPath = resolve('test.js');
     expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code uploaded with codeId: code-456'));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('code uploaded with codeId: code-456')
+    );
   });
 
   it('should throw CliError when file does not exist', async () => {
@@ -180,4 +184,3 @@ describe('uploadCommand', () => {
     await expect(uploadCommand(options)).rejects.toThrow('Upload failed');
   });
 });
-

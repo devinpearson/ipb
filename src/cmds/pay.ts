@@ -1,6 +1,12 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { confirmDestructiveOperation, initializePbApi, validateAmount, validateAccountId, withRetry } from '../utils.js';
+import {
+  confirmDestructiveOperation,
+  initializePbApi,
+  validateAccountId,
+  validateAmount,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -24,7 +30,7 @@ export async function payCommand(
     accountId = await input({ message: 'Enter your account ID:' });
   }
   validateAccountId(accountId);
-  
+
   if (!beneficiaryId) {
     beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
   }
@@ -32,13 +38,13 @@ export async function payCommand(
   if (!beneficiaryId || beneficiaryId.trim().length === 0) {
     throw new Error('Beneficiary ID is required');
   }
-  
+
   if (!amount) {
     const amt = await input({ message: 'Enter amount (in rands):' });
     amount = parseFloat(amt);
   }
   validateAmount(amount);
-  
+
   if (!reference) {
     reference = await input({ message: 'Enter reference for the payment:' });
   }
@@ -57,24 +63,25 @@ export async function payCommand(
     'This will make a payment from your account. Continue?',
     { yes: options.yes }
   );
-  
+
   if (!confirmed) {
     console.log('Payment cancelled.');
     return;
   }
 
   console.log('💳 paying');
-  
+
   // Use retry logic with rate limit handling
   const result = await withRetry(
-    () => api.payMultiple(accountId, [
-      {
-        beneficiaryId: beneficiaryId,
-        amount: amount.toString(),
-        myReference: reference,
-        theirReference: reference,
-      },
-    ]),
+    () =>
+      api.payMultiple(accountId, [
+        {
+          beneficiaryId: beneficiaryId,
+          amount: amount.toString(),
+          myReference: reference,
+          theirReference: reference,
+        },
+      ]),
     {
       maxRetries: 3,
       verbose: options.verbose,

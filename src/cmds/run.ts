@@ -1,5 +1,4 @@
-import fs, { promises as fsPromises } from 'node:fs';
-import path from 'node:path';
+import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
@@ -25,10 +24,10 @@ interface Options {
  */
 export async function runCommand(options: Options) {
   printTitleBox();
-  
+
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
-  
+
   console.log(chalk.white(`Running code:`), chalk.blueBright(normalizedFilename));
   const transaction = createTransaction(
     options.currency,
@@ -53,13 +52,19 @@ export async function runCommand(options: Options) {
       await validateFilePath(envFilePath);
     } catch (error) {
       if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
-        throw new CliError(ERROR_CODES.MISSING_ENV_FILE, `Env file "${envFilePath}" does not exist.`);
+        throw new CliError(
+          ERROR_CODES.MISSING_ENV_FILE,
+          `Env file "${envFilePath}" does not exist.`
+        );
       }
       throw error;
     }
 
     const envFileSize = await getFileSize(envFilePath);
-    const spinner = createSpinner(true, `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`).start();
+    const spinner = createSpinner(
+      true,
+      `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
+    ).start();
     const data = await fsPromises.readFile(envFilePath, 'utf8');
     spinner.stop();
     const lines = data.split('\n');
@@ -68,9 +73,12 @@ export async function runCommand(options: Options) {
   }
   // Convert the environmentvariables to a string
   const environmentvariablesString = JSON.stringify(environmentvariables);
-  
+
   const codeFileSize = await getFileSize(normalizedFilename);
-  const codeSpinner = createSpinner(true, `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`).start();
+  const codeSpinner = createSpinner(
+    true,
+    `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
+  ).start();
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   codeSpinner.stop();
   // Run the code

@@ -1,5 +1,11 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, getVerboseMode, initializePbApi, withRetry } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  getVerboseMode,
+  initializePbApi,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -9,7 +15,7 @@ import type { CommonOptions } from './types.js';
 export async function accountsCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -21,15 +27,12 @@ export async function accountsCommand(options: CommonOptions) {
   const api = await initializePbApi(credentials, options);
   const verbose = getVerboseMode(options.verbose);
   if (verbose && !isPiped) console.log('💳 fetching accounts...');
-  
+
   // Use retry logic with rate limit handling
-  const result = await withRetry(
-    () => api.getAccounts(),
-    {
-      maxRetries: 3,
-      verbose,
-    }
-  );
+  const result = await withRetry(() => api.getAccounts(), {
+    maxRetries: 3,
+    verbose,
+  });
   const accounts = result.data.accounts;
   if (!accounts || accounts.length === 0) {
     if (!isPiped) {
@@ -55,10 +58,15 @@ export async function accountsCommand(options: CommonOptions) {
   }
 
   // Use raw accounts for structured output, simplified for table
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? accounts : simpleAccounts;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} account(s) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? accounts : simpleAccounts;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} account(s) found.`);
+      }
     }
-  });
+  );
 }

@@ -31,24 +31,24 @@ export async function publishCommand(options: Options) {
       'Code ID is required. Use -i or --code-id to specify the code ID from a previous upload command.'
     );
   }
-  
+
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
-  
+
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
-  
+
   // Require confirmation before publishing (activates code)
   printTitleBox();
   const confirmed = await confirmDestructiveOperation(
     `This will publish code (codeId: ${options.codeId}) to card ${cardKey} and make it active. Continue?`,
     { yes: options.yes }
   );
-  
+
   if (!confirmed) {
     console.log('Publish cancelled.');
     return;
   }
-  
+
   const disableSpinner = options.spinner === true;
   const spinner = createSpinner(!disableSpinner, '🚀 reading code...').start();
   const api = await initializeApi(credentials, options);

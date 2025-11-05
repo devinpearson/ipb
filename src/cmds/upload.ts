@@ -1,5 +1,4 @@
 import { promises as fsPromises } from 'node:fs';
-import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
@@ -24,17 +23,17 @@ interface Options extends CommonOptions {
 export async function uploadCommand(options: Options) {
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
-  
+
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '🚀 reading code...');
   const api = await initializeApi(credentials, options);
-  
+
   const codeFileSize = await getFileSize(normalizedFilename);
   spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
   spinner.start();
-  
+
   const raw = { code: '' };
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;

@@ -1,10 +1,5 @@
-import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
-import {
-  createSpinner,
-  initializeApi,
-  normalizeCardKey,
-} from '../utils.js';
+import { createSpinner, initializeApi, normalizeCardKey } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {

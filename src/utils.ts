@@ -1,20 +1,31 @@
-import fs from 'node:fs';
-import { readFile, mkdir, access, constants, readdir, unlink, writeFile, chmod, rename, open } from 'node:fs/promises';
-import path from 'node:path';
-import { homedir, tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import {
+  access,
+  chmod,
+  constants,
+  mkdir,
+  open,
+  readdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
+import path from 'node:path';
 import chalk from 'chalk';
-import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
+import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
  * Should be called at application startup before any chalk usage.
- * 
+ *
  * According to clig.dev guidelines:
  * - NO_COLOR: Disable color output (any value)
  * - FORCE_COLOR: Force color output (any value)
- * 
+ *
  * Note: Chalk v5 automatically respects NO_COLOR, but we explicitly configure it
  * to ensure FORCE_COLOR is also handled correctly.
  */
@@ -22,7 +33,6 @@ export function configureChalk(): void {
   // Chalk v5 automatically respects NO_COLOR, but we can configure FORCE_COLOR
   // by ensuring the environment variable is set properly
   // The actual color disabling is handled by chalk internally when NO_COLOR is set
-  
   // We don't need to do anything special - chalk v5 handles NO_COLOR automatically
   // and FORCE_COLOR is also respected by chalk's internal detection
   // This function exists for documentation and future extensibility
@@ -63,17 +73,18 @@ export function getVerboseMode(verboseFlag?: boolean): boolean {
  * @param content - Content to page
  * @param options - Options including whether output is piped
  */
-export async function pageOutput(content: string, options: { isPiped?: boolean } = {}): Promise<void> {
+export async function pageOutput(
+  content: string,
+  options: { isPiped?: boolean } = {}
+): Promise<void> {
   // Don't page if output is piped (would interfere with piping)
   if (options.isPiped || isStdoutPiped()) {
     process.stdout.write(content);
     return;
   }
-  
-  // Check if we should use a pager
-  const pager = process.env.PAGER || 'less';
-  
+
   // For now, just output directly
+  // Note: PAGER environment variable is detected but paging not yet fully implemented
   // TODO: Implement actual paging with spawn when terminal supports it
   // This would require detecting terminal height and only paging if content exceeds it
   console.log(content);
@@ -87,11 +98,11 @@ export async function pageOutput(content: string, options: { isPiped?: boolean }
 export function getTerminalDimensions(): { lines: number; columns: number } | null {
   const lines = process.env.LINES ? parseInt(process.env.LINES, 10) : null;
   const columns = process.env.COLUMNS ? parseInt(process.env.COLUMNS, 10) : null;
-  
+
   if (lines !== null && columns !== null && !Number.isNaN(lines) && !Number.isNaN(columns)) {
     return { lines, columns };
   }
-  
+
   // Fallback to process.stdout if available
   if (process.stdout.isTTY && process.stdout.rows && process.stdout.columns) {
     return {
@@ -99,7 +110,7 @@ export function getTerminalDimensions(): { lines: number; columns: number } | nu
       columns: process.stdout.columns,
     };
   }
-  
+
   return null;
 }
 
@@ -107,9 +118,9 @@ export function getTerminalDimensions(): { lines: number; columns: number } | nu
  * Gets the temporary directory path, respecting TMPDIR environment variable.
  * According to clig.dev guidelines, should check TMPDIR for temporary files.
  * Node.js os.tmpdir() already respects TMPDIR, so we use it directly.
- * 
+ *
  * @returns Path to the temporary directory
- * 
+ *
  * @example
  * ```typescript
  * const tempDir = getTempDir();
@@ -125,11 +136,11 @@ export function getTempDir(): string {
 /**
  * Opens a file in the user's editor, respecting the EDITOR environment variable.
  * According to clig.dev guidelines, should check EDITOR when prompting for multi-line input.
- * 
+ *
  * @param filepath - Path to the file to open
  * @param options - Options including editor override
  * @throws {CliError} When editor is not available or file cannot be opened
- * 
+ *
  * @example
  * ```typescript
  * await openInEditor('/path/to/file.json');
@@ -142,25 +153,25 @@ export async function openInEditor(
 ): Promise<void> {
   // Check for editor in options, then environment variable, then defaults
   const editor = options.editor || process.env.EDITOR || getDefaultEditor();
-  
+
   if (!editor) {
     throw new CliError(
       ERROR_CODES.FILE_NOT_FOUND,
       'No editor available. Set EDITOR environment variable (e.g., export EDITOR=nano)'
     );
   }
-  
+
   // Ensure file exists or create it
   const dir = path.dirname(filepath);
   if (!fs.existsSync(dir)) {
     await mkdir(dir, { recursive: true });
   }
-  
+
   // Split editor command (handles "editor --flag" format)
   const editorParts = editor.split(/\s+/);
   const editorCommand = editorParts[0];
   const editorArgs = [...editorParts.slice(1), filepath];
-  
+
   // Ensure editor command is not undefined
   if (!editorCommand) {
     throw new CliError(
@@ -168,12 +179,12 @@ export async function openInEditor(
       'Invalid editor command. Set EDITOR environment variable to a valid editor.'
     );
   }
-  
+
   return new Promise<void>((resolve, reject) => {
     const editorProcess = spawn(editorCommand, editorArgs, {
       stdio: 'inherit',
     });
-    
+
     editorProcess.on('error', (error: Error) => {
       reject(
         new CliError(
@@ -182,7 +193,7 @@ export async function openInEditor(
         )
       );
     });
-    
+
     editorProcess.on('exit', (code: number | null) => {
       if (code === 0 || code === null) {
         resolve();
@@ -208,7 +219,7 @@ function getDefaultEditor(): string | null {
     // Windows: try common editors
     return 'notepad.exe';
   }
-  
+
   // Unix-like: try common editors in order of preference
   // These are typically available on most systems
   const unixEditors = ['nano', 'vim', 'vi', 'emacs'];
@@ -229,17 +240,17 @@ interface TerminalCapabilities {
 /**
  * Detects terminal capabilities based on TERM environment variable and terminal type.
  * According to clig.dev guidelines, should check TERM and TERMINFO/TERMCAP for terminal capabilities.
- * 
+ *
  * @returns Terminal capability information
  */
 export function detectTerminalCapabilities(): TerminalCapabilities {
   const term = process.env.TERM;
-  const terminfo = process.env.TERMINFO;
-  const termcap = process.env.TERMCAP;
-  
+  // Note: TERMINFO and TERMCAP are environment variables that may be set by the system
+  // but are not directly used in our terminal capability detection logic
+
   // Check if we're in a TTY
   const isTTY = process.stdout.isTTY === true;
-  
+
   // Default: assume limited capabilities if not a TTY
   if (!isTTY) {
     return {
@@ -248,48 +259,49 @@ export function detectTerminalCapabilities(): TerminalCapabilities {
       termType: term || null,
     };
   }
-  
+
   // Check TERM environment variable for terminal type
   // Common terminals that support Unicode/emoji:
   // - xterm-256color, xterm-kitty, xterm (modern versions)
   // - screen-256color, tmux-256color
   // - iterm2, alacritty, wezterm
   // - linux, vt220, dumb (usually don't support Unicode well)
-  
+
   const termLower = term?.toLowerCase() || '';
-  
+
   // Terminals known to NOT support Unicode/emoji well
   const noUnicodeTerms = ['dumb', 'vt220', 'vt100', 'vt102', 'ansi'];
   const likelyNoUnicode = noUnicodeTerms.some((t) => termLower.includes(t));
-  
+
   // Check for NO_COLOR (if set, probably want plain text anyway)
   const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
-  
+
   // Check if terminal explicitly supports Unicode
   // Modern terminals usually support Unicode if they support 256 colors
-  const supports256Colors = termLower.includes('256color') || 
-                             termLower.includes('truecolor') ||
-                             termLower.includes('kitty') ||
-                             termLower.includes('iterm') ||
-                             termLower.includes('alacritty') ||
-                             termLower.includes('wezterm');
-  
+  const supports256Colors =
+    termLower.includes('256color') ||
+    termLower.includes('truecolor') ||
+    termLower.includes('kitty') ||
+    termLower.includes('iterm') ||
+    termLower.includes('alacritty') ||
+    termLower.includes('wezterm');
+
   // Assume Unicode support if:
   // - Terminal supports 256 colors
   // - Not a known problematic terminal
   // - Not explicitly disabled via NO_COLOR
   const supportsUnicode = !likelyNoUnicode && !noColor && (supports256Colors || term === undefined);
-  
+
   // Emoji support is generally a subset of Unicode support
   // Some terminals support Unicode but not emoji (e.g., older xterm)
   // Assume emoji support if Unicode is supported and terminal is modern
   const modernTerms = ['kitty', 'iterm', 'alacritty', 'wezterm', 'foot', 'rio'];
-  const supportsEmoji = supportsUnicode && (
-    modernTerms.some((t) => termLower.includes(t)) ||
-    termLower.includes('256color') ||
-    term === undefined // Assume modern if TERM not set
-  );
-  
+  const supportsEmoji =
+    supportsUnicode &&
+    (modernTerms.some((t) => termLower.includes(t)) ||
+      termLower.includes('256color') ||
+      term === undefined); // Assume modern if TERM not set
+
   return {
     supportsUnicode,
     supportsEmoji,
@@ -321,11 +333,11 @@ const EMOJI_FALLBACKS: Record<string, string> = {
 
 /**
  * Gets a safe version of text with emoji/Unicode, falling back to ASCII if terminal doesn't support it.
- * 
+ *
  * @param text - Text that may contain emojis/Unicode
  * @param options - Options including force ASCII
  * @returns Text with emojis replaced if terminal doesn't support them
- * 
+ *
  * @example
  * ```typescript
  * const text = getSafeText('💳 fetching accounts...');
@@ -337,7 +349,7 @@ export function getSafeText(text: string, options: { forceASCII?: boolean } = {}
   if (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '') {
     options.forceASCII = true;
   }
-  
+
   // If forcing ASCII, replace all emojis
   if (options.forceASCII) {
     let result = text;
@@ -346,10 +358,10 @@ export function getSafeText(text: string, options: { forceASCII?: boolean } = {}
     }
     return result;
   }
-  
+
   // Check terminal capabilities
   const capabilities = detectTerminalCapabilities();
-  
+
   // If terminal doesn't support emoji, replace them
   if (!capabilities.supportsEmoji) {
     let result = text;
@@ -358,7 +370,7 @@ export function getSafeText(text: string, options: { forceASCII?: boolean } = {}
     }
     return result;
   }
-  
+
   // Terminal supports emoji, return original text
   return text;
 }
@@ -384,7 +396,7 @@ export function getTerminalCapabilities(): TerminalCapabilities {
 /**
  * Logs a message with automatic emoji/Unicode fallback based on terminal capabilities.
  * This is a convenience wrapper around console.log that applies getSafeText automatically.
- * 
+ *
  * @param message - Message to log (may contain emojis)
  * @param args - Additional arguments to pass to console.log
  */
@@ -408,7 +420,7 @@ const SECRET_ENV_VARS = [
 /**
  * Detects if secrets are being loaded from environment variables.
  * Returns information about which secrets are being loaded from env vars.
- * 
+ *
  * @returns Object containing information about secret usage from environment variables
  */
 export function detectSecretUsageFromEnv(): {
@@ -416,13 +428,13 @@ export function detectSecretUsageFromEnv(): {
   hasSecretsFromEnv: boolean;
 } {
   const secretsFromEnv: string[] = [];
-  
+
   for (const envVar of SECRET_ENV_VARS) {
     if (process.env[envVar] !== undefined && process.env[envVar] !== '') {
       secretsFromEnv.push(envVar);
     }
   }
-  
+
   return {
     secretsFromEnv,
     hasSecretsFromEnv: secretsFromEnv.length > 0,
@@ -432,7 +444,7 @@ export function detectSecretUsageFromEnv(): {
 /**
  * Checks if the CLI is running in a non-interactive environment (script, CI/CD, etc.).
  * This helps determine when to show security warnings.
- * 
+ *
  * @returns True if running in a non-interactive environment
  */
 export function isNonInteractiveEnvironment(): boolean {
@@ -440,7 +452,7 @@ export function isNonInteractiveEnvironment(): boolean {
   if (!process.stdout.isTTY) {
     return true;
   }
-  
+
   // Check for common CI/CD environment variables
   const ciEnvVars = [
     'CI',
@@ -453,13 +465,13 @@ export function isNonInteractiveEnvironment(): boolean {
     'BUILDKITE',
     'TEAMCITY_VERSION',
   ];
-  
+
   for (const envVar of ciEnvVars) {
     if (process.env[envVar] !== undefined && process.env[envVar] !== '') {
       return true;
     }
   }
-  
+
   // Check if running in a script (non-interactive shell)
   // This is a heuristic - scripts often have TERM=dumb or no TERM
   const term = process.env.TERM;
@@ -468,7 +480,7 @@ export function isNonInteractiveEnvironment(): boolean {
     // This case is mainly for when TERM is set but we're actually in a script
     return false; // We already checked isTTY above
   }
-  
+
   return false;
 }
 
@@ -476,44 +488,54 @@ export function isNonInteractiveEnvironment(): boolean {
  * Warns about secret usage from environment variables.
  * According to clig.dev guidelines, secrets should not be read from environment variables
  * because they can be leaked in process lists, logs, or CI/CD configurations.
- * 
+ *
  * @param options - Options including verbose mode and whether to show warnings
  * @returns True if warnings were shown
  */
-export function warnAboutSecretUsage(options: { verbose?: boolean; force?: boolean } = {}): boolean {
+export function warnAboutSecretUsage(
+  options: { verbose?: boolean; force?: boolean } = {}
+): boolean {
   const { secretsFromEnv, hasSecretsFromEnv } = detectSecretUsageFromEnv();
-  
+
   if (!hasSecretsFromEnv) {
     return false;
   }
-  
+
   // Only warn in verbose mode or if forced, or if in non-interactive environment
-  const shouldWarn = options.force || 
-                     options.verbose || 
-                     isDebugEnabled() ||
-                     isNonInteractiveEnvironment();
-  
+  const shouldWarn =
+    options.force || options.verbose || isDebugEnabled() || isNonInteractiveEnvironment();
+
   if (!shouldWarn) {
     return false;
   }
-  
-  const warningText = getSafeText(`⚠️  Security Warning: Secrets are being loaded from environment variables:`);
+
+  const warningText = getSafeText(
+    `⚠️  Security Warning: Secrets are being loaded from environment variables:`
+  );
   console.warn(chalk.yellow(warningText));
-  
+
   for (const envVar of secretsFromEnv) {
     console.warn(chalk.yellow(`   - ${envVar}`));
   }
-  
-  console.warn(chalk.yellow('\n   For better security, store secrets in credential files instead:'));
-  console.warn(chalk.yellow('   - Run: ipb config --client-id <id> --client-secret <secret> --api-key <key>'));
-  console.warn(chalk.yellow('   - Or use profiles: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'));
+
+  console.warn(
+    chalk.yellow('\n   For better security, store secrets in credential files instead:')
+  );
+  console.warn(
+    chalk.yellow('   - Run: ipb config --client-id <id> --client-secret <secret> --api-key <key>')
+  );
+  console.warn(
+    chalk.yellow(
+      '   - Or use profiles: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
+    )
+  );
   console.warn(chalk.yellow('\n   Environment variables can be leaked in:'));
   console.warn(chalk.yellow('   - Process lists (ps, top)'));
   console.warn(chalk.yellow('   - System logs'));
   console.warn(chalk.yellow('   - CI/CD configuration files'));
   console.warn(chalk.yellow('   - Shell history'));
   console.warn('');
-  
+
   return true;
 }
 
@@ -527,8 +549,12 @@ configureChalk();
  * @param errorMessage - The error message
  * @returns Exit code from ExitCode enum
  */
-function determineExitCode(error: unknown, errorCode: string | undefined, errorMessage: string): ExitCode {
-  const lowerMessage = errorMessage.toLowerCase();
+function determineExitCode(
+  _error: unknown,
+  errorCode: string | undefined,
+  _errorMessage: string
+): ExitCode {
+  const lowerMessage = _errorMessage.toLowerCase();
 
   // Validation errors (invalid input, missing required fields)
   if (
@@ -618,7 +644,7 @@ function determineExitCode(error: unknown, errorCode: string | undefined, errorM
  */
 export function handleCliError(error: unknown, options: { verbose?: boolean }, context: string) {
   const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
-  
+
   // Extract error code if it's a CliError
   let errorCode: string | undefined;
   if (error instanceof CliError) {
@@ -627,18 +653,18 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
 
   // Determine appropriate exit code
   const exitCode = determineExitCode(error, errorCode, errorMessage);
-  
+
   // Generate actionable suggestions based on error type and message
   let suggestion = '';
   const lowerMessage = errorMessage.toLowerCase();
-  
+
   // File not found errors
   if (
     errorCode === ERROR_CODES.FILE_NOT_FOUND ||
     lowerMessage.includes('file does not exist') ||
     lowerMessage.includes('enoent') ||
     lowerMessage.includes('no such file or directory') ||
-    lowerMessage.includes('received undefined') && lowerMessage.includes('path')
+    (lowerMessage.includes('received undefined') && lowerMessage.includes('path'))
   ) {
     // Check if it's a missing filename error
     if (lowerMessage.includes('received undefined') && lowerMessage.includes('path')) {
@@ -654,7 +680,8 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     lowerMessage.includes('card-key') ||
     lowerMessage.includes('cardkey')
   ) {
-    suggestion = '\n💡 Tip: Use `ipb cards` to list your cards and get the card key, or provide it with `-c <card-key>`.';
+    suggestion =
+      '\n💡 Tip: Use `ipb cards` to list your cards and get the card key, or provide it with `-c <card-key>`.';
   }
   // Credential/authentication errors
   else if (
@@ -667,15 +694,17 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     lowerMessage.includes('403') ||
     lowerMessage.includes('invalid token')
   ) {
-    suggestion = '\n💡 Tip: Run `ipb config` to set your credentials, or check your API keys in the Investec Developer Portal.';
+    suggestion =
+      '\n💡 Tip: Run `ipb config` to set your credentials, or check your API keys in the Investec Developer Portal.';
   }
   // Missing env file errors
   else if (
     errorCode === ERROR_CODES.MISSING_ENV_FILE ||
     lowerMessage.includes('env file') ||
-    lowerMessage.includes('.env.') && lowerMessage.includes('does not exist')
+    (lowerMessage.includes('.env.') && lowerMessage.includes('does not exist'))
   ) {
-    suggestion = '\n💡 Tip: Create the environment file (e.g., `.env.production`) or use a different environment name.';
+    suggestion =
+      '\n💡 Tip: Create the environment file (e.g., `.env.production`) or use a different environment name.';
   }
   // Missing account ID errors
   else if (
@@ -695,7 +724,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   // Project exists errors
   else if (
     errorCode === ERROR_CODES.PROJECT_EXISTS ||
-    lowerMessage.includes('project') && lowerMessage.includes('exists')
+    (lowerMessage.includes('project') && lowerMessage.includes('exists'))
   ) {
     suggestion = '\n💡 Tip: Use a different project name or remove the existing project directory.';
   }
@@ -730,12 +759,12 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   ) {
     suggestion = '\n💡 Tip: Check file permissions or run with appropriate access rights.';
   }
-  
+
   console.error(chalk.redBright(`Failed to ${context}:`), errorMessage);
   if (suggestion) {
     console.error(chalk.yellow(suggestion));
   }
-  
+
   // In verbose mode, show rate limit information if available
   if (options.verbose) {
     const rateLimitInfo = detectRateLimit(error);
@@ -749,7 +778,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   } else {
     console.log('');
   }
-  
+
   process.exit(exitCode);
 }
 
@@ -761,6 +790,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
  * @param handler - The command handler function
  * @returns Wrapped handler that attaches context to errors
  */
+// biome-ignore lint/suspicious/noExplicitAny: Generic function wrapper needs flexible typing for command handlers
 export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
   commandName: string,
   handler: T
@@ -876,7 +906,9 @@ function sanitizeOptions(options: Record<string, unknown>): Record<string, unkno
 
   for (const [key, value] of Object.entries(options)) {
     const lowerKey = key.toLowerCase();
-    const isSensitive = sensitiveKeys.some((sensitiveKey) => lowerKey.includes(sensitiveKey.toLowerCase()));
+    const isSensitive = sensitiveKeys.some((sensitiveKey) =>
+      lowerKey.includes(sensitiveKey.toLowerCase())
+    );
 
     if (isSensitive && typeof value === 'string' && value.length > 0) {
       // Redact sensitive values (show first 4 chars and last 4 chars if long enough)
@@ -903,7 +935,10 @@ function sanitizeArgs(args: string[]): string[] {
     // Check if argument looks like a sensitive value (API key, token, etc.)
     if (
       arg.length > 20 &&
-      (arg.includes('key') || arg.includes('token') || arg.includes('secret') || arg.includes('password'))
+      (arg.includes('key') ||
+        arg.includes('token') ||
+        arg.includes('secret') ||
+        arg.includes('password'))
     ) {
       return `${arg.substring(0, 4)}***${arg.substring(arg.length - 4)}`;
     }
@@ -1000,7 +1035,7 @@ export async function checkLatestVersion() {
     const latestVersion = data['dist-tags'].latest;
 
     return latestVersion;
-  } catch (error) {
+  } catch {
     // Silent failure - don't warn users about version check failures
     return null;
   }
@@ -1012,7 +1047,10 @@ export async function checkLatestVersion() {
  * @param force - Force check even if checked recently
  * @returns Promise that resolves to the latest version if available, or null
  */
-export async function checkForUpdates(currentVersion: string, force = false): Promise<string | null> {
+export async function checkForUpdates(
+  currentVersion: string,
+  force = false
+): Promise<string | null> {
   const lastCheck = getLastUpdateCheck();
   const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -1023,12 +1061,12 @@ export async function checkForUpdates(currentVersion: string, force = false): Pr
 
   try {
     const latest = await checkLatestVersion();
-    
+
     // Update cache timestamp (even if check failed) - non-blocking
     setLastUpdateCheck().catch(() => {
       // Ignore errors
     });
-    
+
     if (latest && latest !== currentVersion) {
       return latest;
     }
@@ -1045,7 +1083,9 @@ export async function checkForUpdates(currentVersion: string, force = false): Pr
  * @param latestVersion - Latest available version
  */
 export function showUpdateNotification(currentVersion: string, latestVersion: string): void {
-  const warningText = getSafeText(`⚠️  New version available: ${latestVersion} (current: ${currentVersion})`);
+  const warningText = getSafeText(
+    `⚠️  New version available: ${latestVersion} (current: ${currentVersion})`
+  );
   console.log(chalk.yellow(`\n${warningText}`));
   console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
 }
@@ -1093,15 +1133,15 @@ export async function readStdin(): Promise<string | null> {
   return new Promise((resolve) => {
     let data = '';
     process.stdin.setEncoding('utf8');
-    
+
     process.stdin.on('data', (chunk: string) => {
       data += chunk;
     });
-    
+
     process.stdin.on('end', () => {
       resolve(data.trim() || null);
     });
-    
+
     // Timeout after 100ms if no data arrives
     setTimeout(() => {
       if (!data) {
@@ -1126,14 +1166,14 @@ export async function formatOutput(
   // Auto-detect pipe mode: if stdout is piped, use JSON format
   const isPiped = isStdoutPiped();
   const autoJson = isPiped && !options.yaml && !options.output;
-  
+
   // Determine output format: YAML takes precedence over JSON if both are specified
   const outputFormat = options.yaml ? 'yaml' : options.json || autoJson ? 'json' : null;
   const shouldOutputStructured = outputFormat || options.output;
 
   if (shouldOutputStructured) {
     let output: string;
-    
+
     if (outputFormat === 'yaml') {
       const yaml = await import('js-yaml');
       output = yaml.dump(data, { indent: 2, lineWidth: -1 });
@@ -1192,7 +1232,7 @@ function truncateValue(value: unknown, maxLength: number): string {
   if (str.length <= maxLength) {
     return str;
   }
-  return str.substring(0, maxLength - 3) + '...';
+  return `${str.substring(0, maxLength - 3)}...`;
 }
 
 /**
@@ -1229,24 +1269,26 @@ function determineAlignment(header: string, sampleData: TableData): 'left' | 'ri
   if (numericPattern.test(header)) {
     return 'right';
   }
-  
+
   // Check actual data types in sample
   const sampleValues = sampleData.slice(0, 10).map((row) => row[header]);
-  const allNumeric = sampleValues.length > 0 && sampleValues.every((val) => {
-    if (val === null || val === undefined || val === '') return false;
-    const num = Number(val);
-    return !Number.isNaN(num) && isFinite(num);
-  });
-  
+  const allNumeric =
+    sampleValues.length > 0 &&
+    sampleValues.every((val) => {
+      if (val === null || val === undefined || val === '') return false;
+      const num = Number(val);
+      return !Number.isNaN(num) && Number.isFinite(num);
+    });
+
   if (allNumeric) {
     return 'right';
   }
-  
+
   // Boolean values can be centered
   if (sampleValues.every((val) => typeof val === 'boolean')) {
     return 'center';
   }
-  
+
   return 'left';
 }
 
@@ -1266,12 +1308,12 @@ export function printTable(data: TableData): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Table = require('cli-table3');
     const headers: string[] = Object.keys(data[0] as TableRow);
-    
+
     // Determine column widths (max 80 chars per column, min 10)
     // Use terminal width if available, otherwise default to 120
     const terminalWidth = process.stdout.columns || 120;
     const maxWidth = Math.min(80, Math.max(10, Math.floor(terminalWidth / headers.length)));
-    
+
     // Create table with column configurations
     const table = new Table({
       head: headers.map((h) => chalk.bold(h)),
@@ -1295,7 +1337,7 @@ export function printTable(data: TableData): void {
     });
 
     console.log(table.toString());
-  } catch (error) {
+  } catch {
     // Fallback to basic formatting if cli-table3 is not available
     const headers: string[] = Object.keys(data[0] as TableRow);
     const colWidths: number[] = headers.map((header) =>
@@ -1329,12 +1371,12 @@ export function normalizeFilePath(filePath: string): string {
   if (filePath.startsWith('~/') || filePath === '~') {
     filePath = filePath.replace('~', homedir());
   }
-  
+
   // Resolve relative paths to absolute paths
   if (!path.isAbsolute(filePath)) {
     filePath = path.resolve(process.cwd(), filePath);
   }
-  
+
   return path.normalize(filePath);
 }
 
@@ -1370,7 +1412,7 @@ export async function checkFilePermissions(
   operation: 'read' | 'write' = 'read'
 ): Promise<void> {
   const normalizedPath = normalizeFilePath(filePath);
-  
+
   try {
     if (operation === 'read') {
       await access(normalizedPath, constants.R_OK);
@@ -1425,20 +1467,17 @@ export async function validateFilePath(
   allowedExtensions?: string[]
 ): Promise<string> {
   if (!filePath || filePath.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'File path is required and cannot be empty.'
-    );
+    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File path is required and cannot be empty.');
   }
-  
+
   const normalizedPath = normalizeFilePath(filePath);
-  
+
   if (allowedExtensions && allowedExtensions.length > 0) {
     validateFileExtension(normalizedPath, allowedExtensions, 'read');
   }
-  
+
   await checkFilePermissions(normalizedPath, 'read');
-  
+
   return normalizedPath;
 }
 
@@ -1454,20 +1493,17 @@ export async function validateFilePathForWrite(
   allowedExtensions?: string[]
 ): Promise<string> {
   if (!filePath || filePath.trim() === '') {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'File path is required and cannot be empty.'
-    );
+    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File path is required and cannot be empty.');
   }
-  
+
   const normalizedPath = normalizeFilePath(filePath);
-  
+
   if (allowedExtensions && allowedExtensions.length > 0) {
     validateFileExtension(normalizedPath, allowedExtensions, 'write');
   }
-  
+
   await checkFilePermissions(normalizedPath, 'write');
-  
+
   return normalizedPath;
 }
 
@@ -1481,15 +1517,15 @@ export function validateAmount(amount: number, maxDecimals = 2): void {
   if (Number.isNaN(amount)) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a valid number');
   }
-  
+
   if (amount <= 0) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
   }
-  
+
   if (!Number.isFinite(amount)) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a finite number');
   }
-  
+
   // Check decimal precision
   const decimalPlaces = (amount.toString().split('.')[1] || '').length;
   if (decimalPlaces > maxDecimals) {
@@ -1509,19 +1545,19 @@ export function validateAccountId(accountId: string): void {
   if (!accountId || accountId.trim().length === 0) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID is required and cannot be empty');
   }
-  
+
   // Basic format validation: account IDs should not contain certain characters
   // and should have reasonable length (typically 6-50 characters)
   const trimmedId = accountId.trim();
-  
+
   if (trimmedId.length < 3) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID must be at least 3 characters long');
   }
-  
+
   if (trimmedId.length > 100) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID cannot exceed 100 characters');
   }
-  
+
   // Check for path traversal attempts or other suspicious patterns
   if (trimmedId.includes('..') || trimmedId.includes('/') || trimmedId.includes('\\')) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID contains invalid characters');
@@ -1553,7 +1589,7 @@ export async function confirmDestructiveOperation(
 
   // Use dynamic import to avoid loading @inquirer/prompts for all commands
   const { confirm } = await import('@inquirer/prompts');
-  
+
   try {
     const confirmed = await confirm({
       message,
@@ -1648,7 +1684,9 @@ export function validateCredentialsFile(
 ): void {
   const credsRecord = creds as Record<string, string>;
   const missing = requiredFields.filter(
-    (field) => !credsRecord[field] || (typeof credsRecord[field] === 'string' && credsRecord[field].trim() === '')
+    (field) =>
+      !credsRecord[field] ||
+      (typeof credsRecord[field] === 'string' && credsRecord[field].trim() === '')
   );
 
   if (missing.length > 0) {
@@ -1706,14 +1744,14 @@ import type { IPbApi } from './mock-pb.js';
  * Writes a file atomically using a temporary file and rename.
  * This ensures the file is either completely written or not written at all,
  * preventing corruption from crashes or interruptions.
- * 
+ *
  * Note: The temporary file is created in the same directory as the target file
  * (not in the system temp directory) because atomic rename operations only work
  * on the same filesystem. This is the correct approach for atomic file writes.
- * 
+ *
  * For general temporary files that don't require atomic operations, use `getTempDir()`
  * which respects the TMPDIR environment variable.
- * 
+ *
  * @param filepath - Target file path
  * @param data - Data to write (string or Buffer)
  * @param options - Write options including permissions
@@ -1729,14 +1767,14 @@ export async function writeFileAtomic(
   // Note: Temp file is in same directory as target (required for atomic rename)
   // For general temp files, use getTempDir() instead
   const tempPath = path.join(dir, `.${filename}.tmp`);
-  
+
   try {
     // Ensure directory exists
     await ensureCredentialsDirectory({ folder: dir });
-    
+
     // Write to temp file
     await writeFile(tempPath, data, { encoding: 'utf8', flag: 'w' });
-    
+
     // Ensure data is flushed to disk before renaming
     const fd = await open(tempPath, 'r+');
     try {
@@ -1744,12 +1782,12 @@ export async function writeFileAtomic(
     } finally {
       await fd.close();
     }
-    
+
     // Set permissions on temp file (if specified)
     if (options.permissions !== undefined) {
       await chmod(tempPath, options.permissions);
     }
-    
+
     // Atomically rename temp file to target (rename is atomic on most filesystems)
     await rename(tempPath, filepath);
   } catch (error) {
@@ -1778,7 +1816,7 @@ export async function cleanupTempFiles(dir: string): Promise<void> {
     const files = await readdir(dir);
     const tempFiles = files.filter((f) => f.endsWith('.tmp'));
     const now = Date.now();
-    
+
     for (const file of tempFiles) {
       const filePath = path.join(dir, file);
       try {
@@ -1846,7 +1884,7 @@ export async function listProfiles(): Promise<string[]> {
   if (!fs.existsSync(profilesDir)) {
     return [];
   }
-  
+
   try {
     const files = await readdir(profilesDir);
     return files
@@ -1872,7 +1910,7 @@ export async function readProfile(profileName: string): Promise<Record<string, s
       `Profile "${profileName}" does not exist. Use 'ipb config profile list' to see available profiles.`
     );
   }
-  
+
   try {
     const data = await readFile(profilePath, 'utf8');
     return { ...defaultCreds, ...JSON.parse(data) };
@@ -1890,10 +1928,13 @@ export async function readProfile(profileName: string): Promise<Record<string, s
  * @param profileName - Name of the profile to write
  * @param data - Credentials data to write
  */
-export async function writeProfile(profileName: string, data: Record<string, string>): Promise<void> {
+export async function writeProfile(
+  profileName: string,
+  data: Record<string, string>
+): Promise<void> {
   const profilesDir = getProfilesDirectory();
   await ensureCredentialsDirectory({ folder: profilesDir });
-  
+
   const profilePath = getProfilePath(profileName);
   await writeCredentialsFile(profilePath, data);
 }
@@ -1906,12 +1947,9 @@ export async function writeProfile(profileName: string, data: Record<string, str
 export async function deleteProfile(profileName: string): Promise<void> {
   const profilePath = getProfilePath(profileName);
   if (!fs.existsSync(profilePath)) {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      `Profile "${profileName}" does not exist.`
-    );
+    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, `Profile "${profileName}" does not exist.`);
   }
-  
+
   try {
     await access(profilePath, constants.F_OK);
     await unlink(profilePath);
@@ -1933,7 +1971,7 @@ export async function getActiveProfile(): Promise<string | null> {
   if (!fs.existsSync(activeProfilePath)) {
     return null;
   }
-  
+
   try {
     const data = await readFile(activeProfilePath, 'utf8');
     const config = JSON.parse(data);
@@ -1952,9 +1990,9 @@ export async function getActiveProfile(): Promise<string | null> {
 export async function setActiveProfile(profileName: string | null): Promise<void> {
   const activeProfilePath = getActiveProfileConfigPath();
   const configDir = path.dirname(activeProfilePath);
-  
+
   await ensureCredentialsDirectory({ folder: configDir });
-  
+
   if (profileName === null) {
     // Remove active profile config
     if (fs.existsSync(activeProfilePath)) {
@@ -1973,11 +2011,14 @@ export async function setActiveProfile(profileName: string | null): Promise<void
  * @param profileName - Optional profile name to load
  * @returns Updated credentials object with profile data merged in
  */
-export async function loadProfile(credentials: Credentials, profileName?: string): Promise<Credentials> {
+export async function loadProfile(
+  credentials: Credentials,
+  profileName?: string
+): Promise<Credentials> {
   if (!profileName) {
     return credentials;
   }
-  
+
   try {
     const profileData = await readProfile(profileName);
     // Merge profile data into credentials (profile takes precedence over defaults)
@@ -2031,7 +2072,7 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
 
     // Try to extract retry-after from error message
     const retryAfterMatch = errorMessage.match(/retry[-\s]after[:\s]+(\d+)/i);
-    if (retryAfterMatch && retryAfterMatch[1]) {
+    if (retryAfterMatch?.[1]) {
       const retryValue = parseInt(retryAfterMatch[1], 10);
       if (!Number.isNaN(retryValue)) {
         info.retryAfter = retryValue;
@@ -2040,7 +2081,7 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
 
     // Try to extract reset time from error message
     const resetMatch = errorMessage.match(/reset[:\s]+(\d+)/i);
-    if (resetMatch && resetMatch[1]) {
+    if (resetMatch?.[1]) {
       const resetValue = parseInt(resetMatch[1], 10);
       if (!Number.isNaN(resetValue)) {
         info.reset = resetValue;
@@ -2049,10 +2090,12 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
 
     // Check if error object has response/headers (common in fetch responses)
     if (error && typeof error === 'object' && 'response' in error) {
-      const response = (error as { response?: { status?: number; headers?: Headers | Record<string, string> } }).response;
+      const response = (
+        error as { response?: { status?: number; headers?: Headers | Record<string, string> } }
+      ).response;
       if (response?.headers) {
         const headers = response.headers;
-        
+
         // Extract rate limit headers (common patterns)
         const getHeader = (name: string): string | null => {
           if (headers instanceof Headers) {
@@ -2068,7 +2111,8 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
         };
 
         const rateLimitLimit = getHeader('x-ratelimit-limit') || getHeader('ratelimit-limit');
-        const rateLimitRemaining = getHeader('x-ratelimit-remaining') || getHeader('ratelimit-remaining');
+        const rateLimitRemaining =
+          getHeader('x-ratelimit-remaining') || getHeader('ratelimit-remaining');
         const rateLimitReset = getHeader('x-ratelimit-reset') || getHeader('ratelimit-reset');
         const retryAfter = getHeader('retry-after');
 
@@ -2165,7 +2209,7 @@ function calculateBackoffDelay(
   maxDelay = 60000,
   jitter = true
 ): number {
-  const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  const exponentialDelay = Math.min(baseDelay * 2 ** attempt, maxDelay);
   if (jitter) {
     // Add random jitter (±25%) to prevent thundering herd
     const jitterAmount = exponentialDelay * 0.25;
@@ -2192,13 +2236,7 @@ export async function withRetry<T>(
     onRetry?: (attempt: number, error: unknown, delay: number) => void;
   } = {}
 ): Promise<T> {
-  const {
-    maxRetries = 3,
-    baseDelay = 1000,
-    maxDelay = 60000,
-    verbose = false,
-    onRetry,
-  } = options;
+  const { maxRetries = 3, baseDelay = 1000, maxDelay = 60000, verbose = false, onRetry } = options;
 
   let lastError: unknown;
   let lastRateLimitInfo: RateLimitInfo | null = null;
@@ -2220,7 +2258,9 @@ export async function withRetry<T>(
           : calculateBackoffDelay(attempt, baseDelay, maxDelay);
 
         if (verbose) {
-          const warningText = getSafeText(`⚠️  Rate limit exceeded. ${formatRateLimitInfo(rateLimitInfo)}. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`);
+          const warningText = getSafeText(
+            `⚠️  Rate limit exceeded. ${formatRateLimitInfo(rateLimitInfo)}. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`
+          );
           console.log(chalk.yellow(warningText));
         }
 
@@ -2257,15 +2297,15 @@ export function formatFileSize(bytes: number): string {
   if (bytes === 0) {
     return '0 B';
   }
-  
+
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const size = bytes / Math.pow(k, i);
-  
+  const size = bytes / k ** i;
+
   // Round to 1 decimal place for KB/MB/GB, no decimals for bytes
   const rounded = i === 0 ? Math.round(size) : Math.round(size * 10) / 10;
-  
+
   return `${rounded} ${sizes[i]}`;
 }
 
@@ -2296,7 +2336,7 @@ export interface Spinner {
 export function createSpinner(enabled: boolean, text: string): Spinner {
   // Use safe text that respects terminal capabilities
   const safeText = getSafeText(text);
-  
+
   if (!enabled) {
     // No-op spinner: does not log anything (for pipe mode)
     return {
@@ -2373,7 +2413,10 @@ export function normalizeCardKey(
   }
   const num = Number(credentialsCardKey);
   if (Number.isNaN(num)) {
-    throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Invalid card key in credentials: must be a number');
+    throw new CliError(
+      ERROR_CODES.MISSING_CARD_KEY,
+      'Invalid card key in credentials: must be a number'
+    );
   }
   return num;
 }

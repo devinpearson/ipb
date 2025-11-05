@@ -10,7 +10,7 @@ import type { CommonOptions } from './types.js';
 export async function beneficiariesCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -48,10 +48,15 @@ export async function beneficiariesCommand(options: CommonOptions) {
   );
 
   // Use full beneficiaries data when piped or structured output requested
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? beneficiaries : simpleBeneficiaries;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} beneficiary(ies) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? beneficiaries : simpleBeneficiaries;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} beneficiary(ies) found.`);
+      }
     }
-  });
+  );
 }

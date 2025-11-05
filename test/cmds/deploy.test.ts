@@ -1,13 +1,13 @@
 /// <reference types="vitest" />
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deployCommand } from '../../src/cmds/deploy';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -16,15 +16,17 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializeApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
-    validateFilePath: vi.fn(async (path) => {
+    validateFilePath: vi.fn(async (_path) => {
       // Return absolute path for testing
       const { resolve } = await import('node:path');
-      return resolve(path);
+      return resolve('test.js');
     }),
     confirmDestructiveOperation: vi.fn(async () => true),
     formatFileSize: vi.fn((bytes) => {
@@ -32,7 +34,7 @@ vi.mock('../../src/utils.ts', async () => {
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }),
-    getFileSize: vi.fn(async (path) => {
+    getFileSize: vi.fn(async (_path) => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
@@ -121,7 +123,9 @@ describe('deployCommand', () => {
     expect(mockFsPromises.readFile).toHaveBeenCalledWith(expectedPath, 'utf8');
     expect(mockApi.uploadCode).toHaveBeenCalledWith('test-card-key', { code: mockCode });
     expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith('test-card-key', 'code-123', mockCode);
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code deployed with codeId: code-123'));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('code deployed with codeId: code-123')
+    );
   });
 
   it('should deploy code with env file', async () => {
@@ -152,9 +156,7 @@ describe('deployCommand', () => {
     (validateFilePath as vi.Mock)
       .mockResolvedValueOnce(resolve('.env.production')) // For env file
       .mockResolvedValueOnce(resolve('test.js')); // For code file
-    mockFsPromises.readFile
-      .mockResolvedValueOnce(mockEnvContent)
-      .mockResolvedValueOnce(mockCode);
+    mockFsPromises.readFile.mockResolvedValueOnce(mockEnvContent).mockResolvedValueOnce(mockCode);
     mockFsPromises.stat
       .mockResolvedValueOnce({ size: Buffer.byteLength(mockEnvContent, 'utf8') })
       .mockResolvedValueOnce({ size: Buffer.byteLength(mockCode, 'utf8') });
@@ -172,7 +174,9 @@ describe('deployCommand', () => {
       variables: { API_KEY: 'test123', SECRET: 'secret456' },
     });
     expect(mockApi.uploadCode).toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code deployed with codeId: code-123'));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('code deployed with codeId: code-123')
+    );
   });
 
   it('should throw CliError when env file does not exist', async () => {
@@ -193,7 +197,8 @@ describe('deployCommand', () => {
     (confirmDestructiveOperation as vi.Mock).mockResolvedValue(true);
     (validateFilePath as vi.Mock)
       .mockResolvedValueOnce(resolve('test.js')) // First call for test.js succeeds
-      .mockRejectedValueOnce( // Second call for .env.missing fails
+      .mockRejectedValueOnce(
+        // Second call for .env.missing fails
         new CliError(ERROR_CODES.FILE_NOT_FOUND, 'File does not exist')
       );
 

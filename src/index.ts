@@ -220,9 +220,40 @@ function generateCompletionScript(shell: string): string {
     pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
     published: ['--filename', '--card-key'],
     register: ['--email', '--password'],
-    run: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
-    r: ['--filename', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'], // alias for run
-    simulate: ['--filename', '--card-key', '--env', '--amount', '--currency', '--mcc', '--merchant', '--city', '--country', '--verbose'],
+    run: [
+      '--filename',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+    ],
+    r: [
+      '--filename',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+    ], // alias for run
+    simulate: [
+      '--filename',
+      '--card-key',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+    ],
     transfer: ['--yes'],
     transactions: ['--json', '--yaml', '--output'],
     tx: ['--json', '--yaml', '--output'], // alias for transactions
@@ -383,7 +414,7 @@ ${allOpts
     }
     if (opt.includes('<')) {
       const match = opt.match(/--([^<]+)\s*<([^>]+)>/);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match[2]) {
         const optName = match[1].replace(/-/g, '_');
         const argName = match[2];
         return `            '${opt}[${argName}]:${optName}:'`;
@@ -409,13 +440,15 @@ _ipb "$@"
 
 async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
-  
+
   // Add global options
   program.option('--check-updates', 'Check for available updates');
   program.option('--no-history', 'Disable command history logging');
-  
+
   // Add help text with command categories
-  program.addHelpText('afterAll', `
+  program.addHelpText(
+    'afterAll',
+    `
 Command Categories:
   Card Management        cards, enable, disable
   Code Management        deploy, fetch, upload, publish, published, logs, run, simulate
@@ -430,16 +463,19 @@ Command Categories:
 
 For more information about a specific command, use:
   $ ipb <command> --help
-`);
+`
+  );
 
   // Use shared options for most commands
-  
+
   // Card Management
   addApiCredentialOptions(
     program
       .command('cards')
       .alias('c')
-      .description('List all programmable cards. Shows card keys, numbers, and activation status for each card.')
+      .description(
+        'List all programmable cards. Shows card keys, numbers, and activation status for each card.'
+      )
       .addHelpText(
         'after',
         `
@@ -456,7 +492,9 @@ Examples:
   const configCmd = program
     .command('config')
     .alias('cfg')
-    .description('Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations. Supports configuration profiles for managing multiple environments.')
+    .description(
+      'Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations. Supports configuration profiles for managing multiple environments.'
+    )
     .addHelpText(
       'after',
       `
@@ -486,18 +524,16 @@ Examples:
   $ ipb config edit --profile production
       `
     );
-  
+
   addApiCredentialOptions(configCmd)
     .option('--card-key <cardKey>', 'Set your card key for the Investec API')
     .option('--openai-key <openaiKey>', 'Set your OpenAI API key for AI code generation')
     .option('--sandbox-key <sandboxKey>', 'Set your sandbox key for AI generation')
     .action(withCommandContext('config', configCommand));
-  
+
   // Profile subcommands
-  const profileCmd = configCmd
-    .command('profile')
-    .description('Manage configuration profiles');
-  
+  const profileCmd = configCmd.command('profile').description('Manage configuration profiles');
+
   profileCmd
     .command('list')
     .alias('ls')
@@ -506,7 +542,9 @@ Examples:
       const { listProfiles, getActiveProfile } = await import('./utils.js');
       const profiles = await listProfiles();
       if (profiles.length === 0) {
-        console.log('No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>');
+        console.log(
+          'No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
+        );
       } else {
         const activeProfile = await getActiveProfile();
         console.log('Available profiles:');
@@ -516,7 +554,7 @@ Examples:
         }
       }
     });
-  
+
   profileCmd
     .command('set')
     .description('Set the active profile (used when --profile is not specified)')
@@ -539,7 +577,7 @@ Examples:
         throw error;
       }
     });
-  
+
   profileCmd
     .command('show')
     .description('Show the currently active profile')
@@ -552,29 +590,35 @@ Examples:
         console.log('No active profile set. Using default credentials.');
       }
     });
-  
+
   profileCmd
     .command('delete')
     .alias('rm')
     .description('Delete a configuration profile')
     .argument('<profile>', 'Profile name to delete')
     .action(async (profileName: string) => {
-      const { deleteProfile, getActiveProfile, getSafeText, setActiveProfile } = await import('./utils.js');
+      const { deleteProfile, getActiveProfile, getSafeText, setActiveProfile } = await import(
+        './utils.js'
+      );
       await deleteProfile(profileName);
       // If the deleted profile was active, clear the active profile
       const activeProfile = await getActiveProfile();
       if (activeProfile === profileName) {
         await setActiveProfile(null);
-        console.log(getSafeText(`✅ Profile "${profileName}" deleted and cleared from active profile.`));
+        console.log(
+          getSafeText(`✅ Profile "${profileName}" deleted and cleared from active profile.`)
+        );
       } else {
         console.log(getSafeText(`✅ Profile "${profileName}" deleted.`));
       }
     });
-  
+
   // Edit command - opens credentials file in editor
   configCmd
     .command('edit')
-    .description('Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.')
+    .description(
+      'Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.'
+    )
     .option('--profile <profile>', 'Edit a specific profile instead of default credentials')
     .addHelpText(
       'after',
@@ -589,32 +633,29 @@ Examples:
     .action(async (options: { profile?: string }) => {
       const { openInEditor, getProfilePath } = await import('./utils.js');
       const { credentialLocation } = await import('./index.js');
-      
+
       let filepath: string;
       if (options.profile) {
         filepath = getProfilePath(options.profile);
       } else {
         filepath = credentialLocation.filename;
       }
-      
-      try {
-        const editor = process.env.EDITOR || 'default editor';
-        console.log(`Opening ${filepath} in ${editor}...`);
-        await openInEditor(filepath);
-        const successText = getSafeText('✅ Credentials file saved');
-        console.log(successText);
-      } catch (error) {
-        // Error is already a CliError with helpful message
-        throw error;
-      }
+
+      const editor = process.env.EDITOR || 'default editor';
+      console.log(`Opening ${filepath} in ${editor}...`);
+      await openInEditor(filepath);
+      const successText = getSafeText('✅ Credentials file saved');
+      console.log(successText);
     });
-  
+
   // Code Management
   addApiCredentialOptions(
     program
       .command('deploy')
       .alias('d')
-      .description('Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active.')
+      .description(
+        'Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active.'
+      )
       .addHelpText(
         'after',
         `
@@ -635,7 +676,9 @@ Examples:
     program
       .command('logs')
       .alias('log')
-      .description('Fetch execution logs from a card. Retrieves transaction execution logs and saves them to a JSON file.')
+      .description(
+        'Fetch execution logs from a card. Retrieves transaction execution logs and saves them to a JSON file.'
+      )
       .addHelpText(
         'after',
         `
@@ -651,7 +694,9 @@ Examples:
   program
     .command('run')
     .alias('r')
-    .description('Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.')
+    .description(
+      'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
+    )
     .addHelpText(
       'after',
       `
@@ -674,7 +719,9 @@ Examples:
     program
       .command('fetch')
       .alias('f')
-      .description('Fetch saved code from a card. Downloads the code currently saved on a card and saves it to a local file.')
+      .description(
+        'Fetch saved code from a card. Downloads the code currently saved on a card and saves it to a local file.'
+      )
       .addHelpText(
         'after',
         `
@@ -691,7 +738,9 @@ Examples:
     program
       .command('upload')
       .alias('up')
-      .description('Upload code to a card without publishing. Saves JavaScript code to a card but does not activate it. Use publish command to activate.')
+      .description(
+        'Upload code to a card without publishing. Saves JavaScript code to a card but does not activate it. Use publish command to activate.'
+      )
       .addHelpText(
         'after',
         `
@@ -708,7 +757,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('env')
-      .description('Download environment variables from a card. Retrieves all environment variables configured on a card and saves them to a JSON file.')
+      .description(
+        'Download environment variables from a card. Retrieves all environment variables configured on a card and saves them to a JSON file.'
+      )
       .addHelpText(
         'after',
         `
@@ -718,13 +769,18 @@ Examples:
       `
       )
   )
-    .requiredOption('-f,--filename <filename>', 'Output filename for environment variables (JSON format)')
+    .requiredOption(
+      '-f,--filename <filename>',
+      'Output filename for environment variables (JSON format)'
+    )
     .option('-c,--card-key <cardKey>', 'Card identifier to fetch environment from')
     .action(withCommandContext('env', envCommand));
   addApiCredentialOptions(
     program
       .command('env-list')
-      .description('List all supported environment variables. Shows available environment variables with descriptions, usage examples, and default values.')
+      .description(
+        'List all supported environment variables. Shows available environment variables with descriptions, usage examples, and default values.'
+      )
       .addHelpText(
         'after',
         `
@@ -738,7 +794,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('upload-env')
-      .description('Upload environment variables to a card. Reads environment variables from a JSON file and uploads them to a card.')
+      .description(
+        'Upload environment variables to a card. Reads environment variables from a JSON file and uploads them to a card.'
+      )
       .addHelpText(
         'after',
         `
@@ -754,7 +812,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('published')
-      .description('Download the currently published code from a card. Retrieves the active code currently running on a card and saves it to a local file.')
+      .description(
+        'Download the currently published code from a card. Retrieves the active code currently running on a card and saves it to a local file.'
+      )
       .addHelpText(
         'after',
         `
@@ -771,7 +831,9 @@ Examples:
     program
       .command('publish')
       .alias('pub')
-      .description('Publish previously uploaded code to make it active. Activates code that was uploaded using the upload command. Requires code ID from upload.')
+      .description(
+        'Publish previously uploaded code to make it active. Activates code that was uploaded using the upload command. Requires code ID from upload.'
+      )
       .addHelpText(
         'after',
         `
@@ -782,14 +844,19 @@ Examples:
       `
       )
   )
-    .requiredOption('-f,--filename <filename>', 'JavaScript file to publish (must match uploaded code)')
+    .requiredOption(
+      '-f,--filename <filename>',
+      'JavaScript file to publish (must match uploaded code)'
+    )
     .requiredOption('-i,--code-id <codeId>', 'Code ID from previous upload command')
     .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
     .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('publish', publishCommand));
   program
     .command('simulate')
-    .description('Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.')
+    .description(
+      'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
+    )
     .addHelpText(
       'after',
       `
@@ -812,7 +879,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('enable')
-      .description('Enable programmable code on a card. Activates programmable card functionality. Code must be deployed and published first.')
+      .description(
+        'Enable programmable code on a card. Activates programmable card functionality. Code must be deployed and published first.'
+      )
       .addHelpText(
         'after',
         `
@@ -827,7 +896,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('disable')
-      .description('Disable programmable code on a card. Deactivates programmable card functionality. Code remains deployed but will not execute on transactions.')
+      .description(
+        'Disable programmable code on a card. Deactivates programmable card functionality. Code remains deployed but will not execute on transactions.'
+      )
       .addHelpText(
         'after',
         `
@@ -845,7 +916,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('currencies')
-      .description('List all supported currency codes. Shows ISO 4217 currency codes and names available for use in transaction simulations and operations.')
+      .description(
+        'List all supported currency codes. Shows ISO 4217 currency codes and names available for use in transaction simulations and operations.'
+      )
       .addHelpText(
         'after',
         `
@@ -860,7 +933,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('countries')
-      .description('List all supported country codes. Shows ISO 3166-1 alpha-2 country codes and names available for use in transaction simulations.')
+      .description(
+        'List all supported country codes. Shows ISO 3166-1 alpha-2 country codes and names available for use in transaction simulations.'
+      )
       .addHelpText(
         'after',
         `
@@ -875,7 +950,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('merchants')
-      .description('List merchant categories and codes. Shows merchant category codes (MCC) with descriptions for use in transaction simulations.')
+      .description(
+        'List merchant categories and codes. Shows merchant category codes (MCC) with descriptions for use in transaction simulations.'
+      )
       .addHelpText(
         'after',
         `
@@ -892,7 +969,9 @@ Examples:
     program
       .command('accounts')
       .alias('acc')
-      .description('List all Investec accounts. Shows account IDs, account numbers, product names, and reference names for all linked accounts.')
+      .description(
+        'List all Investec accounts. Shows account IDs, account numbers, product names, and reference names for all linked accounts.'
+      )
       .addHelpText(
         'after',
         `
@@ -908,7 +987,9 @@ Examples:
     program
       .command('balances')
       .alias('bal')
-      .description('Get account balance information. Retrieves current balance, available balance, and budget balance for a specific account.')
+      .description(
+        'Get account balance information. Retrieves current balance, available balance, and budget balance for a specific account.'
+      )
       .addHelpText(
         'after',
         `
@@ -926,7 +1007,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('transfer')
-      .description('Transfer money between your own accounts. Moves funds from one account to another. Prompts interactively for missing information.')
+      .description(
+        'Transfer money between your own accounts. Moves funds from one account to another. Prompts interactively for missing information.'
+      )
       .addHelpText(
         'after',
         `
@@ -946,7 +1029,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('pay')
-      .description('Pay a beneficiary from your account. Makes a payment to a registered beneficiary. Requires confirmation before executing.')
+      .description(
+        'Pay a beneficiary from your account. Makes a payment to a registered beneficiary. Requires confirmation before executing.'
+      )
       .addHelpText(
         'after',
         `
@@ -967,7 +1052,9 @@ Examples:
     program
       .command('transactions')
       .alias('tx')
-      .description('Get transaction history for an account. Retrieves and displays recent transactions with full details including amounts, dates, and merchants.')
+      .description(
+        'Get transaction history for an account. Retrieves and displays recent transactions with full details including amounts, dates, and merchants.'
+      )
       .addHelpText(
         'after',
         `
@@ -984,7 +1071,9 @@ Examples:
   addApiCredentialOptions(
     program
       .command('beneficiaries')
-      .description('List all beneficiaries. Shows all registered beneficiaries linked to your Investec profile with their IDs and details.')
+      .description(
+        'List all beneficiaries. Shows all registered beneficiaries linked to your Investec profile with their IDs and details.'
+      )
       .addHelpText(
         'after',
         `
@@ -999,7 +1088,9 @@ Examples:
   // AI & Code Generation
   program
     .command('new')
-    .description('Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.')
+    .description(
+      'Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.'
+    )
     .addHelpText(
       'after',
       `
@@ -1020,7 +1111,9 @@ Examples:
     .action(withCommandContext('new', newCommand));
   program
     .command('ai')
-    .description('Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.')
+    .description(
+      'Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.'
+    )
     .addHelpText(
       'after',
       `
@@ -1037,7 +1130,9 @@ Examples:
     .action(withCommandContext('ai', generateCommand));
   program
     .command('bank')
-    .description('Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.')
+    .description(
+      'Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.'
+    )
     .addHelpText(
       'after',
       `
@@ -1053,7 +1148,9 @@ Examples:
   // Authentication
   program
     .command('register')
-    .description('Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.')
+    .description(
+      'Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.'
+    )
     .addHelpText(
       'after',
       `
@@ -1069,7 +1166,9 @@ Note: After registration, message in #12_sandbox-playground with your email to a
     .action(withCommandContext('register', registerCommand));
   program
     .command('login')
-    .description('Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.')
+    .description(
+      'Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.'
+    )
     .addHelpText(
       'after',
       `
@@ -1084,7 +1183,9 @@ Examples:
   // Utilities
   program
     .command('completion')
-    .description('Generate shell completion script. Creates autocomplete scripts for bash or zsh to enable tab completion for commands and options.')
+    .description(
+      'Generate shell completion script. Creates autocomplete scripts for bash or zsh to enable tab completion for commands and options.'
+    )
     .addHelpText(
       'after',
       `
@@ -1103,17 +1204,19 @@ Examples:
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(chalk.red(`Error generating completion script: ${errorMessage}`));
         // Use validation error for unsupported shell, general error for other issues
-        const exitCode = errorMessage.includes('Unsupported shell') 
-          ? ExitCode.VALIDATION_ERROR 
+        const exitCode = errorMessage.includes('Unsupported shell')
+          ? ExitCode.VALIDATION_ERROR
           : ExitCode.GENERAL_ERROR;
         process.exit(exitCode);
       }
     });
-  
+
   // Documentation generation command
   program
     .command('docs')
-    .description('Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.')
+    .description(
+      'Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.'
+    )
     .addHelpText(
       'after',
       `
@@ -1130,7 +1233,7 @@ Examples:
 
   // Check for --check-updates flag in raw arguments
   const hasCheckUpdatesFlag = process.argv.includes('--check-updates');
-  
+
   // If --check-updates flag is present, handle it before parsing
   if (hasCheckUpdatesFlag && process.argv.length === 3) {
     // Only --check-updates flag, no command
@@ -1142,40 +1245,38 @@ Examples:
     }
     process.exit(0);
   }
-  
+
   // Check if stdout is piped before parsing
   const { isStdoutPiped } = await import('./utils.js');
   const isPiped = isStdoutPiped();
-  
+
   // Track command execution for history logging
   const startTime = Date.now();
   let commandName = '';
-  let commandArgs: string[] = [];
   let commandOptions: Record<string, unknown> = {};
   let exitCode = 0;
-  
+
   // Hook into command execution to capture command details
   program.hook('preAction', (thisCommand) => {
-    commandName = thisCommand.name() || (thisCommand.parent?.name() || '');
-    commandArgs = thisCommand.args || [];
+    commandName = thisCommand.name() || thisCommand.parent?.name() || '';
     // Merge global options and command-specific options
     const globalOpts = program.opts();
     const commandOpts = thisCommand.opts();
     commandOptions = { ...globalOpts, ...commandOpts };
   });
-  
+
   try {
     // Check for secret usage from environment variables before executing command
     // We need to check verbose mode from raw args since we haven't parsed yet
     const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
     const verbose = getVerboseMode(hasVerboseFlag);
-    
+
     // Warn about secret usage (will only show if verbose or in non-interactive environment)
     warnAboutSecretUsage({ verbose });
-    
+
     // Parse arguments to execute commands
     await program.parseAsync(process.argv);
-    
+
     // If we got here, command succeeded
     exitCode = 0;
   } catch (error) {
@@ -1187,26 +1288,28 @@ Examples:
     try {
       const globalOpts = program.opts();
       const noHistory = globalOpts.history === false;
-      
+
       if (!noHistory && commandName) {
         const duration = Date.now() - startTime;
         // Get the actual command name from program.args or the command that was executed
         const actualCommandName = program.args[0] || commandName;
         const actualArgs = program.args.slice(1);
-        
+
         // Merge all options (global + command-specific)
         const allOptions = { ...globalOpts, ...commandOptions };
-        
+
         // Non-blocking: don't await to avoid slowing down command exit
-        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(() => {
-          // Ignore errors
-        });
+        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(
+          () => {
+            // Ignore errors
+          }
+        );
       }
     } catch {
       // Ignore errors logging history
     }
   }
-  
+
   // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
   if (hasCheckUpdatesFlag && process.argv.length > 3) {
     // --check-updates flag with a command - check after command execution
@@ -1234,7 +1337,7 @@ Examples:
         // Silent failure for background checks
       });
   }
-  
+
   // Only add newline if not piped (to avoid corrupting JSON output)
   if (!isPiped) {
     console.log(''); // Add a newline after command execution
@@ -1262,13 +1365,13 @@ export async function optionCredentials(
     if (activeProfile) {
       credentials = await loadProfile(credentials, activeProfile);
     }
-    
+
     // Fall back to credentials file if no profile is active
     if (options.credentialsFile) {
       credentials = await loadCredentialsFile(credentials, options.credentialsFile);
     }
   }
-  
+
   // Command-line options always override profile/credentials file
   if (options.apiKey) {
     credentials.apiKey = options.apiKey;

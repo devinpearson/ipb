@@ -28,7 +28,9 @@ export async function newCommand(name: string, options: Options) {
   if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
     throw new CliError(
       ERROR_CODES.INVALID_PROJECT_NAME,
-      getSafeText('💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.')
+      getSafeText(
+        '💣 Project name contains invalid characters. Use only letters, numbers, hyphens, and underscores.'
+      )
     );
   }
   // Add a force option to the Options interface
@@ -46,5 +48,7 @@ export async function newCommand(name: string, options: Options) {
   console.log('Next steps:');
   console.log(getSafeText(`- 📂 Navigate to your project: ${chalk.green(`cd ${name}`)}`));
   console.log(getSafeText(`- 📝 Edit your code in ${chalk.green(`${name}/main.js`)}`));
-  console.log(getSafeText(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`));
+  console.log(
+    getSafeText(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`)
+  );
 }

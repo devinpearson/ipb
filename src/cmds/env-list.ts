@@ -33,28 +33,32 @@ export async function envListCommand(options: CommonOptions) {
     },
     {
       name: 'INVESTEC_CLIENT_ID',
-      description: 'Client ID for authenticating with the Investec API. Get this from the Investec Developer Portal.',
+      description:
+        'Client ID for authenticating with the Investec API. Get this from the Investec Developer Portal.',
       required: true,
       example: 'your-client-id',
       category: 'API Credentials',
     },
     {
       name: 'INVESTEC_CLIENT_SECRET',
-      description: 'Client secret for authenticating with the Investec API. Get this from the Investec Developer Portal.',
+      description:
+        'Client secret for authenticating with the Investec API. Get this from the Investec Developer Portal.',
       required: true,
       example: 'your-client-secret',
       category: 'API Credentials',
     },
     {
       name: 'INVESTEC_API_KEY',
-      description: 'API key for accessing the Investec API. Get this from the Investec Developer Portal.',
+      description:
+        'API key for accessing the Investec API. Get this from the Investec Developer Portal.',
       required: true,
       example: 'your-api-key',
       category: 'API Credentials',
     },
     {
       name: 'INVESTEC_CARD_KEY',
-      description: 'Card identifier (key) for your programmable card. Use this to target specific cards.',
+      description:
+        'Card identifier (key) for your programmable card. Use this to target specific cards.',
       required: false,
       example: '123456',
       category: 'API Credentials',
@@ -68,14 +72,16 @@ export async function envListCommand(options: CommonOptions) {
     },
     {
       name: 'SANDBOX_KEY',
-      description: 'Sandbox access token for AI generation service. Obtained via `ipb login` command.',
+      description:
+        'Sandbox access token for AI generation service. Obtained via `ipb login` command.',
       required: false,
       example: 'your-sandbox-token',
       category: 'AI Generation',
     },
     {
       name: 'DEBUG',
-      description: 'Enable debug mode. When set to "true", uses mock APIs instead of real API calls. Useful for testing without API access.',
+      description:
+        'Enable debug mode. When set to "true", uses mock APIs instead of real API calls. Useful for testing without API access.',
       required: false,
       default: 'false',
       example: 'true',
@@ -83,7 +89,8 @@ export async function envListCommand(options: CommonOptions) {
     },
     {
       name: 'REJECT_UNAUTHORIZED',
-      description: 'SSL certificate validation control. Set to "false" to disable SSL certificate validation (not recommended for production).',
+      description:
+        'SSL certificate validation control. Set to "false" to disable SSL certificate validation (not recommended for production).',
       required: false,
       default: 'true',
       example: 'false',
@@ -149,11 +156,12 @@ export async function envListCommand(options: CommonOptions) {
   console.log(chalk.green('   INVESTEC_API_KEY=your-api-key\n'));
 
   console.log(chalk.gray('3. Override via command line:'));
-  console.log(chalk.green('   ipb cards --client-id <id> --client-secret <secret> --api-key <key>\n'));
+  console.log(
+    chalk.green('   ipb cards --client-id <id> --client-secret <secret> --api-key <key>\n')
+  );
 
   console.log(chalk.gray('4. Priority order (highest to lowest):'));
   console.log(chalk.yellow('   1. Command line options'));
   console.log(chalk.yellow('   2. Environment variables'));
   console.log(chalk.yellow('   3. Credentials file (~/.ipb/credentials.json)'));
 }
-

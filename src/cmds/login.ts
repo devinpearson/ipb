@@ -3,11 +3,7 @@ import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation, printTitleBox } from '../index.js';
-import {
-  ensureCredentialsDirectory,
-  readCredentialsFile,
-  writeCredentialsFile,
-} from '../utils.js';
+import { ensureCredentialsDirectory, readCredentialsFile, writeCredentialsFile } from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -68,7 +64,7 @@ export async function loginCommand(options: Options) {
   }
   const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
   console.log('Login successful');
-  let cred = await readCredentialsFile(credentialLocation);
+  const cred = await readCredentialsFile(credentialLocation);
   if (Object.values(cred).every((v) => v === '')) {
     // File doesn't exist, ensure directory exists before creating
     await ensureCredentialsDirectory(credentialLocation);

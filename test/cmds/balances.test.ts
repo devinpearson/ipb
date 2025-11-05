@@ -6,7 +6,7 @@ import { balancesCommand } from '../../src/cmds/balances';
 vi.mock('../../src/index.ts', () => ({
   credentials: {},
   printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (options, credentials) => credentials),
+  optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));
 
 vi.mock('../../src/utils.ts', async () => {
@@ -15,7 +15,9 @@ vi.mock('../../src/utils.ts', async () => {
     ...actual,
     initializePbApi: vi.fn(),
     createSpinner: vi.fn(() => ({
-      start: vi.fn(function() { return this; }),
+      start: vi.fn(function () {
+        return this;
+      }),
       stop: vi.fn(),
     })),
     isStdoutPiped: vi.fn(() => false), // Mock as not piped for tests
@@ -44,8 +46,8 @@ describe('balancesCommand', () => {
 
     const mockBalance = {
       accountId: 'acc-123',
-      currentBalance: 1000.50,
-      availableBalance: 950.00,
+      currentBalance: 1000.5,
+      availableBalance: 950.0,
       currency: 'ZAR',
     };
 
@@ -75,4 +77,3 @@ describe('balancesCommand', () => {
     await expect(balancesCommand('invalid-account', options)).rejects.toThrow('Account not found');
   });
 });
-

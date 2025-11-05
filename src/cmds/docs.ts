@@ -1,6 +1,6 @@
 import { promises as fsPromises } from 'node:fs';
-import { Command } from 'commander';
 import chalk from 'chalk';
+import type { Command } from 'commander';
 import { printTitleBox } from '../index.js';
 import { validateFilePathForWrite } from '../utils.js';
 
@@ -23,11 +23,15 @@ interface CommandInfo {
  * @param globalOptionFlags - Set of global option flags to filter out
  * @returns Command information object
  */
-function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = new Set()): CommandInfo {
+function extractCommandInfo(
+  command: Command,
+  globalOptionFlags: Set<string> = new Set()
+): CommandInfo {
   const args: Array<{ name: string; description: string; required: boolean }> = [];
   const options: Array<{ flags: string; description: string; required: boolean }> = [];
-  
+
   // Extract arguments using Commander.js internal API
+  // biome-ignore lint/suspicious/noExplicitAny: Commander.js internal API is not fully typed
   const registeredArgs = (command as any)._args || [];
   for (const arg of registeredArgs) {
     const argName = typeof arg.name === 'function' ? arg.name() : arg.name || '';
@@ -41,7 +45,7 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
       });
     }
   }
-  
+
   // Extract options (filter out global options)
   const registeredOptions = command.options || [];
   for (const option of registeredOptions) {
@@ -49,16 +53,19 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
     if (!flags) {
       continue;
     }
-    
+
     // Check if this is a global option by checking if any of its flags are in the global set
-    const flagParts = flags.split(',').map((f) => f.trim().split(/\s+/)[0]).filter((f): f is string => Boolean(f));
+    const flagParts = flags
+      .split(',')
+      .map((f) => f.trim().split(/\s+/)[0])
+      .filter((f): f is string => Boolean(f));
     const isGlobalOption = flagParts.some((flag) => globalOptionFlags.has(flag));
-    
+
     // Skip global options (they're documented separately)
     if (isGlobalOption) {
       continue;
     }
-    
+
     const desc = option.description || '';
     // Check if option is required by looking at the flag pattern (<value> vs [value])
     // Also check option.required property, but note that Commander.js doesn't always set this correctly
@@ -66,13 +73,13 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
     const required = option.required === true || hasRequiredPattern;
     options.push({ flags, description: desc, required });
   }
-  
+
   // Extract examples from help text
   let examples = '';
   try {
     const helpText = command.helpInformation();
     const exampleMatch = helpText.match(/Examples:\s*\n((?:\s+\$[^\n]+\n?)+)/);
-    if (exampleMatch && exampleMatch[1]) {
+    if (exampleMatch?.[1]) {
       examples = exampleMatch[1]
         .split('\n')
         .filter((line) => line.trim())
@@ -82,7 +89,7 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
   } catch {
     // If help generation fails, skip examples
   }
-  
+
   // Extract subcommands
   const subcommands: CommandInfo[] = [];
   const subcmds = command.commands || [];
@@ -92,7 +99,7 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
       subcommands.push(extractCommandInfo(subcmd, globalOptionFlags));
     }
   }
-  
+
   return {
     name: command.name(),
     aliases: command.aliases(),
@@ -111,22 +118,26 @@ function extractCommandInfo(command: Command, globalOptionFlags: Set<string> = n
  * @param globalOptionFlags - Set of global option flags (for filtering)
  * @returns Markdown string
  */
-function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Set<string> = new Set(), level = 2): string {
+function formatCommandAsMarkdown(
+  commandInfo: CommandInfo,
+  globalOptionFlags: Set<string> = new Set(),
+  level = 2
+): string {
   const heading = '#'.repeat(level);
   const lines: string[] = [];
-  
+
   // Command name and aliases
   let commandTitle = commandInfo.name;
   if (commandInfo.aliases.length > 0) {
     commandTitle += ` (aliases: ${commandInfo.aliases.join(', ')})`;
   }
   lines.push(`${heading} ${commandTitle}\n`);
-  
+
   // Description
   if (commandInfo.description) {
     lines.push(`${commandInfo.description}\n`);
   }
-  
+
   // Usage
   let usage = `\`ipb ${commandInfo.name}`;
   if (commandInfo.arguments.length > 0) {
@@ -140,7 +151,7 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
   }
   usage += '`';
   lines.push(`**Usage:** ${usage}\n`);
-  
+
   // Arguments
   if (commandInfo.arguments.length > 0) {
     lines.push('**Arguments:**');
@@ -151,7 +162,7 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
     }
     lines.push('');
   }
-  
+
   // Options
   if (commandInfo.options.length > 0) {
     lines.push('**Options:**');
@@ -162,7 +173,7 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
     }
     lines.push('');
   }
-  
+
   // Examples
   if (commandInfo.examples) {
     lines.push('**Examples:**');
@@ -175,7 +186,7 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
     lines.push('```');
     lines.push('');
   }
-  
+
   // Subcommands
   if (commandInfo.subcommands && commandInfo.subcommands.length > 0) {
     lines.push('**Subcommands:**');
@@ -184,7 +195,7 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
       lines.push(formatCommandAsMarkdown(subcmd, globalOptionFlags, level + 1));
     }
   }
-  
+
   return lines.join('\n');
 }
 
@@ -195,16 +206,16 @@ function formatCommandAsMarkdown(commandInfo: CommandInfo, globalOptionFlags: Se
  */
 export function generateCommandDocumentation(program: Command): string {
   const lines: string[] = [];
-  
+
   // Header
   lines.push('# IPB CLI Command Reference');
   lines.push('');
   lines.push('> This documentation is auto-generated from the CLI command definitions.');
-  lines.push('> Last generated: ' + new Date().toISOString());
+  lines.push(`> Last generated: ${new Date().toISOString()}`);
   lines.push('');
   lines.push('## Table of Contents');
   lines.push('');
-  
+
   // Collect global options first (for filtering)
   // Global options are: --check-updates, --no-history, and all options added via addApiCredentialOptions
   const globalOptionFlags = new Set<string>([
@@ -224,14 +235,17 @@ export function generateCommandDocumentation(program: Command): string {
     '--yaml',
     '--output',
   ]);
-  
+
   // Also collect from program.options to be safe
   const globalOptions = program.options || [];
   for (const opt of globalOptions) {
     const flags = opt.flags || '';
     if (flags) {
       // Extract individual flag names (e.g., "--api-key <apiKey>" -> "--api-key")
-      const flagParts = flags.split(',').map((f) => f.trim().split(/\s+/)[0]).filter((f): f is string => Boolean(f));
+      const flagParts = flags
+        .split(',')
+        .map((f) => f.trim().split(/\s+/)[0])
+        .filter((f): f is string => Boolean(f));
       for (const flag of flagParts) {
         if (flag) {
           globalOptionFlags.add(flag);
@@ -239,36 +253,36 @@ export function generateCommandDocumentation(program: Command): string {
       }
     }
   }
-  
+
   // Collect all commands
   const commands: CommandInfo[] = [];
   const programCommands = program.commands || [];
-  
+
   for (const cmd of programCommands) {
     const cmdName = cmd.name();
     if (cmdName && cmdName !== '<command>') {
       commands.push(extractCommandInfo(cmd, globalOptionFlags));
     }
   }
-  
+
   // Generate table of contents
   for (const cmd of commands) {
     lines.push(`- [${cmd.name}](#${cmd.name.toLowerCase().replace(/\s+/g, '-')})`);
   }
   lines.push('');
-  
+
   // Generate command documentation
   for (const cmd of commands) {
     lines.push(formatCommandAsMarkdown(cmd, globalOptionFlags));
     lines.push('');
   }
-  
+
   // Global options section
   lines.push('## Global Options');
   lines.push('');
   lines.push('These options are available for all commands:');
   lines.push('');
-  
+
   for (const opt of globalOptions) {
     const flags = opt.flags || '';
     const desc = opt.description || '';
@@ -278,7 +292,7 @@ export function generateCommandDocumentation(program: Command): string {
     }
   }
   lines.push('');
-  
+
   return lines.join('\n');
 }
 
@@ -290,20 +304,19 @@ export function generateCommandDocumentation(program: Command): string {
  */
 export async function docsCommand(outputPath: string, program: Command) {
   printTitleBox();
-  
+
   console.log(chalk.blueBright('📚 Generating command documentation...'));
-  
+
   // Generate documentation from the program
   const documentation = generateCommandDocumentation(program);
-  
+
   // Validate and normalize output path
   const normalizedPath = await validateFilePathForWrite(outputPath);
-  
+
   // Write to file
   await fsPromises.writeFile(normalizedPath, documentation, 'utf8');
-  
+
   const commandCount = program.commands.length;
   console.log(chalk.green(`✅ Documentation generated successfully: ${normalizedPath}`));
   console.log(chalk.gray(`   Total commands documented: ${commandCount}`));
 }
-

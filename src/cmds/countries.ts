@@ -10,7 +10,7 @@ import type { CommonOptions } from './types.js';
 export async function countriesCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -33,10 +33,15 @@ export async function countriesCommand(options: CommonOptions) {
   const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
 
   // Use full countries data when piped or structured output requested
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? countries : simpleCountries;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} country(ies) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? countries : simpleCountries;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} country(ies) found.`);
+      }
     }
-  });
+  );
 }

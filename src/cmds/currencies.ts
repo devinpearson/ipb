@@ -10,7 +10,7 @@ import type { CommonOptions } from './types.js';
 export async function currenciesCommand(options: CommonOptions) {
   const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
-  
+
   if (!isPiped) {
     printTitleBox();
   }
@@ -36,10 +36,15 @@ export async function currenciesCommand(options: CommonOptions) {
   }));
 
   // Use full currencies data when piped or structured output requested
-  const dataToOutput = options.json || options.yaml || options.output || isPiped ? currencies : simpleCurrencies;
-  await formatOutput(dataToOutput, { json: options.json, yaml: options.yaml, output: options.output }, (count) => {
-    if (!isPiped) {
-      console.log(`\n${count} currency(ies) found.`);
+  const dataToOutput =
+    options.json || options.yaml || options.output || isPiped ? currencies : simpleCurrencies;
+  await formatOutput(
+    dataToOutput,
+    { json: options.json, yaml: options.yaml, output: options.output },
+    (count) => {
+      if (!isPiped) {
+        console.log(`\n${count} currency(ies) found.`);
+      }
     }
-  });
+  );
 }
