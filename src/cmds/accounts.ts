@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -20,7 +20,15 @@ export async function accountsCommand(options: CommonOptions) {
   }
   const api = await initializePbApi(credentials, options);
   if (options.verbose && !isPiped) console.log('💳 fetching accounts...');
-  const result = await api.getAccounts();
+  
+  // Use retry logic with rate limit handling
+  const result = await withRetry(
+    () => api.getAccounts(),
+    {
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   const accounts = result.data.accounts;
   if (!accounts || accounts.length === 0) {
     if (!isPiped) {

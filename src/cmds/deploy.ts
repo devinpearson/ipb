@@ -9,6 +9,7 @@ import {
   normalizeCardKey,
   validateFilePath,
   validateFilePathForWrite,
+  withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -55,7 +56,14 @@ export async function deployCommand(options: Options) {
       const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
       envObject = dotenv.parse(envFileContent);
 
-      await api.uploadEnv(cardKey, { variables: envObject });
+      // Use retry logic with rate limit handling
+      await withRetry(
+        () => api.uploadEnv(cardKey, { variables: envObject }),
+        {
+          maxRetries: 3,
+          verbose: options.verbose,
+        }
+      );
       spinner.text = '📦 env uploaded';
     } catch (error) {
       if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
@@ -72,8 +80,23 @@ export async function deployCommand(options: Options) {
   
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   raw.code = code;
-  const saveResult = await api.uploadCode(cardKey, raw);
-  await api.uploadPublishedCode(cardKey, saveResult.data.result.codeId, code);
+  
+  // Use retry logic with rate limit handling for API calls
+  const saveResult = await withRetry(
+    () => api.uploadCode(cardKey, raw),
+    {
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
+  
+  await withRetry(
+    () => api.uploadPublishedCode(cardKey, saveResult.data.result.codeId, code),
+    {
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   spinner.stop();
   console.log(`🎉 code deployed with codeId: ${saveResult.data.result.codeId}`);
 }

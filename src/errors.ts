@@ -35,6 +35,7 @@ export const ERROR_CODES = {
   MISSING_EMAIL_OR_PASSWORD: 'E4011', // Added for register command
   MISSING_ACCOUNT_ID: 'E4012', // Added for balances command
   INVALID_INPUT: 'E4013', // Added for input validation errors
+  RATE_LIMIT_EXCEEDED: 'E4014', // Added for rate limiting errors
   // Add more as needed
 };
 

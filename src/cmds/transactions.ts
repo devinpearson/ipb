@@ -1,5 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi, validateAccountId } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi, validateAccountId, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -58,7 +58,14 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
   const api = await initializePbApi(credentials, options);
 
-  const result = await api.getAccountTransactions(accountId);
+  // Use retry logic with rate limit handling
+  const result = await withRetry(
+    () => api.getAccountTransactions(accountId),
+    {
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   const transactions = result.data.transactions;
   spinner.stop();
   if (!transactions) {

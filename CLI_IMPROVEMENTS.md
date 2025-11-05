@@ -536,12 +536,38 @@ ipb accounts --json | ipb balances  # balances will read accountId from stdin
 
 ### 19. Rate Limiting Indicators
 
-**Current State**: No indication of API rate limits.
+**Status**: ✅ Fully Implemented
 
-**Recommendations**:
-- Show rate limit information in verbose mode
-- Add retry logic with exponential backoff
-- Display rate limit status
+**Implementation Details**:
+- Added `RATE_LIMIT_EXCEEDED` error code (`E4014`) to `src/errors.ts`
+- Created `RateLimitInfo` interface and `detectRateLimit()` function to extract rate limit information from errors (429 status codes, headers, error messages)
+- Created `formatRateLimitInfo()` function to format rate limit information for display
+- Implemented `withRetry()` utility function with exponential backoff and jitter for automatic retry on rate limit errors
+- Enhanced error handler (`handleCliError`) to detect rate limit errors and provide actionable suggestions
+- Added rate limit information display in verbose mode when errors occur
+- Integrated retry logic with rate limit handling into all major API commands:
+  - `cardsCommand` - `api.getCards()`
+  - `accountsCommand` - `api.getAccounts()`
+  - `balancesCommand` - `api.getAccountBalances()`
+  - `transactionsCommand` - `api.getAccountTransactions()`
+  - `transferCommand` - `api.transferMultiple()`
+  - `payCommand` - `api.payMultiple()`
+  - `deployCommand` - `api.uploadEnv()`, `api.uploadCode()`, `api.uploadPublishedCode()`
+- Retry logic automatically detects 429 status codes, rate limit headers (`X-RateLimit-*`, `Retry-After`), and rate limit keywords in error messages
+- Exponential backoff with jitter prevents thundering herd problems
+- Configurable max retries (default: 3), base delay (default: 1000ms), and max delay (default: 60000ms)
+- Verbose mode shows retry attempts and rate limit information
+
+**Files Updated**:
+- ✅ `src/errors.ts` - Added `RATE_LIMIT_EXCEEDED` error code
+- ✅ `src/utils.ts` - Added rate limit detection, formatting, and retry logic utilities
+- ✅ `src/cmds/cards.ts` - Wrapped `api.getCards()` with retry logic
+- ✅ `src/cmds/accounts.ts` - Wrapped `api.getAccounts()` with retry logic
+- ✅ `src/cmds/balances.ts` - Wrapped `api.getAccountBalances()` with retry logic
+- ✅ `src/cmds/transactions.ts` - Wrapped `api.getAccountTransactions()` with retry logic
+- ✅ `src/cmds/transfer.ts` - Wrapped `api.transferMultiple()` with retry logic
+- ✅ `src/cmds/pay.ts` - Wrapped `api.payMultiple()` with retry logic
+- ✅ `src/cmds/deploy.ts` - Wrapped `api.uploadEnv()`, `api.uploadCode()`, and `api.uploadPublishedCode()` with retry logic
 
 ---
 
@@ -616,22 +642,23 @@ ipb config profile delete staging
 ## 📋 Implementation Checklist
 
 ### Phase 1: Critical Improvements (Week 1)
-- [ ] Enhanced input validation utilities
-- [ ] Improved command descriptions with examples
-- [ ] Enhanced error messages with suggestions
-- [ ] Add confirmation for destructive operations
+- [x] Enhanced input validation utilities ✅ (Item 1)
+- [x] Improved command descriptions with examples ✅ (Item 2)
+- [x] Enhanced error messages with suggestions ✅ (Item 4)
+- [x] Add confirmation for destructive operations ✅ (Item 10)
 
 ### Phase 2: User Experience (Week 2)
-- [ ] Consistent JSON output across all commands
-- [ ] Command aliases for common operations
-- [ ] Better help text organization
-- [ ] Configuration file validation
+- [x] Consistent JSON output across all commands ✅ (Item 3)
+- [x] Command aliases for common operations ✅ (Item 5)
+- [x] Better help text organization ✅ (Item 6)
+- [x] Configuration file validation ✅ (Item 7)
 
 ### Phase 3: Advanced Features (Week 3)
-- [ ] Shell autocomplete support
-- [ ] Version update notifications
-- [ ] Better table formatting
+- [x] Shell autocomplete support ✅ (Item 12)
+- [x] Version update notifications ✅ (Item 13)
+- [x] Better table formatting ✅ (Item 14)
 - [ ] Command documentation generation
+- [x] Rate limiting indicators with retry logic ✅ (Item 19)
 
 ---
 

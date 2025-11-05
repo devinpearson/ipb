@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { confirmDestructiveOperation, createSpinner, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
+import { confirmDestructiveOperation, createSpinner, initializePbApi, validateAmount, validateAccountId, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -65,14 +65,21 @@ export async function transferCommand(
   const spinner = createSpinner(!disableSpinner, '💳 transfering...');
   const api = await initializePbApi(credentials, options);
 
-  const result = await api.transferMultiple(accountId, [
+  // Use retry logic with rate limit handling
+  const result = await withRetry(
+    () => api.transferMultiple(accountId, [
+      {
+        beneficiaryAccountId: beneficiaryAccountId,
+        amount: amount.toString(),
+        myReference: reference,
+        theirReference: reference,
+      },
+    ]),
     {
-      beneficiaryAccountId: beneficiaryAccountId,
-      amount: amount.toString(),
-      myReference: reference,
-      theirReference: reference,
-    },
-  ]);
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   spinner.stop();
   for (const transfer of result.data.TransferResponses) {
     console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);

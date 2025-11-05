@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../index.js';
-import { confirmDestructiveOperation, initializePbApi, validateAmount, validateAccountId } from '../utils.js';
+import { confirmDestructiveOperation, initializePbApi, validateAmount, validateAccountId, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -64,14 +64,22 @@ export async function payCommand(
   }
 
   console.log('💳 paying');
-  const result = await api.payMultiple(accountId, [
+  
+  // Use retry logic with rate limit handling
+  const result = await withRetry(
+    () => api.payMultiple(accountId, [
+      {
+        beneficiaryId: beneficiaryId,
+        amount: amount.toString(),
+        myReference: reference,
+        theirReference: reference,
+      },
+    ]),
     {
-      beneficiaryId: beneficiaryId,
-      amount: amount.toString(),
-      myReference: reference,
-      theirReference: reference,
-    },
-  ]);
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   for (const transfer of result.data.TransferResponses) {
     console.log(
       `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`

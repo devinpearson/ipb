@@ -1,6 +1,6 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi, validateAccountId } from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi, validateAccountId, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -48,7 +48,14 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   const spinner = createSpinner(!disableSpinner, '💳 fetching balances...').start();
   const api = await initializePbApi(credentials, options);
 
-  const result = await api.getAccountBalances(accountId);
+  // Use retry logic with rate limit handling
+  const result = await withRetry(
+    () => api.getAccountBalances(accountId),
+    {
+      maxRetries: 3,
+      verbose: options.verbose,
+    }
+  );
   spinner.stop();
 
   // Always use structured output when piped or when explicitly requested
