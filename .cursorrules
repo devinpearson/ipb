@@ -1,0 +1,350 @@
+# Investec Programmable Banking CLI - Cursor Rules
+
+## Project Technology Stack
+
+### Core Technologies
+- **Node.js**: >=20.0.0 (ESM modules only)
+- **TypeScript**: 5.9.3 with strict mode
+- **Module System**: ESM (ES Modules) - all imports use `.js` extension
+- **CLI Framework**: Commander.js 14.x
+- **Testing**: Vitest 3.x with ESM support
+- **Linting/Formatting**: Biome 2.3.x (replaces ESLint/Prettier)
+- **Build Tool**: TypeScript compiler (tsc)
+
+### Key Dependencies
+- `commander`: CLI framework for command definitions
+- `chalk`: Terminal colors (v5, respects NO_COLOR/FORCE_COLOR)
+- `ora`: Spinner/progress indicators
+- `cli-table3`: Enhanced table formatting
+- `js-yaml`: YAML serialization
+- `@inquirer/prompts`: Interactive prompts (confirm, input, password)
+- `investec-pb-api`: Programmable Banking API client
+- `investec-card-api`: Card API client
+- `programmable-card-code-emulator`: Local code execution emulator
+
+## Project Setup
+
+### Directory Structure
+```
+src/
+  ├── index.ts          # Entry point, command registration, global options
+  ├── utils.ts          # Shared utilities (2500+ lines of helper functions)
+  ├── errors.ts         # CliError class, ExitCode enum, ERROR_CODES
+  ├── cmds/             # Command implementations (30+ commands)
+  │   ├── index.ts      # Command exports
+  │   ├── types.ts      # Shared interfaces (CommonOptions, Credentials, etc.)
+  │   └── *.ts          # Individual command files
+  ├── mock-pb.ts        # Mock Programmable Banking API for testing
+  └── mock-card.ts      # Mock Card API for testing
+
+test/
+  ├── __mocks__/        # Mock implementations (ora, utils, external-editor, etc.)
+  ├── cmds/             # Command tests
+  ├── helpers.ts        # Test helper utilities
+  └── setup.js          # Vitest setup
+
+bin/                    # Compiled output (gitignored, generated)
+templates/              # Project templates (default, petro)
+```
+
+### Build & Development
+- **Build**: `npm run build` → TypeScript compiles `src/` to `bin/`
+- **Source Maps**: Enabled for debugging
+- **Declaration Files**: Generated for library consumers
+- **File Copying**: Templates and assets copied to `bin/` during build
+
+### TypeScript Configuration
+- **Target**: ES2022
+- **Module**: NodeNext (ESM)
+- **Strict Mode**: Enabled with `noUncheckedIndexedAccess` and `noImplicitOverride`
+- **Module Resolution**: NodeNext
+- **Import Extensions**: Must use `.js` for ESM imports (TypeScript requirement)
+
+## Code Patterns & Conventions
+
+### Error Handling Pattern
+```typescript
+// 1. Use CliError for user-facing errors
+throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Card key is required');
+
+// 2. Wrap commands with context
+export const myCommand = withCommandContext('my-command', async (options) => {
+  // Command implementation
+});
+
+// 3. Centralized error handling in main()
+catch (error) {
+  handleCliError(error, { verbose: getVerboseMode(true) }, 'command name');
+}
+```
+
+### Command Structure Pattern
+```typescript
+export async function commandName(options: CommonOptions) {
+  // 1. Validate inputs
+  const normalizedPath = await validateFilePath(options.filename, ['.js']);
+  
+  // 2. Initialize API with retry support
+  const api = await initializePbApi(credentials, options);
+  const verbose = getVerboseMode(options.verbose);
+  
+  // 3. Show progress (if not piped)
+  const spinner = createSpinner(!isStdoutPiped(), getSafeText('💳 Processing...'));
+  
+  // 4. Make API calls with retry
+  const result = await withRetry(() => api.someMethod(), { verbose });
+  
+  // 5. Format output
+  formatOutput(result.data, options);
+}
+```
+
+### Utility Functions Usage
+- **Credentials**: `loadCredentialsFile()`, `readCredentialsFile()`, `writeCredentialsFile()`
+- **Profiles**: `getActiveProfile()`, `setActiveProfile()`, `readProfile()`, `deleteProfile()`
+- **Terminal**: `getSafeText()`, `detectTerminalCapabilities()`, `getTerminalDimensions()`
+- **Output**: `formatOutput()`, `printTable()`, `formatFileSize()`
+- **Validation**: `validateAmount()`, `validateAccountId()`, `validateFilePath()`
+- **API**: `initializeApi()`, `initializePbApi()`, `withRetry()`
+- **Security**: `warnAboutSecretUsage()`, `detectSecretUsageFromEnv()`
+- **History**: `logCommandHistory()`, `readCommandHistory()`
+
+### Import Patterns
+```typescript
+// Node.js built-ins (use node: prefix)
+import { promises as fsPromises } from 'node:fs';
+import { homedir } from 'node:os';
+
+// External packages
+import chalk from 'chalk';
+import { Command } from 'commander';
+
+// Internal modules (use .js extension)
+import { CliError, ERROR_CODES } from '../errors.js';
+import { formatOutput, getVerboseMode } from '../utils.js';
+
+// Type-only imports
+import type { CommonOptions, Credentials } from './types.js';
+```
+
+## Testing Patterns
+
+### Mock Setup
+```typescript
+vi.mock('../../src/utils.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../src/utils.ts')>();
+  return {
+    ...actual,
+    initializeApi: vi.fn(),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn(function() { return this; }),
+      stop: vi.fn(),
+      text: '',
+    })),
+  };
+});
+```
+
+### Test Structure
+- Use `describe()` blocks for grouping
+- Use `it()` for individual test cases
+- Mock external dependencies
+- Test both success and error paths
+- Use `expect().toThrow(CliError)` for error testing
+
+## Code Quality Standards
+
+### Biome Configuration
+- **Quote Style**: Single quotes
+- **Semicolons**: Always
+- **Indentation**: 2 spaces
+- **Line Width**: 100 characters
+- **Trailing Commas**: ES5 style
+- **Arrow Parentheses**: Always
+
+### Linting Rules
+- `noExplicitAny`: Error (use `biome-ignore` comments when necessary, e.g., generic function wrappers)
+- `noUnusedVariables`: Error
+- `noUnusedImports`: Auto-fixed
+- Recommended rules enabled
+
+### Code Style Requirements
+1. **JSDoc Comments**: Required for exported functions
+2. **Type Safety**: Avoid `any`, use proper types or `unknown`
+3. **Error Handling**: Always use `CliError` for user-facing errors
+4. **Async/Await**: Prefer over promises
+5. **Terminal Safety**: Use `getSafeText()` for emoji/Unicode text
+6. **Progress Indicators**: Use `createSpinner()` for operations
+7. **Output Formatting**: Use `formatOutput()` for structured data
+
+## Environment-Specific Behavior
+
+### Terminal Detection
+- Automatically detects terminal capabilities (Unicode/emoji support)
+- Falls back to ASCII when terminal doesn't support emojis
+- Respects `TERM`, `NO_COLOR`, `FORCE_COLOR` environment variables
+- Detects piped output (`isStdoutPiped()`) to suppress interactive elements
+
+### Non-Interactive Mode
+- Detects CI/CD environments (GitHub Actions, GitLab CI, etc.)
+- Shows security warnings when secrets are in environment variables
+- Suppresses interactive prompts when appropriate
+
+### Verbose/Debug Mode
+- `--verbose` flag or `DEBUG=1` environment variable
+- Shows detailed API calls, rate limit info, retry attempts
+- Uses `getVerboseMode()` utility to check both sources
+
+## Security Considerations
+
+### Secret Management
+- **Preferred**: Store in credential files (`~/.ipb/.credentials.json` or profiles)
+- **Warning**: Environment variables are detected and warned about
+- **File Permissions**: Credential files use `0o600` (read/write owner only)
+- **Atomic Writes**: `writeFileAtomic()` ensures data integrity
+
+### Input Validation
+- Always validate user inputs (amounts, account IDs, file paths)
+- Use validation utilities: `validateAmount()`, `validateAccountId()`, `validateFilePath()`
+- Provide clear error messages with suggestions
+
+## Command Development Guidelines
+
+### Adding New Commands
+1. Create file in `src/cmds/` following naming convention (`kebab-case.ts`)
+2. Export function following pattern: `export async function commandName(options: Options)`
+3. Add to `src/cmds/index.ts` exports
+4. Register in `src/index.ts` with `.command()`, `.description()`, `.action()`
+5. Add options using `.option()` or `.requiredOption()`
+6. Add tests in `test/cmds/`
+7. Update shell completion scripts if needed
+8. Add to `GENERATED_README.md` (auto-generated via `npm run docs`)
+
+### Command Options
+- Use `CommonOptions` interface for shared options (verbose, json, yaml, output, profile, etc.)
+- Add command-specific options to command's `Options` interface
+- Use `.requiredOption()` for required inputs
+- Provide helpful descriptions and examples
+
+### Output Formatting
+- Support `--json`, `--yaml`, `--output` flags via `formatOutput()`
+- Automatically detect piped output and use JSON format
+- Use `printTable()` for tabular data (with `cli-table3`)
+- Show file sizes in progress indicators using `formatFileSize()`
+
+### Destructive Operations
+- Require confirmation using `confirmDestructiveOperation()`
+- Support `--yes` flag to bypass confirmation
+- Check for non-interactive mode to auto-confirm when appropriate
+
+## File Operations
+
+### File Path Handling
+- Use `validateFilePath()` for reading files
+- Use `validateFilePathForWrite()` for writing files
+- Use `normalizeFilePath()` to expand `~` and resolve paths
+- Check file extensions and permissions
+
+### Atomic Operations
+- Use `writeFileAtomic()` for credential files and critical data
+- Ensures data integrity with temp file + rename pattern
+- Handles permissions and cleanup automatically
+
+## API Integration
+
+### API Client Initialization
+- Use `initializeApi()` for Card API
+- Use `initializePbApi()` for Programmable Banking API
+- Both support credential overrides via options
+- Both validate credentials before initialization
+
+### Rate Limiting
+- All API calls wrapped in `withRetry()` for automatic retry
+- Exponential backoff with jitter
+- Detects rate limits from error responses
+- Shows rate limit info in verbose mode
+
+### Error Handling
+- API errors caught and converted to `CliError` when appropriate
+- Rate limit errors automatically retried
+- Network errors provide actionable suggestions
+- Validation errors show specific field requirements
+
+## Testing Guidelines
+
+### Test File Structure
+- One test file per command in `test/cmds/`
+- Mock external dependencies (API clients, file system, etc.)
+- Test both success and error cases
+- Use `vi.hoisted()` for shared mocks
+
+### Mock Patterns
+- Mock `../../src/utils.ts` with actual implementations + overrides
+- Mock `../../src/index.ts` for credentials and shared exports
+- Mock file system operations
+- Mock terminal capabilities for consistent output
+
+## Common Utilities Reference
+
+### Credential Management
+- `loadCredentialsFile()`: Load credentials with profile support
+- `readCredentialsFile()`: Read credentials file async
+- `readCredentialsFileSync()`: Read credentials file sync (module init)
+- `writeCredentialsFile()`: Write credentials with atomic operation
+- `validateCredentialsFile()`: Validate required fields
+
+### Profile Management
+- `getActiveProfile()`: Get currently active profile name
+- `setActiveProfile()`: Set active profile (atomic write)
+- `readProfile()`: Read profile credentials
+- `deleteProfile()`: Delete profile and credentials
+- `listProfiles()`: List all available profiles
+
+### Terminal & Output
+- `getSafeText()`: Get terminal-safe text (emoji fallbacks)
+- `formatOutput()`: Format data as JSON/YAML/table
+- `printTable()`: Print formatted table using cli-table3
+- `createSpinner()`: Create progress spinner (auto-handles pipe mode)
+- `formatFileSize()`: Format bytes as human-readable size
+
+### Validation
+- `validateAmount()`: Validate monetary amounts
+- `validateAccountId()`: Validate account ID format
+- `validateFilePath()`: Validate file path for reading
+- `validateFilePathForWrite()`: Validate file path for writing
+
+### API & Retry
+- `initializeApi()`: Initialize Card API client
+- `initializePbApi()`: Initialize Programmable Banking API client
+- `withRetry()`: Wrap function with retry logic (rate limit handling)
+- `detectRateLimit()`: Detect rate limit from error
+- `formatRateLimitInfo()`: Format rate limit info for display
+
+### Security & Environment
+- `warnAboutSecretUsage()`: Warn about secrets in environment variables
+- `detectSecretUsageFromEnv()`: Detect secrets loaded from env vars
+- `isNonInteractiveEnvironment()`: Detect CI/CD/script environments
+- `getVerboseMode()`: Get effective verbose mode (flag or DEBUG env)
+
+## Important Notes
+
+1. **ESM Only**: All imports must use `.js` extension (TypeScript requirement for ESM)
+2. **Type Safety**: Strict TypeScript with `noUncheckedIndexedAccess`
+3. **Terminal Safety**: Always use `getSafeText()` for emoji/Unicode output
+4. **Error Context**: Use `withCommandContext()` to attach command names to errors
+5. **Rate Limiting**: Always use `withRetry()` for API calls
+6. **Security**: Prefer credential files over environment variables for secrets
+7. **Testing**: Mock terminal capabilities for consistent test output
+8. **Documentation**: Generate docs with `npm run docs` (updates GENERATED_README.md)
+
+## When Writing Code
+
+- Follow existing patterns in the codebase
+- Use provided utility functions instead of reinventing
+- Check for terminal capabilities before using advanced features
+- Support both interactive and non-interactive (CI/CD) environments
+- Provide clear, actionable error messages
+- Include JSDoc comments for exported functions
+- Write tests for new commands
+- Run `npm run lint:fix` before committing
+
