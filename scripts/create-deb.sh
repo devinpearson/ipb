@@ -11,8 +11,8 @@ ARCH=${2:-"amd64"}
 echo "Creating .deb package for IPB CLI v${VERSION} (${ARCH})..."
 
 # Check if binary exists
-if [ ! -f "dist/investec-ipb-linux-${ARCH}" ]; then
-  echo "Error: Binary not found at dist/investec-ipb-linux-${ARCH}"
+if [ ! -f "dist/ipb-linux-${ARCH}" ]; then
+  echo "Error: Binary not found at dist/ipb-linux-${ARCH}"
   echo "Building binary first..."
   npm run pkg:linux
 fi
@@ -29,9 +29,9 @@ mkdir -p "${PACKAGE_DIR}/usr/local/bin"
 mkdir -p "${PACKAGE_DIR}/DEBIAN"
 
 # Copy binary
-BINARY_SOURCE="dist/investec-ipb-linux-${ARCH}"
+BINARY_SOURCE="dist/ipb-linux-${ARCH}"
 if [ "$ARCH" = "arm64" ]; then
-  BINARY_SOURCE="dist/investec-ipb-linux-arm64"
+  BINARY_SOURCE="dist/ipb-linux-arm64"
 fi
 
 cp "${BINARY_SOURCE}" "${PACKAGE_DIR}/usr/local/bin/ipb"

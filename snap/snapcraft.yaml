@@ -30,7 +30,7 @@ parts:
     plugin: dump
     source: dist/
     organize:
-      investec-ipb-linux-x64: usr/bin/ipb
+      ipb-linux-x64: usr/bin/ipb
     prime:
       - usr/bin/ipb
 

@@ -69,7 +69,7 @@ export async function transferCommand(
   }
 
   const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '💳 transfering...').start();
+  const spinner = createSpinner(!disableSpinner, '💳 transferring...').start();
   const api = await initializePbApi(credentials, options);
 
   try {

@@ -122,12 +122,12 @@ sudo apt-get install -f  # Install dependencies if needed
 **Direct Binary:**
 ```sh
 # x64
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/investec-ipb-linux-x64 -o ipb
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-linux-x64 -o ipb
 chmod +x ipb
 sudo mv ipb /usr/local/bin/
 
 # ARM64
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/investec-ipb-linux-arm64 -o ipb
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-linux-arm64 -o ipb
 chmod +x ipb
 sudo mv ipb /usr/local/bin/
 ```

@@ -56,13 +56,13 @@ npm run pkg:clean
 ### Output
 
 Binaries are generated in the `dist/` directory with the following naming convention:
-- `investec-ipb-macos-x64` (macOS Intel)
-- `investec-ipb-macos-arm64` (macOS Apple Silicon)
-- `investec-ipb-linux-x64` (Linux x64)
-- `investec-ipb-linux-arm64` (Linux ARM64)
-- `investec-ipb-win-x64.exe` (Windows x64)
+- `ipb-macos-x64` (macOS Intel)
+- `ipb-macos-arm64` (macOS Apple Silicon)
+- `ipb-linux-x64` (Linux x64)
+- `ipb-linux-arm64` (Linux ARM64)
+- `ipb-win-x64.exe` (Windows x64)
 
-**Note:** The binary names use the package name (`investec-ipb`) from `package.json`.
+**Note:** The binary names use the `ipb` prefix for the installed command name.
 
 ### Build Architecture
 
@@ -188,7 +188,7 @@ See `.github/workflows/release.yml` for the automated release workflow.
 
 2. **Calculate SHA256 checksums:**
    ```bash
-   shasum -a 256 dist/investec-ipb-*
+   shasum -a 256 dist/ipb-*
    ```
 
 3. **Create a GitHub Release:**
@@ -218,7 +218,7 @@ Create a Scoop manifest in a separate repository or in the main repo under `scoo
   "license": "MIT",
   "url": "https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-win-x64.exe",
   "hash": "SHA256_CHECKSUM",
-  "bin": "ipb-win-x64.exe",
+  "bin": ["ipb-win-x64.exe", "ipb.exe"],
   "autoupdate": {
     "url": "https://github.com/devinpearson/ipb/releases/download/v$version/ipb-win-x64.exe"
   }
@@ -260,7 +260,7 @@ sudo apt-get install fakeroot dpkg-dev
 
 # Create package structure
 mkdir -p ipb_0.8.3/usr/local/bin
-cp dist/investec-ipb-linux-x64 ipb_0.8.3/usr/local/bin/ipb
+cp dist/ipb-linux-x64 ipb_0.8.3/usr/local/bin/ipb
 chmod +x ipb_0.8.3/usr/local/bin/ipb
 
 # Create control file
@@ -343,8 +343,8 @@ Before releasing:
 
 1. **Test binaries locally:**
    ```bash
-   ./dist/investec-ipb-macos-arm64 --version
-   ./dist/investec-ipb-macos-arm64 --help
+   ./dist/ipb-macos-arm64 --version
+   ./dist/ipb-macos-arm64 --help
    ```
 
 2. **Test Homebrew formula:**

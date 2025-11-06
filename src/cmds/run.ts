@@ -65,11 +65,13 @@ export async function runCommand(options: Options) {
       true,
       `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
     ).start();
-    const data = await fsPromises.readFile(envFilePath, 'utf8');
-    spinner.stop();
-    const lines = data.split('\n');
-
-    environmentvariables = convertToJson(lines);
+    try {
+      const data = await fsPromises.readFile(envFilePath, 'utf8');
+      const lines = data.split('\n');
+      environmentvariables = convertToJson(lines);
+    } finally {
+      spinner.stop();
+    }
   }
   // Convert the environmentvariables to a string
   const environmentvariablesString = JSON.stringify(environmentvariables);
@@ -79,8 +81,12 @@ export async function runCommand(options: Options) {
     true,
     `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
   ).start();
-  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
-  codeSpinner.stop();
+  let code: string;
+  try {
+    code = await fsPromises.readFile(normalizedFilename, 'utf8');
+  } finally {
+    codeSpinner.stop();
+  }
   // Run the code
   const executionItems = await run(transaction, code, environmentvariablesString);
   executionItems.forEach((item) => {
@@ -104,7 +110,7 @@ function convertToJson(arr: string[]) {
         if (equalsIndex !== -1) {
           const key = line.substring(0, equalsIndex).trim();
           const fullValue = line.substring(equalsIndex + 1).trim();
-          if (key && fullValue) {
+          if (key) {
             output[key] = fullValue;
           }
         }

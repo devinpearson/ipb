@@ -52,7 +52,8 @@ for binary in "${BINARIES[@]}"; do
     # Update checksum in formula
     if [[ "$OSTYPE" == "darwin"* ]]; then
       sed -i '' "s|url \".*$binary_name\"|url \"https://github.com/devinpearson/ipb/releases/download/v$VERSION/$binary_name\"|" "$FORMULA_FILE"
-      sed -i '' "s|sha256 \".*\" # $binary_name|sha256 \"$checksum\" # $binary_name|" "$FORMULA_FILE"
+      #sed -i '' "s|sha256 \".*\" # $binary_name|sha256 \"$checksum\" # $binary_name|" "$FORMULA_FILE"
+      sed -i '' "/url \".*$binary_name\"/,/sha256/s|sha256 \".*\"|sha256 \"$checksum\"|" "$FORMULA_FILE"
     else
       sed -i "s|url \".*$binary_name\"|url \"https://github.com/devinpearson/ipb/releases/download/v$VERSION/$binary_name\"|" "$FORMULA_FILE"
       sed -i "s|sha256 \".*\" # $binary_name|sha256 \"$checksum\" # $binary_name|" "$FORMULA_FILE"

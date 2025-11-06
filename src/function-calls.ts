@@ -229,7 +229,7 @@ export async function transferMultiple(args: unknown): Promise<Transfer[]> {
   console.log(`💳 transfering for account ${options.accountId}`);
   const transfer: TransferMultiple = {
     beneficiaryAccountId: options.beneficiaryAccountId,
-    amount: '10', // hardcoded for testing
+    amount: options.amount,
     myReference: options.myReference,
     theirReference: options.theirReference,
   };

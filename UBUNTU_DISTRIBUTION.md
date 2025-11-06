@@ -37,7 +37,7 @@ mkdir -p ipb_0.8.3/usr/local/bin
 mkdir -p ipb_0.8.3/DEBIAN
 
 # Copy binary
-cp dist/investec-ipb-linux-x64 ipb_0.8.3/usr/local/bin/ipb
+cp dist/ipb-linux-x64 ipb_0.8.3/usr/local/bin/ipb
 chmod +x ipb_0.8.3/usr/local/bin/ipb
 
 # Create control file
@@ -75,9 +75,9 @@ A PPA allows users to add your repository and install/update via `apt`.
 
 ### Prerequisites
 
-1. **Launchpad Account** - Sign up at https://launchpad.net
+1. **Launchpad Account** - Sign up at [Launchpad](https://launchpad.net)
 2. **GPG Key** - For signing packages
-3. **PPA Repository** - Create at https://launchpad.net/people/+new-ppa
+3. **PPA Repository** - Create at [Launchpad PPA creation page](https://launchpad.net/people/+new-ppa)
 
 ### Setup Steps
 
@@ -171,7 +171,7 @@ sudo snap install ipb_0.8.3_amd64.snap --dangerous
 
 ### Publishing to Snap Store
 
-1. Register at https://snapcraft.io
+1. Register at [Snap Store](https://snapcraft.io)
 2. Upload snap: `snapcraft upload --release=stable ipb_0.8.3_amd64.snap`
 3. Users install: `sudo snap install ipb`
 
@@ -187,7 +187,7 @@ npm run pkg:linux
 
 # Create AppDir structure
 mkdir -p AppDir/usr/bin
-cp dist/investec-ipb-linux-x64 AppDir/usr/bin/ipb
+cp dist/ipb-linux-x64 AppDir/usr/bin/ipb
 chmod +x AppDir/usr/bin/ipb
 
 # Create AppImage (requires appimagetool)
@@ -210,13 +210,13 @@ Simplest method - users download and install manually.
 
 ```bash
 # Download binary
-wget https://github.com/devinpearson/ipb/releases/download/v0.8.3/investec-ipb-linux-x64
+wget https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-linux-x64
 
 # Make executable
-chmod +x investec-ipb-linux-x64
+chmod +x ipb-linux-x64
 
 # Install to system
-sudo mv investec-ipb-linux-x64 /usr/local/bin/ipb
+sudo mv ipb-linux-x64 /usr/local/bin/ipb
 
 # Verify
 ipb --version

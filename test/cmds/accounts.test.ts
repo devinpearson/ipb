@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accountsCommand } from '../../src/cmds/accounts';
 
 vi.mock('../../src/index.ts', () => ({
@@ -34,6 +34,14 @@ const mockApi = {
 (initializePbApi as vi.Mock).mockResolvedValue(mockApi);
 
 describe('accountsCommand', () => {
+  let consoleLogSpy: { mockRestore: () => void } | undefined;
+
+  afterEach(() => {
+    if (consoleLogSpy) {
+      consoleLogSpy.mockRestore();
+      consoleLogSpy = undefined;
+    }
+  });
   it('should fetch and display accounts correctly', async () => {
     const options = {
       host: 'test-host',
@@ -55,7 +63,7 @@ describe('accountsCommand', () => {
 
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
-    console.log = vi.fn();
+    consoleLogSpy = vi.spyOn(console, 'log');
     const { formatOutput } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
@@ -84,7 +92,7 @@ describe('accountsCommand', () => {
 
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
-    console.log = vi.fn();
+    consoleLogSpy = vi.spyOn(console, 'log');
     const { formatOutput } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
