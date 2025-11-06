@@ -28,7 +28,12 @@ interface Options extends CommonOptions {
  * @throws {CliError} When card key is missing, files don't exist, or deployment fails
  */
 export async function deployCommand(options: Options) {
-  printTitleBox();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+
+  if (!isPiped) {
+    printTitleBox();
+  }
 
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
@@ -46,7 +51,7 @@ export async function deployCommand(options: Options) {
     return;
   }
 
-  const disableSpinner = options.spinner === true; // default false
+  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 starting deployment...').start();
   let envObject = {};
   const api = await initializeApi(credentials, options);

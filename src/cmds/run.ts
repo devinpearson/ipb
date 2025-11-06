@@ -100,10 +100,13 @@ function convertToJson(arr: string[]) {
       const _txt = line?.trim();
 
       if (line) {
-        const key = line.split('=')[0]?.trim();
-        const value = line.split('=')[1]?.trim();
-        if (key && value) {
-          output[key] = value;
+        const equalsIndex = line.indexOf('=');
+        if (equalsIndex !== -1) {
+          const key = line.substring(0, equalsIndex).trim();
+          const fullValue = line.substring(equalsIndex + 1).trim();
+          if (key && fullValue) {
+            output[key] = fullValue;
+          }
         }
       }
     }

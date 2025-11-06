@@ -1,4 +1,5 @@
 import { input } from '@inquirer/prompts';
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   confirmDestructiveOperation,
@@ -36,7 +37,7 @@ export async function payCommand(
   }
   // Beneficiary ID validation (similar format to account ID)
   if (!beneficiaryId || beneficiaryId.trim().length === 0) {
-    throw new Error('Beneficiary ID is required');
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Beneficiary ID is required');
   }
 
   if (!amount) {

@@ -23,7 +23,15 @@
     "tapes": "./scripts/tapes.sh",
     "docs": "npm run build && node bin/index.js docs",
     "docs:source": "node --loader tsx src/cmds/docs.ts",
-    "prepublishOnly": "npm run build && npm run docs"
+    "prepublishOnly": "npm run build && npm run docs",
+    "bundle": "npm run build && node esbuild.config.js",
+    "bundle:minify": "npm run build && node esbuild.config.js --minify",
+    "pkg:build": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --out-path dist --no-bytecode --public",
+    "pkg:macos": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-macos-x64,node20-macos-arm64 --out-path dist --no-bytecode --public",
+    "pkg:linux": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-linux-x64,node20-linux-arm64 --out-path dist --no-bytecode --public",
+    "pkg:windows": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-win-x64 --out-path dist --no-bytecode --public",
+    "pkg:all": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-macos-x64,node20-macos-arm64,node20-linux-x64,node20-linux-arm64,node20-win-x64 --out-path dist --no-bytecode --public",
+    "pkg:clean": "rimraf ./dist ./dist-bundle"
   },
   "keywords": [
     "investec",
@@ -68,11 +76,31 @@
     "@commander-js/extra-typings": "^14.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.19.0",
+    "@yao-pkg/pkg": "^6.10.1",
+    "esbuild": "^0.25.12",
     "rimraf": "^6.1.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "files": [
     "bin"
-  ]
+  ],
+  "pkg": {
+    "scripts": [
+      "dist-bundle/index.cjs"
+    ],
+    "assets": [
+      "dist-bundle/templates/**/*",
+      "dist-bundle/assets/**/*",
+      "dist-bundle/instructions.txt"
+    ],
+    "outputPath": "dist",
+    "targets": [
+      "node20-macos-x64",
+      "node20-macos-arm64",
+      "node20-linux-x64",
+      "node20-linux-arm64",
+      "node20-win-x64"
+    ]
+  }
 }

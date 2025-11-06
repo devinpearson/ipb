@@ -2,6 +2,7 @@ import https from 'node:https';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import OpenAI from 'openai';
+import { CliError, ERROR_CODES } from '../errors.js';
 import { availableFunctions, tools } from '../function-calls.js';
 import { credentials, printTitleBox } from '../index.js';
 
@@ -91,8 +92,12 @@ async function generateResponse(prompt: string, instructions: string): Promise<s
     }
     throw new Error('Invalid response format from OpenAI');
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error generating code:', error);
-    return null;
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      `Error generating code: ${errorMessage}`
+    );
   }
 }
 

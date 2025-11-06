@@ -9,6 +9,7 @@ import { validateFilePathForWrite } from '../utils.js';
  */
 interface CommandInfo {
   name: string;
+  path: string; // Full command path (e.g., "beneficiaries list")
   aliases: string[];
   description: string;
   arguments: Array<{ name: string; description: string; required: boolean }>;
@@ -18,14 +19,36 @@ interface CommandInfo {
 }
 
 /**
+ * Generates a GitHub-compatible slug from a heading text.
+ * GitHub's slug algorithm:
+ * - Lowercase the text
+ * - Remove punctuation (parentheses, etc.)
+ * - Replace spaces with hyphens
+ * - Collapse consecutive hyphens
+ * - Trim leading/trailing hyphens
+ * @param text - The heading text to slugify
+ * @returns GitHub-compatible slug
+ */
+function githubSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove punctuation (parentheses, etc.)
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Collapse consecutive hyphens
+    .replace(/^-+|-+$/g, ''); // Trim leading/trailing hyphens
+}
+
+/**
  * Extracts command information from a Commander.js command.
  * @param command - Commander.js command instance
  * @param globalOptionFlags - Set of global option flags to filter out
+ * @param parentPath - Full path of parent command (for nested subcommands)
  * @returns Command information object
  */
 function extractCommandInfo(
   command: Command,
-  globalOptionFlags: Set<string> = new Set()
+  globalOptionFlags: Set<string> = new Set(),
+  parentPath: string = ''
 ): CommandInfo {
   const args: Array<{ name: string; description: string; required: boolean }> = [];
   const options: Array<{ flags: string; description: string; required: boolean }> = [];
@@ -90,18 +113,23 @@ function extractCommandInfo(
     // If help generation fails, skip examples
   }
 
+  // Build full command path
+  const cmdName = command.name();
+  const fullPath = parentPath ? `${parentPath} ${cmdName}` : cmdName;
+
   // Extract subcommands
   const subcommands: CommandInfo[] = [];
   const subcmds = command.commands || [];
   for (const subcmd of subcmds) {
-    const cmdName = subcmd.name();
-    if (cmdName && cmdName !== '<command>') {
-      subcommands.push(extractCommandInfo(subcmd, globalOptionFlags));
+    const subcmdName = subcmd.name();
+    if (subcmdName && subcmdName !== '<command>') {
+      subcommands.push(extractCommandInfo(subcmd, globalOptionFlags, fullPath));
     }
   }
 
   return {
-    name: command.name(),
+    name: cmdName,
+    path: fullPath,
     aliases: command.aliases(),
     description: command.description() || '',
     arguments: args,
@@ -138,8 +166,8 @@ function formatCommandAsMarkdown(
     lines.push(`${commandInfo.description}\n`);
   }
 
-  // Usage
-  let usage = `\`ipb ${commandInfo.name}`;
+  // Usage - use full command path instead of just name
+  let usage = `\`ipb ${commandInfo.path}`;
   if (commandInfo.arguments.length > 0) {
     for (const arg of commandInfo.arguments) {
       if (arg.required) {
@@ -265,9 +293,28 @@ export function generateCommandDocumentation(program: Command): string {
     }
   }
 
-  // Generate table of contents
+  // Generate table of contents with GitHub-compatible slugs
+  // Track base slugs to handle duplicates (GitHub appends -1, -2, etc. to duplicates)
+  const slugCounts = new Map<string, number>();
+  
   for (const cmd of commands) {
-    lines.push(`- [${cmd.name}](#${cmd.name.toLowerCase().replace(/\s+/g, '-')})`);
+    // Build the heading text (same as what will be in the markdown)
+    let headingText = cmd.name;
+    if (cmd.aliases.length > 0) {
+      headingText += ` (aliases: ${cmd.aliases.join(', ')})`;
+    }
+    
+    // Generate base slug
+    const baseSlug = githubSlug(headingText);
+    
+    // Handle duplicate slugs by appending -n (GitHub behavior)
+    const count = slugCounts.get(baseSlug) || 0;
+    slugCounts.set(baseSlug, count + 1);
+    
+    // First occurrence uses base slug, subsequent ones get -1, -2, etc.
+    const slug = count > 0 ? `${baseSlug}-${count}` : baseSlug;
+    
+    lines.push(`- [${cmd.name}](#${slug})`);
   }
   lines.push('');
 

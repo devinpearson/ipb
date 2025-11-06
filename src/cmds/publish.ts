@@ -27,7 +27,7 @@ export async function publishCommand(options: Options) {
   // Validate required codeId option
   if (!options.codeId || options.codeId.trim() === '') {
     throw new CliError(
-      ERROR_CODES.MISSING_API_TOKEN,
+      ERROR_CODES.MISSING_CODE_ID,
       'Code ID is required. Use -i or --code-id to specify the code ID from a previous upload command.'
     );
   }

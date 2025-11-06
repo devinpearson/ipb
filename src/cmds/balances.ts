@@ -55,32 +55,35 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   }
   const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching balances...').start();
-  const api = await initializePbApi(credentials, options);
+  try {
+    const api = await initializePbApi(credentials, options);
 
-  // Use retry logic with rate limit handling
-  const result = await withRetry(() => api.getAccountBalances(accountId), {
-    maxRetries: 3,
-    verbose: options.verbose,
-  });
-  spinner.stop();
-
-  // Always use structured output when piped or when explicitly requested
-  if (options.json || options.yaml || options.output || isPiped) {
-    await formatOutput(result.data, {
-      json: options.json,
-      yaml: options.yaml,
-      output: options.output,
+    // Use retry logic with rate limit handling
+    const result = await withRetry(() => api.getAccountBalances(accountId), {
+      maxRetries: 3,
+      verbose: options.verbose,
     });
-    return;
-  }
 
-  // Default formatted text output (only when not piped)
-  console.log(`Account Id ${result.data.accountId}`);
-  console.log(`Currency: ${result.data.currency}`);
-  console.log('Balances:');
-  console.log(`Current: ${result.data.currentBalance}`);
-  console.log(`Available: ${result.data.availableBalance}`);
-  console.log(`Budget: ${result.data.budgetBalance}`);
-  console.log(`Straight: ${result.data.straightBalance}`);
-  console.log(`Cash: ${result.data.cashBalance}`);
+    // Always use structured output when piped or when explicitly requested
+    if (options.json || options.yaml || options.output || isPiped) {
+      await formatOutput(result.data, {
+        json: options.json,
+        yaml: options.yaml,
+        output: options.output,
+      });
+      return;
+    }
+
+    // Default formatted text output (only when not piped)
+    console.log(`Account Id ${result.data.accountId}`);
+    console.log(`Currency: ${result.data.currency}`);
+    console.log('Balances:');
+    console.log(`Current: ${result.data.currentBalance}`);
+    console.log(`Available: ${result.data.availableBalance}`);
+    console.log(`Budget: ${result.data.budgetBalance}`);
+    console.log(`Straight: ${result.data.straightBalance}`);
+    console.log(`Cash: ${result.data.cashBalance}`);
+  } finally {
+    spinner.stop();
+  }
 }

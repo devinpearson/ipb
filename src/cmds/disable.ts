@@ -33,13 +33,16 @@ export async function disableCommand(options: Options) {
 
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '🍄 disabling code on card...').start();
-  const api = await initializeApi(credentials, options);
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const result = await api.toggleCode(cardKey, false);
-  spinner.stop();
-  if (!result.data.result.Enabled) {
-    console.log('✅ code disabled successfully');
-  } else {
-    console.log('❌ code disable failed');
+    const result = await api.toggleCode(cardKey, false);
+    if (!result.data.result.Enabled) {
+      console.log('✅ code disabled successfully');
+    } else {
+      console.log('❌ code disable failed');
+    }
+  } finally {
+    spinner.stop();
   }
 }

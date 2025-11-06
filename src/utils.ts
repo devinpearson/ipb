@@ -134,6 +134,31 @@ export function getTempDir(): string {
 }
 
 /**
+ * Gets the directory name of the current module.
+ * Works in both normal Node.js ESM and when packaged with pkg.
+ * When packaged with pkg, templates are bundled in the snapshot and accessible via snapshot paths.
+ * @param metaUrl - The import.meta.url from the calling module (defaults to import.meta.url)
+ * @returns The directory path of the current module
+ */
+export function getModuleDirname(metaUrl: string = import.meta.url): string {
+  // Normal ESM: use import.meta.url
+  const fileUrl = new URL(metaUrl);
+  let dirPath = path.dirname(fileUrl.pathname);
+  
+  // When packaged with pkg, paths may be in snapshot format
+  // pkg uses snapshot paths like /snapshot/project/...
+  // We need to normalize the path for both cases
+  if (dirPath.startsWith('/snapshot/')) {
+    // In pkg snapshot, paths are relative to the snapshot root
+    // Return the snapshot path as-is since templates are bundled there
+    return dirPath;
+  }
+  
+  // Normal Node.js path
+  return dirPath;
+}
+
+/**
  * Opens a file in the user's editor, respecting the EDITOR environment variable.
  * According to clig.dev guidelines, should check EDITOR when prompting for multi-line input.
  *
@@ -2324,6 +2349,8 @@ export async function getFileSize(filepath: string): Promise<number> {
 export interface Spinner {
   start: (text?: string) => Spinner;
   stop: () => Spinner;
+  succeed: (text?: string) => Spinner;
+  fail: (text?: string) => Spinner;
   text?: string;
 }
 
@@ -2345,6 +2372,14 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
         return this;
       },
       stop() {
+        // Don't log anything when disabled
+        return this;
+      },
+      succeed(_text?: string) {
+        // Don't log anything when disabled
+        return this;
+      },
+      fail(_text?: string) {
         // Don't log anything when disabled
         return this;
       },

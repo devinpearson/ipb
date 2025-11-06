@@ -174,11 +174,12 @@ export async function getAccountTransactions(args: unknown): Promise<AccountTran
       'getAccountTransactions requires { accountId: string; fromDate: string; toDate: string }'
     );
   }
+  const fromDate = options.fromDate;
   const api = await initializePbApi(credentials, {} as Options);
   console.log(
-    `💳 fetching transactions for account ${options.accountId}, fromDate: ${options.fromDate}, toDate: ${options.toDate}`
+    `💳 fetching transactions for account ${options.accountId}, fromDate: ${fromDate}, toDate: ${options.toDate}`
   );
-  const result = await api.getAccountTransactions(options.accountId, '2025-05-24', options.toDate);
+  const result = await api.getAccountTransactions(options.accountId, fromDate, options.toDate);
   const transactions = result.data.transactions;
   return transactions;
 }

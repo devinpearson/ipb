@@ -59,7 +59,9 @@ This repository is crafted with ❤️ by our talented community members. It's a
 
 ## Installation
 
-Before installing, [download and install Node.js](https://nodejs.org/en/download/).
+### npm (Recommended - requires Node.js)
+
+Before installing, [download and install Node.js](https://nodejs.org/en/download/) (version 20 or higher).
 
 To install or upgrade the CLI, run the following command:
 
@@ -72,6 +74,75 @@ On Windows, you may need to set your execution policy to allow running scripts. 
 ```sh
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
+
+### Homebrew (macOS/Linux - no Node.js required)
+
+Install via Homebrew for a standalone binary (no Node.js installation needed):
+
+```sh
+brew tap devinpearson/ipb
+brew install ipb
+```
+
+Or install directly:
+
+```sh
+brew install devinpearson/ipb/ipb
+```
+
+### Direct Download (no Node.js required)
+
+Download pre-built binaries from [GitHub Releases](https://github.com/devinpearson/ipb/releases).
+
+**macOS:**
+```sh
+# Apple Silicon (M1/M2/M3)
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-macos-arm64 -o ipb
+chmod +x ipb
+sudo mv ipb /usr/local/bin/
+
+# Intel
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-macos-x64 -o ipb
+chmod +x ipb
+sudo mv ipb /usr/local/bin/
+```
+
+**Linux:**
+
+**Ubuntu/Debian (.deb package):**
+```sh
+# Download .deb package
+wget https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb_0.8.3_amd64.deb
+
+# Install
+sudo dpkg -i ipb_0.8.3_amd64.deb
+sudo apt-get install -f  # Install dependencies if needed
+```
+
+**Direct Binary:**
+```sh
+# x64
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/investec-ipb-linux-x64 -o ipb
+chmod +x ipb
+sudo mv ipb /usr/local/bin/
+
+# ARM64
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/investec-ipb-linux-arm64 -o ipb
+chmod +x ipb
+sudo mv ipb /usr/local/bin/
+```
+
+**Ubuntu PPA (if available):**
+```sh
+sudo add-apt-repository ppa:your-launchpad-id/ipb
+sudo apt update
+sudo apt install ipb
+```
+
+**Windows:**
+Download `ipb-win-x64.exe` from the [releases page](https://github.com/devinpearson/ipb/releases), rename it to `ipb.exe`, and add it to your PATH.
+
+For more distribution options, see [DISTRIBUTION.md](./DISTRIBUTION.md).
 
 ### Shell Autocomplete
 

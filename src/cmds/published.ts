@@ -23,11 +23,15 @@ export async function publishedCommand(options: Options) {
   printTitleBox();
   const disableSpinner = options.spinner === true; // default false
   const spinner = createSpinner(!disableSpinner, '🚀 fetching code...').start();
-  const api = await initializeApi(credentials, options);
+  let code: string;
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const result = await api.getPublishedCode(cardKey);
-  const code = result.data.result.code;
-  spinner.stop();
+    const result = await api.getPublishedCode(cardKey);
+    code = result.data.result.code;
+  } finally {
+    spinner.stop();
+  }
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
   console.log(`💾 saving to file: ${normalizedFilename}`);
   await fsPromises.writeFile(normalizedFilename, code, 'utf8');

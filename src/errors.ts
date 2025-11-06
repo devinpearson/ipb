@@ -36,6 +36,7 @@ export const ERROR_CODES = {
   MISSING_ACCOUNT_ID: 'E4012', // Added for balances command
   INVALID_INPUT: 'E4013', // Added for input validation errors
   RATE_LIMIT_EXCEEDED: 'E4014', // Added for rate limiting errors
+  MISSING_CODE_ID: 'E4015', // Added for missing code ID
   // Add more as needed
 };
 

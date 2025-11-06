@@ -91,7 +91,7 @@ describe('accountsCommand', () => {
 
     expect(formatOutput).toHaveBeenCalledWith(
       mockAccounts,
-      { json: true, output: undefined },
+      { json: true, yaml: undefined, output: undefined },
       expect.any(Function)
     );
   });

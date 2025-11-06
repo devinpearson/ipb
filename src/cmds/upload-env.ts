@@ -20,13 +20,18 @@ export async function uploadEnvCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
   const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '🚀 uploading env...');
+  const spinner = createSpinner(!disableSpinner, '🚀 uploading env...').start();
   const api = await initializeApi(credentials, options);
 
-  const raw = { variables: {} };
-  const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
-  raw.variables = JSON.parse(variables);
-  const _result = await api.uploadEnv(cardKey, raw);
-  spinner.stop();
-  console.log(`🎉 env uploaded`);
+  try {
+    const raw = { variables: {} };
+    const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
+    raw.variables = JSON.parse(variables);
+    const _result = await api.uploadEnv(cardKey, raw);
+    spinner.succeed();
+    console.log(`🎉 env uploaded`);
+  } catch (error) {
+    spinner.fail();
+    throw error;
+  }
 }

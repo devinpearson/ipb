@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 
 const agent = new https.Agent({
@@ -108,7 +109,17 @@ export async function aiCommand(prompt: string, options: Options) {
     console.log(response?.description);
   }
   console.log('');
-  const output = response?.code as string;
+  
+  // Validate OpenAI response before using it
+  if (!response || typeof response.code !== 'string' || response.code.trim() === '') {
+    console.error(chalk.red('Error: Invalid or missing code in OpenAI response'));
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      'OpenAI response is missing or invalid. The response must contain a non-empty code string.'
+    );
+  }
+  
+  const output = response.code;
   const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner } = await import(
     '../utils.js'
   );
@@ -119,8 +130,11 @@ export async function aiCommand(prompt: string, options: Options) {
     true,
     `💾 saving to file: ${chalk.greenBright(normalizedFilename)} (${formatFileSize(outputSize)})...`
   ).start();
-  await fsPromises.writeFile(normalizedFilename, output, 'utf8');
-  spinner.stop();
+  try {
+    await fsPromises.writeFile(normalizedFilename, output, 'utf8');
+  } finally {
+    spinner.stop();
+  }
 
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 generated code saved to file (${formatFileSize(finalSize)})`);
@@ -136,8 +150,11 @@ export async function aiCommand(prompt: string, options: Options) {
       true,
       `💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)} (${formatFileSize(envSize)})...`
     ).start();
-    await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
-    envSpinner.stop();
+    try {
+      await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
+    } finally {
+      envSpinner.stop();
+    }
 
     const finalEnvSize = await getFileSize(normalizedEnvFilename);
     console.log(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`);

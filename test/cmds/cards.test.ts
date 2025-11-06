@@ -70,7 +70,7 @@ describe('cardsCommand', () => {
         { CardKey: '123', CardNumber: '4567 8901 2345 6789', IsProgrammable: true },
         { CardKey: '456', CardNumber: '9876 5432 1098 7654', IsProgrammable: false },
       ],
-      { json: undefined, output: undefined },
+      { json: undefined, yaml: undefined, output: undefined },
       expect.any(Function)
     );
   });

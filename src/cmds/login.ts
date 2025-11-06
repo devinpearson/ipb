@@ -1,9 +1,15 @@
 import https from 'node:https';
+import path from 'node:path';
 import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation, printTitleBox } from '../index.js';
-import { ensureCredentialsDirectory, readCredentialsFile, writeCredentialsFile } from '../utils.js';
+import {
+  ensureCredentialsDirectory,
+  normalizeFilePath,
+  readCredentialsFile,
+  writeCredentialsFile,
+} from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -64,13 +70,24 @@ export async function loginCommand(options: Options) {
   }
   const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
   console.log('Login successful');
-  const cred = await readCredentialsFile(credentialLocation);
-  if (Object.values(cred).every((v) => v === '')) {
-    // File doesn't exist, ensure directory exists before creating
-    await ensureCredentialsDirectory(credentialLocation);
-    await writeCredentialsFile(credentialLocation.filename, cred);
-  }
+  
+  // Resolve credential file path from options or use default
+  const credentialFilePath = options.credentialsFile
+    ? normalizeFilePath(options.credentialsFile)
+    : credentialLocation.filename;
+  const credentialFolder = path.dirname(credentialFilePath);
+  
+  // Ensure directory exists before any read/write operations
+  await ensureCredentialsDirectory({ folder: credentialFolder });
+  
+  // Read credentials from the resolved path
+  const cred = await readCredentialsFile({
+    filename: credentialFilePath,
+    folder: credentialFolder,
+  });
+  
+  // Update and write back to the resolved path
   cred.sandboxKey = loginResponse.access_token;
-  await writeCredentialsFile(credentialLocation.filename, cred);
+  await writeCredentialsFile(credentialFilePath, cred);
   console.log('🔑 access token saved');
 }

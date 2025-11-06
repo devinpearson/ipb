@@ -65,43 +65,46 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   }
   const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
   const spinner = createSpinner(!disableSpinner, '💳 fetching transactions...').start();
-  const api = await initializePbApi(credentials, options);
+  try {
+    const api = await initializePbApi(credentials, options);
 
-  // Use retry logic with rate limit handling
-  const result = await withRetry(() => api.getAccountTransactions(accountId), {
-    maxRetries: 3,
-    verbose: options.verbose,
-  });
-  const transactions = result.data.transactions;
-  spinner.stop();
-  if (!transactions) {
-    if (!isPiped) {
-      console.log('No transactions found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleTransactions = transactions.map(
-    ({ uuid, amount, transactionDate, description }: Transaction) => ({
-      uuid,
-      amount,
-      transactionDate,
-      description,
-    })
-  );
-
-  // Use raw transactions for structured output, simplified for table
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
+    // Use retry logic with rate limit handling
+    const result = await withRetry(() => api.getAccountTransactions(accountId), {
+      maxRetries: 3,
+      verbose: options.verbose,
+    });
+    const transactions = result.data.transactions;
+    if (!transactions) {
       if (!isPiped) {
-        console.log(`\n${count} transaction(s) found.`);
+        console.log('No transactions found');
+      } else {
+        process.stdout.write('[]\n');
       }
+      return;
     }
-  );
+
+    const simpleTransactions = transactions.map(
+      ({ uuid, amount, transactionDate, description }: Transaction) => ({
+        uuid,
+        amount,
+        transactionDate,
+        description,
+      })
+    );
+
+    // Use raw transactions for structured output, simplified for table
+    const dataToOutput =
+      options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
+    await formatOutput(
+      dataToOutput,
+      { json: options.json, yaml: options.yaml, output: options.output },
+      (count) => {
+        if (!isPiped) {
+          console.log(`\n${count} transaction(s) found.`);
+        }
+      }
+    );
+  } finally {
+    spinner.stop();
+  }
 }

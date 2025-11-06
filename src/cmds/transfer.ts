@@ -69,27 +69,32 @@ export async function transferCommand(
   }
 
   const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '💳 transfering...');
+  const spinner = createSpinner(!disableSpinner, '💳 transfering...').start();
   const api = await initializePbApi(credentials, options);
 
-  // Use retry logic with rate limit handling
-  const result = await withRetry(
-    () =>
-      api.transferMultiple(accountId, [
-        {
-          beneficiaryAccountId: beneficiaryAccountId,
-          amount: amount.toString(),
-          myReference: reference,
-          theirReference: reference,
-        },
-      ]),
-    {
-      maxRetries: 3,
-      verbose: options.verbose,
+  try {
+    // Use retry logic with rate limit handling
+    const result = await withRetry(
+      () =>
+        api.transferMultiple(accountId, [
+          {
+            beneficiaryAccountId: beneficiaryAccountId,
+            amount: amount.toString(),
+            myReference: reference,
+            theirReference: reference,
+          },
+        ]),
+      {
+        maxRetries: 3,
+        verbose: options.verbose,
+      }
+    );
+    spinner.succeed();
+    for (const transfer of result.data.TransferResponses) {
+      console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
     }
-  );
-  spinner.stop();
-  for (const transfer of result.data.TransferResponses) {
-    console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
+  } catch (error) {
+    spinner.fail();
+    throw error;
   }
 }
