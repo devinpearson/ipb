@@ -44,9 +44,6 @@ export async function bankCommand(prompt: string, options: Options) {
       baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
     });
   }
-  if (!openai) {
-    throw new Error('OpenAI client is not initialized');
-  }
 
   console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
   console.log(chalk.blueBright('Prompt:'));

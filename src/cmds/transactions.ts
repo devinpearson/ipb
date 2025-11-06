@@ -36,7 +36,7 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
         const parsed = JSON.parse(stdinData);
         // If stdin is an array, take the first accountId
         if (Array.isArray(parsed) && parsed.length > 0) {
-          accountId = parsed[0].accountId || parsed[0].accountId;
+          accountId = parsed[0].accountId;
         } else if (parsed.accountId) {
           accountId = parsed.accountId;
         } else if (typeof parsed === 'string') {
