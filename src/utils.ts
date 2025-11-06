@@ -48,8 +48,9 @@ export function isDebugEnabled(): boolean {
   if (debug === undefined || debug === '') {
     return false;
   }
-  // Any non-empty value enables debug mode
-  return true;
+  const normalized = debug.trim().toLowerCase();
+  const falseValues = new Set(['0', 'false', 'off', 'no', 'disabled']);
+  return !falseValues.has(normalized);
 }
 
 /**
@@ -65,6 +66,20 @@ export function getVerboseMode(verboseFlag?: boolean): boolean {
   }
   // Otherwise, check DEBUG environment variable
   return isDebugEnabled();
+}
+
+export function resolveSpinnerState({
+  spinnerFlag,
+  verboseFlag,
+  isPiped,
+}: {
+  spinnerFlag?: boolean;
+  verboseFlag?: boolean;
+  isPiped: boolean;
+}): { spinnerEnabled: boolean; verbose: boolean } {
+  const verbose = getVerboseMode(verboseFlag);
+  const spinnerEnabled = !isPiped && spinnerFlag !== true && !verbose;
+  return { spinnerEnabled, verbose };
 }
 
 /**
@@ -2349,6 +2364,7 @@ export async function getFileSize(filepath: string): Promise<number> {
 export interface Spinner {
   start: (text?: string) => Spinner;
   stop: () => Spinner;
+  clear: () => Spinner;
   succeed: (text?: string) => Spinner;
   fail: (text?: string) => Spinner;
   text?: string;
@@ -2375,6 +2391,9 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
         // Don't log anything when disabled
         return this;
       },
+      clear() {
+        return this;
+      },
       succeed(_text?: string) {
         // Don't log anything when disabled
         return this;
@@ -2386,7 +2405,11 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
     };
   }
   // Real spinner - use safe text that respects terminal capabilities
-  return ora(safeText);
+  return ora({
+    text: safeText,
+    discardStdin: false,
+    isEnabled: enabled && process.stderr.isTTY,
+  });
 }
 
 /**

@@ -1,11 +1,5 @@
 import { credentials, printTitleBox } from '../index.js';
-import {
-  createSpinner,
-  formatOutput,
-  getVerboseMode,
-  initializePbApi,
-  withRetry,
-} from '../utils.js';
+import { createSpinner, formatOutput, initializePbApi, resolveSpinnerState, withRetry } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -19,13 +13,16 @@ export async function accountsCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
-  const spinner = createSpinner(!disableSpinner, '💳 fetching accounts...');
-  if (!isPiped) {
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching accounts...');
+  if (spinnerEnabled) {
     spinner.start();
   }
   const api = await initializePbApi(credentials, options);
-  const verbose = getVerboseMode(options.verbose);
   if (verbose && !isPiped) console.log('💳 fetching accounts...');
 
   // Use retry logic with rate limit handling
@@ -36,7 +33,9 @@ export async function accountsCommand(options: CommonOptions) {
   const accounts = result.data.accounts;
   if (!accounts || accounts.length === 0) {
     if (!isPiped) {
-      spinner.stop();
+      if (spinnerEnabled) {
+        spinner.stop();
+      }
       console.log('No accounts found');
     } else {
       process.stdout.write('[]\n');
@@ -53,7 +52,7 @@ export async function accountsCommand(options: CommonOptions) {
     })
   );
 
-  if (!isPiped) {
+  if (spinnerEnabled) {
     spinner.stop();
   }
 

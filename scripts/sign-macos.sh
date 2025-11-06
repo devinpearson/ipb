@@ -56,3 +56,5 @@ echo "Checking entitlements..."
 codesign -d --entitlements - dist/ipb-macos-x64 2>/dev/null || echo "No entitlements found"
 codesign -d --entitlements - dist/ipb-macos-arm64 2>/dev/null || echo "No entitlements found"
 
+
+
