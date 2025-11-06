@@ -272,7 +272,7 @@ ipb env-list --yaml --output env-vars.yaml
 
 ### Security Best Practices
 
-**⚠️ Important: Secret Handling**
+#### ⚠️ Important: Secret Handling
 
 For security reasons, the CLI **recommends storing secrets in credential files rather than environment variables**. While the CLI supports environment variables for convenience, they pose security risks:
 
@@ -383,7 +383,7 @@ ipb config profile list
 
 This shows all profiles with the active profile marked:
 
-```
+```text
 Available profiles:
   - development
   - production (active)

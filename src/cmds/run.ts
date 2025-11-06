@@ -109,7 +109,18 @@ function convertToJson(arr: string[]) {
         const equalsIndex = line.indexOf('=');
         if (equalsIndex !== -1) {
           const key = line.substring(0, equalsIndex).trim();
-          const fullValue = line.substring(equalsIndex + 1).trim();
+          let fullValue = line.substring(equalsIndex + 1).trim();
+          // Strip optional wrapping quotes (single or double) if present
+          if (fullValue.length >= 2) {
+            const firstChar = fullValue[0];
+            const lastChar = fullValue[fullValue.length - 1];
+            if (
+              (firstChar === '"' && lastChar === '"') ||
+              (firstChar === "'" && lastChar === "'")
+            ) {
+              fullValue = fullValue.slice(1, -1);
+            }
+          }
           if (key) {
             output[key] = fullValue;
           }

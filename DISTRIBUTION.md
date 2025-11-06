@@ -283,8 +283,8 @@ dpkg-deb --build ipb_0.8.3
 
 For easy distribution and automatic updates, set up a PPA on Launchpad:
 
-1. **Create Launchpad account** at https://launchpad.net
-2. **Create PPA** at https://launchpad.net/people/+new-ppa
+1. **Create Launchpad account** at <https://launchpad.net>
+2. **Create PPA** at <https://launchpad.net/people/+new-ppa>
 3. **Upload packages** using `dput` (see `UBUNTU_DISTRIBUTION.md` for details)
 
 Users can then install via:
