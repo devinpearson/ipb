@@ -54,6 +54,16 @@ describe('docs command', () => {
     expect(markdown).toContain('## cards');
   });
 
+  it('omits hidden commands from generated documentation', () => {
+    const program = new Command();
+    program.command('public-cmd').description('Shown');
+    program.command('secret-cmd', { hidden: true }).description('Hidden');
+
+    const markdown = generateCommandDocumentation(program);
+    expect(markdown).toContain('## public-cmd');
+    expect(markdown).not.toContain('## secret-cmd');
+  });
+
   it('writes generated documentation to output path', async () => {
     const program = new Command();
     program.command('accounts').description('List accounts');

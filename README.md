@@ -27,7 +27,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
   - [Run - Local Simulation](#run---local-simulation)
   - [New Project](#new-project)
   - [Enable and Disable Code](#enable-and-disable-code)
-  - [AI Generation](#ai-generation)
+  - [AI and sandbox auth (disabled)](#ai-and-sandbox-auth-commands-disabled)
   - [Countries](#countries)
   - [Currencies](#currencies)
   - [Merchants](#merchants)
@@ -45,7 +45,6 @@ This repository is crafted with ❤️ by our talented community members. It's a
   - [Transactions](#transactions)
   - [Beneficiaries](#beneficiaries)
 - [Config](#config)
-- [Bank](#bank)
 - [Error Codes](#error-codes)
 - [Development](#development)
 - [Testing](#testing)
@@ -212,7 +211,7 @@ ipb env-list
 
 This command displays:
 - **API Credentials**: `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
-- **AI Generation**: `OPENAI_API_KEY`, `SANDBOX_KEY`
+- **Optional credential fields**: `OPENAI_API_KEY`, `SANDBOX_KEY` (stored if set; AI/login commands are disabled in this build)
 - **Development**: `DEBUG`
 - **Security**: `REJECT_UNAUTHORIZED`
 
@@ -575,33 +574,11 @@ These commands allow you to control whether the programmable code is active on y
 
 ![toggle command](assets/toggle.gif)
 
-### AI Generation
+### AI and sandbox auth commands (disabled)
 
-Generate code for your card using AI. This feature requires an OpenAI API key, which can be set in your environment variables or a `.env` file in the root of your project.
+The **`ipb ai`**, **`ipb bank`**, **`ipb register`**, and **`ipb login`** commands are currently **disabled** in this CLI build (they remain as hidden entry points only so existing scripts get a clear error instead of “unknown command”). Write and deploy card code with your editor and **`ipb deploy`** / **`ipb run`** instead.
 
-To generate code, run the following command:
-
-```sh
-ipb ai <prompt>
-```
-
-The generated code will be saved to a file called `ai-generated.js` in the current directory. If any environment variables are required, they will be saved to a file called `.env.ai`. You can then run or deploy the generated code.
-
-You can use my OpenAI connection to test out the AI generation by registering with the following command:
-
-```sh
-ipb register -e <email> -p <password>
-```
-
-This will create an account on ipb.sanboxpay.co.za. You will need to message in the programmable banking community to get your account activated. Channel: `#12_sandbox-playground` with your email address. Calls to the service will be logged and monitored for abuse. You will be able to use the AI generation without needing to set up your own OpenAI API key.
-
-You will then be able to log in using the following command:
-
-```sh
-ipb login -e <email> -p <password>
-```
-
-You can now use the AI generation command to generate code for your card.
+Profile fields **`openaiKey`** and **`sandboxKey`** are still stored if you set them via **`ipb config`** for possible future use.
 
 ### Countries
 
@@ -815,7 +792,7 @@ ipb config --client-id <client-id> --client-secret <client-secret> --api-key <ap
 ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
 ```
 
-You can also set card key, OpenAI key, and sandbox key using additional options.
+You can also set card key and optional **`openaiKey`** / **`sandboxKey`** fields on the credentials record using additional options.
 
 **Profile Management:**
 
@@ -860,16 +837,6 @@ EDITOR="code --wait" ipb config edit  # VS Code
 ```
 
 For more details, see the [Configuration Profiles](#configuration-profiles) section above.
-
-### Bank
-
-Use the LLM to call your bank with a natural language prompt:
-
-```sh
-ipb bank "Show me my last 5 transactions"
-```
-
-This command uses AI to interpret your prompt and interact with your bank data.
 
 ---
 
@@ -1085,27 +1052,11 @@ Tests are organized in the `test/` directory:
 
 ```text
 test/
-├── cmds/              # Command-specific tests
-│   ├── accounts.test.ts
-│   ├── balances.test.ts
-│   ├── cards.test.ts
-│   ├── deploy.test.ts
-│   ├── fetch.test.ts
-│   ├── publish.test.ts
-│   ├── transactions.test.ts
-│   └── upload.test.ts
-├── __mocks__/         # Mock implementations
-└── helpers.ts         # Test utilities
+├── cmds/              # One file per command area (e.g. deploy.test.ts)
+├── utils/             # Utility and integration-style unit tests
+├── __mocks__/
+└── helpers.ts
 ```
-
-### Current Test Coverage
-
-**28 tests passing** across 8 test files, covering:
-
-- **Core Commands**: `cards`, `accounts`, `balances`, `transactions`
-- **Code Management**: `deploy`, `fetch`, `upload`, `publish`
-- **Error Handling**: CliError propagation, file not found, API errors
-- **Edge Cases**: Missing files, invalid responses, default values
 
 ### Test Patterns
 
@@ -1179,20 +1130,10 @@ When adding tests for new commands:
 
 5. **Test edge cases**: Missing files, invalid inputs, API failures
 
-### Test Coverage Goals
+### Test coverage
 
-- **Current**: 28 tests covering core functionality
-- **Target**: 80%+ code coverage
-- **Priority**: Critical paths first (deploy, fetch, upload, publish)
-
-### Test Documentation
-
-See `TEST_SUGGESTIONS.md` for:
-
-- Complete list of commands needing tests
-- Testing best practices
-- Test implementation templates
-- Coverage goals and priorities
+- Run the suite with `npm run test:run` (Vitest). Tests live under `test/cmds/` and `test/utils/`.
+- When adding a command, add a matching `test/cmds/<command>.test.ts` and follow the mocking patterns above (`vi.importActual` for `utils.ts`, mock `index.ts` credentials where needed).
 
 ---
 

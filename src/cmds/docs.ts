@@ -36,6 +36,14 @@ interface CommandInfo {
  * @param text - The heading text to slugify
  * @returns GitHub-compatible slug
  */
+/**
+ * Commander marks hidden commands with `_hidden` (set via `.command(name, { hidden: true })`).
+ */
+function isCommandHidden(command: Command): boolean {
+  // biome-ignore lint/suspicious/noExplicitAny: Commander does not expose this on the public Command type
+  return Boolean((command as any)._hidden);
+}
+
 function githubSlug(text: string): string {
   return text
     .toLowerCase()
@@ -129,7 +137,7 @@ function extractCommandInfo(
   const subcmds = command.commands || [];
   for (const subcmd of subcmds) {
     const subcmdName = subcmd.name();
-    if (subcmdName && subcmdName !== '<command>') {
+    if (subcmdName && subcmdName !== '<command>' && !isCommandHidden(subcmd)) {
       subcommands.push(extractCommandInfo(subcmd, globalOptionFlags, fullPath));
     }
   }
@@ -296,7 +304,7 @@ export function generateCommandDocumentation(program: Command): string {
 
   for (const cmd of programCommands) {
     const cmdName = cmd.name();
-    if (cmdName && cmdName !== '<command>') {
+    if (cmdName && cmdName !== '<command>' && !isCommandHidden(cmd)) {
       commands.push(extractCommandInfo(cmd, globalOptionFlags));
     }
   }

@@ -1,5 +1,7 @@
 # CLI Improvement Plan
 
+> **Note:** Much of this roadmap is already implemented on the current branch (shared command runners, integration-style tests under `test/cmds/integration-safety.test.ts`, partial `src/utils/*` split, `--no-spinner`). Treat the phases below as **historical intent plus any remaining follow-ups**, not a from-scratch checklist.
+
 ## Phase 1: Stabilize UX + Errors (1-2 sessions)
 
 **Goal:** Stop regressions in spinner/output/error behavior before deeper refactors.

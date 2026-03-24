@@ -1,7 +1,7 @@
 # IPB CLI Command Reference
 
 > This documentation is auto-generated from the CLI command definitions.
-> Last generated: 2026-03-24T17:41:15.060Z
+> Last generated: 2026-03-24T17:50:02.946Z
 
 ## Table of Contents
 
@@ -30,10 +30,6 @@
 - [transactions](#transactions-aliases-tx)
 - [beneficiaries](#beneficiaries)
 - [new](#new)
-- [ai](#ai)
-- [bank](#bank)
-- [register](#register)
-- [login](#login)
 - [completion](#completion)
 - [docs](#docs)
 
@@ -379,57 +375,6 @@ Create a new project with scaffolding. Generates a new project directory with te
 
 - `--force` - Overwrite existing project directory if it exists
 - `--template <template>` (required) - Template to use for project structure
-
-
-## ai
-
-Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.
-
-**Usage:** `ipb ai <prompt>`
-
-**Arguments:**
-
-- `<prompt>` (required) - Natural language description of the card code behavior
-
-**Options:**
-
-- `-f,--filename <filename>` (required) - Output filename for generated code
-- `--force` - Overwrite existing file if it exists
-
-
-## bank
-
-Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.
-
-**Usage:** `ipb bank <prompt>`
-
-**Arguments:**
-
-- `<prompt>` (required) - Natural language description of the banking operation to perform
-
-
-## register
-
-Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.
-
-**Usage:** `ipb register`
-
-**Options:**
-
-- `-e,--email <email>` (required) - Email address for registration
-- `-p,--password <password>` (required) - Password for your account
-
-
-## login
-
-Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.
-
-**Usage:** `ipb login`
-
-**Options:**
-
-- `-e,--email <email>` (required) - Your registered email address
-- `-p,--password <password>` (required) - Your account password
 
 
 ## completion
