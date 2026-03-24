@@ -4,6 +4,8 @@ import {
   createSpinner,
   formatOutput,
   initializePbApi,
+  resolveSpinnerState,
+  stopSpinner,
   validateAccountId,
   withRetry,
 } from '../utils.js';
@@ -53,37 +55,49 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   if (!isPiped) {
     printTitleBox();
   }
-  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
-  const spinner = createSpinner(!disableSpinner, '💳 fetching balances...').start();
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching balances...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let result;
   try {
     const api = await initializePbApi(credentials, options);
 
     // Use retry logic with rate limit handling
-    const result = await withRetry(() => api.getAccountBalances(accountId), {
+    result = await withRetry(() => api.getAccountBalances(accountId), {
       maxRetries: 3,
-      verbose: options.verbose,
+      verbose,
     });
-
-    // Always use structured output when piped or when explicitly requested
-    if (options.json || options.yaml || options.output || isPiped) {
-      await formatOutput(result.data, {
-        json: options.json,
-        yaml: options.yaml,
-        output: options.output,
-      });
-      return;
-    }
-
-    // Default formatted text output (only when not piped)
-    console.log(`Account Id ${result.data.accountId}`);
-    console.log(`Currency: ${result.data.currency}`);
-    console.log('Balances:');
-    console.log(`Current: ${result.data.currentBalance}`);
-    console.log(`Available: ${result.data.availableBalance}`);
-    console.log(`Budget: ${result.data.budgetBalance}`);
-    console.log(`Straight: ${result.data.straightBalance}`);
-    console.log(`Cash: ${result.data.cashBalance}`);
   } finally {
-    spinner.stop();
+    stopSpinner(spinner, spinnerEnabled);
   }
+
+  if (!result) {
+    return;
+  }
+
+  // Always use structured output when piped or when explicitly requested
+  if (options.json || options.yaml || options.output || isPiped) {
+    await formatOutput(result.data, {
+      json: options.json,
+      yaml: options.yaml,
+      output: options.output,
+    });
+    return;
+  }
+
+  // Default formatted text output (only when not piped)
+  console.log(`Account Id ${result.data.accountId}`);
+  console.log(`Currency: ${result.data.currency}`);
+  console.log('Balances:');
+  console.log(`Current: ${result.data.currentBalance}`);
+  console.log(`Available: ${result.data.availableBalance}`);
+  console.log(`Budget: ${result.data.budgetBalance}`);
+  console.log(`Straight: ${result.data.straightBalance}`);
+  console.log(`Cash: ${result.data.cashBalance}`);
 }

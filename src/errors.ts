@@ -37,6 +37,7 @@ export const ERROR_CODES = {
   INVALID_INPUT: 'E4013', // Added for input validation errors
   RATE_LIMIT_EXCEEDED: 'E4014', // Added for rate limiting errors
   MISSING_CODE_ID: 'E4015', // Added for missing code ID
+  INVESTEC_API_ERROR: 'E4016', // Added for Investec API communication failures
   // Add more as needed
 };
 

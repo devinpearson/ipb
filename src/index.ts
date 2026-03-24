@@ -1250,6 +1250,10 @@ Examples:
   const { isStdoutPiped } = await import('./utils.js');
   const isPiped = isStdoutPiped();
 
+  // Determine initial verbose mode from raw args (before parsing)
+  const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
+  let verboseMode = getVerboseMode(hasVerboseFlag);
+
   // Track command execution for history logging
   const startTime = Date.now();
   let commandName = '';
@@ -1263,16 +1267,14 @@ Examples:
     const globalOpts = program.opts();
     const commandOpts = thisCommand.opts();
     commandOptions = { ...globalOpts, ...commandOpts };
+    verboseMode = getVerboseMode(
+      typeof commandOptions.verbose === 'boolean' ? commandOptions.verbose : undefined
+    );
   });
 
   try {
-    // Check for secret usage from environment variables before executing command
-    // We need to check verbose mode from raw args since we haven't parsed yet
-    const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
-    const verbose = getVerboseMode(hasVerboseFlag);
-
     // Warn about secret usage (will only show if verbose or in non-interactive environment)
-    warnAboutSecretUsage({ verbose });
+    warnAboutSecretUsage({ verbose: verboseMode });
 
     // Parse arguments to execute commands
     await program.parseAsync(process.argv);
@@ -1391,5 +1393,12 @@ export async function optionCredentials(
 main().catch((err) => {
   const commandContext = (err as Error & { commandContext?: string })?.commandContext;
   const context = commandContext ? `${commandContext} command` : 'run CLI';
-  handleCliError(err, { verbose: true }, context);
+  // Determine verbose mode from CLI flags (default false if not available)
+  const globalOpts = program.opts();
+  const verboseOption =
+    typeof globalOpts.verbose === 'boolean'
+      ? globalOpts.verbose
+      : process.argv.includes('--verbose') || process.argv.includes('-v');
+  const verboseMode = getVerboseMode(verboseOption);
+  handleCliError(err, { verbose: verboseMode }, context);
 });

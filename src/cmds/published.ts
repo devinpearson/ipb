@@ -4,6 +4,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  resolveSpinnerState,
+  stopSpinner,
   validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -21,8 +23,17 @@ interface Options extends CommonOptions {
 export async function publishedCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
-  const spinner = createSpinner(!disableSpinner, '🚀 fetching code...').start();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 fetching code...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
   let code: string;
   try {
     const api = await initializeApi(credentials, options);
@@ -30,7 +41,7 @@ export async function publishedCommand(options: Options) {
     const result = await api.getPublishedCode(cardKey);
     code = result.data.result.code;
   } finally {
-    spinner.stop();
+    stopSpinner(spinner, spinnerEnabled);
   }
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
   console.log(`💾 saving to file: ${normalizedFilename}`);

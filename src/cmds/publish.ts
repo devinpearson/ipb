@@ -8,6 +8,8 @@ import {
   getFileSize,
   initializeApi,
   normalizeCardKey,
+  stopSpinner,
+  resolveSpinnerState,
   validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -49,16 +51,33 @@ export async function publishCommand(options: Options) {
     return;
   }
 
-  const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '🚀 reading code...').start();
-  const api = await initializeApi(credentials, options);
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let result;
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const codeFileSize = await getFileSize(normalizedFilename);
-  spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
-  const code = await fsPromises.readFile(normalizedFilename, 'utf8');
-  const codeSize = Buffer.byteLength(code, 'utf8');
-  spinner.text = `🚀 publishing code (${formatFileSize(codeSize)})...`;
-  const result = await api.uploadPublishedCode(cardKey, options.codeId, code);
-  spinner.stop();
+    const codeFileSize = await getFileSize(normalizedFilename);
+    spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
+    const code = await fsPromises.readFile(normalizedFilename, 'utf8');
+    const codeSize = Buffer.byteLength(code, 'utf8');
+    spinner.text = `🚀 publishing code (${formatFileSize(codeSize)})...`;
+    result = await api.uploadPublishedCode(cardKey, options.codeId, code);
+  } finally {
+  stopSpinner(spinner, spinnerEnabled);
+  }
+
+  if (!result) {
+    return;
+  }
   console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
 }

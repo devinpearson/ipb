@@ -1,6 +1,22 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  initializePbApi,
+  resolveSpinnerState,
+  stopSpinner,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
+
+type BeneficiarySummary = {
+  beneficiaryId: string;
+  accountNumber: string;
+  beneficiaryName: string;
+  lastPaymentDate: string;
+  lastPaymentAmount: string | number;
+  referenceName: string;
+};
 
 /**
  * Fetches and displays a list of beneficiaries.
@@ -14,14 +30,29 @@ export async function beneficiariesCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
-  const spinner = createSpinner(!disableSpinner, '💳 fetching beneficiaries...').start();
-  const api = await initializePbApi(credentials, options);
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching beneficiaries...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let beneficiaries: BeneficiarySummary[] | undefined;
+  try {
+    const api = await initializePbApi(credentials, options);
 
-  const result = await api.getBeneficiaries();
-  const beneficiaries = result.data;
-  spinner.stop();
-  if (!beneficiaries) {
+    const result = await withRetry(() => api.getBeneficiaries(), {
+      maxRetries: 3,
+      verbose,
+    });
+    beneficiaries = result.data as BeneficiarySummary[];
+  } finally {
+    stopSpinner(spinner, spinnerEnabled);
+  }
+
+  if (!beneficiaries || beneficiaries.length === 0) {
     if (!isPiped) {
       console.log('No beneficiaries found');
     } else {

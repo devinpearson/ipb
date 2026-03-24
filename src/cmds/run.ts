@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
-import { createSpinner, formatFileSize, getFileSize, validateFilePath } from '../utils.js';
+import { createSpinner, formatFileSize, getFileSize, stopSpinner, validateFilePath } from '../utils.js';
 
 interface Options {
   filename: string;
@@ -70,7 +70,7 @@ export async function runCommand(options: Options) {
       const lines = data.split('\n');
       environmentvariables = convertToJson(lines);
     } finally {
-      spinner.stop();
+      stopSpinner(spinner, true);
     }
   }
   // Convert the environmentvariables to a string
@@ -85,7 +85,7 @@ export async function runCommand(options: Options) {
   try {
     code = await fsPromises.readFile(normalizedFilename, 'utf8');
   } finally {
-    codeSpinner.stop();
+    stopSpinner(codeSpinner, true);
   }
   // Run the code
   const executionItems = await run(transaction, code, environmentvariablesString);

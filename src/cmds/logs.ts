@@ -7,6 +7,8 @@ import {
   getFileSize,
   initializeApi,
   normalizeCardKey,
+  resolveSpinnerState,
+  stopSpinner,
   validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -27,25 +29,46 @@ export async function logsCommand(options: Options) {
     throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'filename is required');
   }
   printTitleBox();
-  const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '📊 fetching execution items...').start();
-  const api = await initializeApi(credentials, options);
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '📊 fetching execution items...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let logsDataRaw: string | undefined;
+  let normalizedFilename = '';
+  let logsSize = 0;
 
-  const result = await api.getExecutions(cardKey);
-  spinner.stop();
+  try {
+    const api = await initializeApi(credentials, options);
+    const result = await api.getExecutions(cardKey);
+    const logs = result.data.result.executionItems ?? [];
+    logsDataRaw = JSON.stringify(logs, null, 4);
+    logsSize = Buffer.byteLength(logsDataRaw, 'utf8');
+    normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
+  } finally {
+    stopSpinner(spinner, spinnerEnabled);
+  }
 
-  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
-  const logsData = JSON.stringify(result.data.result.executionItems, null, 4);
-  const logsSize = Buffer.byteLength(logsData, 'utf8');
+  if (!logsDataRaw || normalizedFilename === '') {
+    return;
+  }
 
   // Show progress with file size for write operation
-  const disableSpinnerWrite = options.spinner === true;
   const writeSpinner = createSpinner(
-    !disableSpinnerWrite,
+    spinnerEnabled,
     `💾 saving to file: ${normalizedFilename} (${formatFileSize(logsSize)})...`
-  ).start();
-  await fsPromises.writeFile(normalizedFilename, logsData, 'utf8');
-  writeSpinner.stop();
+  );
+  if (spinnerEnabled) {
+    writeSpinner.start();
+  }
+  await fsPromises.writeFile(normalizedFilename, logsDataRaw, 'utf8');
+  stopSpinner(writeSpinner, spinnerEnabled);
 
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 logs saved to file (${formatFileSize(finalSize)})`);

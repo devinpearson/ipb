@@ -1,5 +1,12 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializePbApi, resolveSpinnerState, withRetry } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  initializePbApi,
+  resolveSpinnerState,
+  stopSpinner,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -22,20 +29,32 @@ export async function accountsCommand(options: CommonOptions) {
   if (spinnerEnabled) {
     spinner.start();
   }
-  const api = await initializePbApi(credentials, options);
-  if (verbose && !isPiped) console.log('💳 fetching accounts...');
 
-  // Use retry logic with rate limit handling
-  const result = await withRetry(() => api.getAccounts(), {
-    maxRetries: 3,
-    verbose,
-  });
-  const accounts = result.data.accounts;
+  let accounts:
+    | Array<{
+        accountId: string;
+        accountNumber: string;
+        referenceName: string;
+        productName: string;
+      }>
+    | undefined;
+
+  try {
+    const api = await initializePbApi(credentials, options);
+    if (verbose && !isPiped) console.log('💳 fetching accounts...');
+
+    // Use retry logic with rate limit handling
+    const result = await withRetry(() => api.getAccounts(), {
+      maxRetries: 3,
+      verbose,
+    });
+    accounts = result.data.accounts;
+  } finally {
+    stopSpinner(spinner, spinnerEnabled);
+  }
+
   if (!accounts || accounts.length === 0) {
     if (!isPiped) {
-      if (spinnerEnabled) {
-        spinner.stop();
-      }
       console.log('No accounts found');
     } else {
       process.stdout.write('[]\n');
@@ -51,10 +70,6 @@ export async function accountsCommand(options: CommonOptions) {
       productName,
     })
   );
-
-  if (spinnerEnabled) {
-    spinner.stop();
-  }
 
   // Use raw accounts for structured output, simplified for table
   const dataToOutput =

@@ -1,5 +1,12 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializeApi } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  initializeApi,
+  resolveSpinnerState,
+  stopSpinner,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -14,14 +21,34 @@ export async function currenciesCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
-  const spinner = createSpinner(!disableSpinner, '💳 fetching currencies...').start();
-  const api = await initializeApi(credentials, options);
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching currencies...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let currencies:
+    | Array<{
+        Code: string;
+        Name: string;
+      }>
+    | undefined;
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const result = await api.getCurrencies();
-  spinner.stop();
-  const currencies = result.data.result;
-  if (!currencies) {
+    const result = await withRetry(() => api.getCurrencies(), {
+      maxRetries: 3,
+      verbose,
+    });
+    currencies = result.data.result;
+  } finally {
+  stopSpinner(spinner, spinnerEnabled);
+  }
+
+  if (!currencies || currencies.length === 0) {
     if (!isPiped) {
       console.log('No currencies found');
     } else {

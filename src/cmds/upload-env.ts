@@ -1,6 +1,6 @@
 import { promises as fsPromises } from 'node:fs';
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, normalizeCardKey, validateFilePath } from '../utils.js';
+import { createSpinner, initializeApi, normalizeCardKey, resolveSpinnerState, validateFilePath } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
@@ -19,19 +19,32 @@ export async function uploadEnvCommand(options: Options) {
 
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '🚀 uploading env...').start();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 uploading env...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
   const api = await initializeApi(credentials, options);
 
   try {
     const raw = { variables: {} };
     const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
     raw.variables = JSON.parse(variables);
-    const _result = await api.uploadEnv(cardKey, raw);
-    spinner.succeed();
+    const result = await api.uploadEnv(cardKey, raw);
+    if (spinnerEnabled) {
+      spinner.succeed();
+    }
     console.log(`🎉 env uploaded`);
   } catch (error) {
-    spinner.fail();
+    if (spinnerEnabled) {
+      spinner.fail();
+    }
     throw error;
   }
 }

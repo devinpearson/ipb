@@ -1,5 +1,12 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, formatOutput, initializeApi } from '../utils.js';
+import {
+  createSpinner,
+  formatOutput,
+  initializeApi,
+  resolveSpinnerState,
+  stopSpinner,
+  withRetry,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -14,14 +21,34 @@ export async function merchantsCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const disableSpinner = options.spinner === true || isPiped; // Disable spinner when piped
-  const spinner = createSpinner(!disableSpinner, '🏪 fetching merchants...').start();
-  const api = await initializeApi(credentials, options);
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🏪 fetching merchants...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let merchants:
+    | Array<{
+        Code: string;
+        Name: string;
+      }>
+    | undefined;
+  try {
+    const api = await initializeApi(credentials, options);
 
-  const result = await api.getMerchants();
-  const merchants = result.data.result;
-  spinner.stop();
-  if (!merchants) {
+    const result = await withRetry(() => api.getMerchants(), {
+      maxRetries: 3,
+      verbose,
+    });
+    merchants = result.data.result;
+  } finally {
+  stopSpinner(spinner, spinnerEnabled);
+  }
+
+  if (!merchants || merchants.length === 0) {
     if (!isPiped) {
       console.log('No merchants found');
     } else {

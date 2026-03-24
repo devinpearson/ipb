@@ -1,5 +1,11 @@
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, normalizeCardKey } from '../utils.js';
+import {
+  createSpinner,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  stopSpinner,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
@@ -14,12 +20,21 @@ interface Options extends CommonOptions {
 export async function enableCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const disableSpinner = options.spinner === true;
-  const spinner = createSpinner(!disableSpinner, '🍄 enabling code on card...').start();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🍄 enabling code on card...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
   const api = await initializeApi(credentials, options);
 
   const result = await api.toggleCode(cardKey, true);
-  spinner.stop();
+  stopSpinner(spinner, spinnerEnabled);
   if (result.data.result.Enabled) {
     console.log('✅ code enabled');
   } else {

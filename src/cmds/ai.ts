@@ -120,7 +120,13 @@ export async function aiCommand(prompt: string, options: Options) {
   }
   
   const output = response.code;
-  const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner } = await import(
+  const {
+    validateFilePathForWrite,
+    formatFileSize,
+    getFileSize,
+    createSpinner,
+    stopSpinner,
+  } = await import(
     '../utils.js'
   );
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
@@ -133,7 +139,7 @@ export async function aiCommand(prompt: string, options: Options) {
   try {
     await fsPromises.writeFile(normalizedFilename, output, 'utf8');
   } finally {
-    spinner.stop();
+    stopSpinner(spinner, true);
   }
 
   const finalSize = await getFileSize(normalizedFilename);
@@ -153,7 +159,7 @@ export async function aiCommand(prompt: string, options: Options) {
     try {
       await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
     } finally {
-      envSpinner.stop();
+      stopSpinner(envSpinner, true);
     }
 
     const finalEnvSize = await getFileSize(normalizedEnvFilename);

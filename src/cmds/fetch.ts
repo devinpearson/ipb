@@ -7,6 +7,8 @@ import {
   getFileSize,
   initializeApi,
   normalizeCardKey,
+  resolveSpinnerState,
+  stopSpinner,
   validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -24,46 +26,69 @@ interface Options extends CommonOptions {
 export async function fetchCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
-  const spinner = createSpinner(!disableSpinner, '💳 fetching code...').start();
-  const api = await initializeApi(credentials, options);
-
-  // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
-  // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
-  if (typeof (api as any).getSavedCode !== 'function') {
-    spinner.stop();
-    throw new CliError(
-      ERROR_CODES.DEPLOY_FAILED,
-      'API client does not support fetching saved code (getSavedCode missing)'
-    );
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching code...');
+  if (spinnerEnabled) {
+    spinner.start();
   }
-  // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
-  const result = await (api as any).getSavedCode(cardKey);
+  let code: string | undefined;
+  let codeSize = 0;
+  let normalizedFilename = '';
+  try {
+    const api = await initializeApi(credentials, options);
 
-  if (
-    !result ||
-    !result.data ||
-    !result.data.result ||
-    typeof result.data.result.code !== 'string'
-  ) {
-    spinner.stop();
-    throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
+    // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
+    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
+    if (typeof (api as any).getSavedCode !== 'function') {
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'API client does not support fetching saved code (getSavedCode missing)'
+      );
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
+    const result = await (api as any).getSavedCode(cardKey);
+
+    if (
+      !result ||
+      !result.data ||
+      !result.data.result ||
+      typeof result.data.result.code !== 'string'
+    ) {
+      throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
+    }
+
+    const fetchedCode = result.data.result.code;
+    if (typeof fetchedCode !== 'string') {
+      throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
+    }
+
+    code = fetchedCode;
+    codeSize = Buffer.byteLength(fetchedCode, 'utf8');
+    normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+  } finally {
+    stopSpinner(spinner, spinnerEnabled);
   }
 
-  const code = result.data.result.code;
-  const codeSize = Buffer.byteLength(code, 'utf8');
-
-  spinner.stop();
-  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+  if (code === undefined || normalizedFilename === '') {
+    return;
+  }
 
   // Show progress with file size for write operation
-  const disableSpinnerWrite = options.spinner === true;
   const writeSpinner = createSpinner(
-    !disableSpinnerWrite,
+    spinnerEnabled,
     `💾 saving to file: ${normalizedFilename} (${formatFileSize(codeSize)})...`
-  ).start();
+  );
+  if (spinnerEnabled) {
+    writeSpinner.start();
+  }
   await fsPromises.writeFile(normalizedFilename, code, 'utf8');
-  writeSpinner.stop();
+  stopSpinner(writeSpinner, spinnerEnabled);
 
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 code saved to file (${formatFileSize(finalSize)})`);

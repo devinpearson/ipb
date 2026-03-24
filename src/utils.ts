@@ -12,11 +12,30 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
+
+const require = createRequire(import.meta.url);
+
+interface CliTableLike {
+  push: (...rows: unknown[]) => void;
+  toString(): string;
+}
+
+type CliTableConstructor = new (options: Record<string, unknown>) => CliTableLike;
+
+let CliTable: CliTableConstructor | undefined;
+
+try {
+  const requiredModule = require('cli-table3');
+  CliTable = (requiredModule?.default ?? requiredModule) as CliTableConstructor;
+} catch {
+  CliTable = undefined;
+}
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -80,6 +99,89 @@ export function resolveSpinnerState({
   const verbose = getVerboseMode(verboseFlag);
   const spinnerEnabled = !isPiped && spinnerFlag !== true && !verbose;
   return { spinnerEnabled, verbose };
+}
+
+type InvestecErrorContext =
+  | 'card-api-auth'
+  | 'card-api-request'
+  | 'pb-api-auth'
+  | 'pb-api-request';
+
+const INVESTEC_ERROR_CONTEXT_MESSAGES: Record<InvestecErrorContext, string> = {
+  'card-api-auth': 'Failed to authenticate with the Investec Card API',
+  'card-api-request': 'Investec Card API request failed',
+  'pb-api-auth': 'Failed to authenticate with the Investec Programmable Banking API',
+  'pb-api-request': 'Investec Programmable Banking API request failed',
+};
+
+function extractInvestecErrorMessage(error: unknown): string | null {
+  if (!error) {
+    return null;
+  }
+
+  if (error instanceof CliError) {
+    return error.message;
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    const axiosResponse = (error as { response?: { status?: number; statusText?: string; data?: unknown } })
+      .response;
+    if (axiosResponse) {
+      const parts: string[] = [];
+      if (typeof axiosResponse.status === 'number') {
+        parts.push(`status ${axiosResponse.status}`);
+      }
+      if (typeof axiosResponse.statusText === 'string' && axiosResponse.statusText !== '') {
+        parts.push(axiosResponse.statusText);
+      }
+      const responseData = axiosResponse.data;
+      if (typeof responseData === 'string' && responseData.trim() !== '') {
+        parts.push(responseData.trim());
+      } else if (
+        responseData &&
+        typeof responseData === 'object' &&
+        Object.keys(responseData as Record<string, unknown>).length > 0
+      ) {
+        try {
+          parts.push(JSON.stringify(responseData));
+        } catch {
+          // Ignore serialization errors
+        }
+      }
+      if (parts.length > 0) {
+        return parts.join(' - ');
+      }
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+  }
+
+  if (typeof error === 'object' && 'message' in (error as Record<string, unknown>)) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim() !== '') {
+      return message;
+    }
+  }
+
+  return null;
+}
+
+export function normalizeInvestecError(error: unknown, context: InvestecErrorContext): CliError {
+  if (error instanceof CliError) {
+    return error;
+  }
+
+  const baseMessage = INVESTEC_ERROR_CONTEXT_MESSAGES[context] ?? 'Investec API error';
+  const detail = extractInvestecErrorMessage(error);
+  const message = detail ? `${baseMessage}: ${detail}` : baseMessage;
+
+  return new CliError(ERROR_CODES.INVESTEC_API_ERROR, message);
 }
 
 /**
@@ -805,8 +907,10 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     console.error(chalk.yellow(suggestion));
   }
 
-  // In verbose mode, show rate limit information if available
-  if (options.verbose) {
+  const shouldShowDebugDetails = Boolean(options.verbose) || isDebugEnabled();
+
+  // In verbose or debug mode, show rate limit information if available
+  if (shouldShowDebugDetails) {
     const rateLimitInfo = detectRateLimit(error);
     if (rateLimitInfo) {
       console.log('');
@@ -1332,6 +1436,10 @@ function determineAlignment(header: string, sampleData: TableData): 'left' | 'ri
   return 'left';
 }
 
+function stripAnsi(value: string): string {
+  return value.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
 /**
  * Prints tabular data to the console in a formatted table with improved formatting.
  * Uses cli-table3 for better column alignment, borders, and handling of long values.
@@ -1343,62 +1451,73 @@ export function printTable(data: TableData): void {
     return;
   }
 
-  try {
-    // Use cli-table3 for better formatting
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Table = require('cli-table3');
+  if (CliTable) {
     const headers: string[] = Object.keys(data[0] as TableRow);
-
-    // Determine column widths (max 80 chars per column, min 10)
-    // Use terminal width if available, otherwise default to 120
+    const rows = data as TableRow[];
     const terminalWidth = process.stdout.columns || 120;
-    const maxWidth = Math.min(80, Math.max(10, Math.floor(terminalWidth / headers.length)));
+    const minColumnWidth = 10;
+    const maxColumnWidth = 36;
 
-    // Create table with column configurations
-    const table = new Table({
-      head: headers.map((h) => chalk.bold(h)),
+    const colWidths = headers.map((header) => {
+      const values = rows.map((row) => formatCellValue(row[header], 256));
+      const longest = Math.max(
+        header.length,
+        ...values.map((value) => stripAnsi(value).length)
+      );
+      const widthWithPadding = longest + 2;
+      return Math.min(
+        maxColumnWidth,
+        Math.max(minColumnWidth, Math.min(widthWithPadding, Math.floor(terminalWidth / headers.length)))
+      );
+    });
+
+    const tableOptions: Record<string, unknown> = {
+      head: headers.map((h) => chalk.bold.cyan(h)),
       style: {
         head: [],
         border: ['gray'],
-        compact: false,
+        compact: true,
       },
-      colWidths: headers.map(() => maxWidth),
+      colWidths,
       colAligns: headers.map((header) => determineAlignment(header, data)),
-      wordWrap: true,
-    });
+      wordWrap: false,
+    };
+    const table = new CliTable(tableOptions);
 
     // Add rows with formatted values
-    data.forEach((row) => {
-      const rowData = headers.map((header) => {
+    rows.forEach((row) => {
+      const rowData = headers.map((header, index) => {
         const value = row[header];
-        return formatCellValue(value, maxWidth);
+        const columnWidth = Math.max(colWidths[index] ?? minColumnWidth, minColumnWidth) - 2;
+        return formatCellValue(value, columnWidth);
       });
       table.push(rowData);
     });
 
     console.log(table.toString());
-  } catch {
-    // Fallback to basic formatting if cli-table3 is not available
-    const headers: string[] = Object.keys(data[0] as TableRow);
-    const colWidths: number[] = headers.map((header) =>
-      Math.max(header.length, ...data.map((row) => String(row[header] ?? '').length))
-    );
-
-    // Print header row
-    const headerRow: string = headers
-      .map((header, index) => header.padEnd(colWidths[index] ?? 0))
-      .join(' | ');
-    console.log(headerRow);
-    console.log('-'.repeat(headerRow.length));
-
-    // Print data rows
-    data.forEach((row) => {
-      const dataRow: string = headers
-        .map((header, index) => String(row[header] ?? '').padEnd(colWidths[index] ?? 0))
-        .join(' | ');
-      console.log(dataRow);
-    });
+    return;
   }
+
+  // Fallback to basic formatting if cli-table3 is not available
+  const headers: string[] = Object.keys(data[0] as TableRow);
+  const colWidths: number[] = headers.map((header) =>
+    Math.max(header.length, ...data.map((row) => String(row[header] ?? '').length))
+  );
+
+  // Print header row
+  const headerRow: string = headers
+    .map((header, index) => header.padEnd(colWidths[index] ?? 0))
+    .join(' | ');
+  console.log(headerRow);
+  console.log('-'.repeat(headerRow.length));
+
+  // Print data rows
+  data.forEach((row) => {
+    const dataRow: string = headers
+      .map((header, index) => String(row[header] ?? '').padEnd(colWidths[index] ?? 0))
+      .join(' | ');
+    console.log(dataRow);
+  });
 }
 
 /**
@@ -2413,6 +2532,26 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
 }
 
 /**
+ * Stops a spinner if it was enabled and ensures the terminal cursor advances to a new line.
+ * @param spinner - Spinner instance returned by createSpinner
+ * @param enabled - Whether the spinner was enabled
+ */
+export function stopSpinner(spinner: Spinner, enabled: boolean): void {
+  if (!enabled) {
+    return;
+  }
+
+  spinner.stop();
+
+  const stream = process.stderr.isTTY ? process.stderr : process.stdout;
+  try {
+    stream.write('\n');
+  } catch {
+    // Ignore stream write errors (e.g., when output is piped)
+  }
+}
+
+/**
  * Initializes the Programmable Banking API client.
  * @param credentials - API credentials
  * @param options - Basic options including credential overrides
@@ -2486,31 +2625,34 @@ export function normalizeCardKey(
  * @returns Initialized ICardApi instance
  * @throws {Error} When API initialization fails
  */
-export async function initializeApi(
-  credentials: Credentials,
-  options: BasicOptions
-): Promise<ICardApi> {
-  credentials = await optionCredentials(options, credentials);
-  // Validate required credentials before initializing API
-  validateCredentialsFile(credentials);
+export async function initializeApi(credentials: Credentials, options: BasicOptions): Promise<ICardApi> {
+  const resolvedCredentials = await optionCredentials(options, credentials);
+  validateCredentialsFile(resolvedCredentials);
+
   let api: ICardApi;
   if (isDebugEnabled()) {
     const { CardApi } = await import('./mock-card.js');
     api = new CardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host
+      resolvedCredentials.clientId,
+      resolvedCredentials.clientSecret,
+      resolvedCredentials.apiKey,
+      resolvedCredentials.host
     );
   } else {
     const { InvestecCardApi } = await import('investec-card-api');
     api = new InvestecCardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host
+      resolvedCredentials.clientId,
+      resolvedCredentials.clientSecret,
+      resolvedCredentials.apiKey,
+      resolvedCredentials.host
     );
   }
-  await api.getAccessToken();
+
+  try {
+    await api.getAccessToken();
+  } catch (error) {
+    throw normalizeInvestecError(error, 'card-api-auth');
+  }
+
   return api;
 }

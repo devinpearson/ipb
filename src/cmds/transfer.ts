@@ -4,6 +4,7 @@ import {
   confirmDestructiveOperation,
   createSpinner,
   initializePbApi,
+  resolveSpinnerState,
   validateAccountId,
   validateAmount,
   withRetry,
@@ -68,8 +69,17 @@ export async function transferCommand(
     return;
   }
 
-  const disableSpinner = options.spinner === false;
-  const spinner = createSpinner(!disableSpinner, '💳 transferring...').start();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 transferring...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
   const api = await initializePbApi(credentials, options);
 
   try {
@@ -86,15 +96,19 @@ export async function transferCommand(
         ]),
       {
         maxRetries: 3,
-        verbose: options.verbose,
+        verbose,
       }
     );
-    spinner.succeed();
+    if (spinnerEnabled) {
+      spinner.succeed();
+    }
     for (const transfer of result.data.TransferResponses) {
       console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
     }
   } catch (error) {
-    spinner.fail();
+    if (spinnerEnabled) {
+      spinner.fail();
+    }
     throw error;
   }
 }

@@ -4,6 +4,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  resolveSpinnerState,
+  stopSpinner,
   validateFilePathForWrite,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -21,13 +23,32 @@ interface Options extends CommonOptions {
 export async function envCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const disableSpinner = options.spinner === true; // default false
-  const spinner = createSpinner(!disableSpinner, '💎 fetching envs...').start();
-  const api = await initializeApi(credentials, options);
-  const result = await api.getEnv(cardKey);
-  const envs = result.data.result.variables;
-  spinner.stop();
-  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💎 fetching envs...');
+  if (spinnerEnabled) {
+    spinner.start();
+  }
+  let envs: Record<string, unknown> | undefined;
+  let normalizedFilename: string;
+  try {
+    const api = await initializeApi(credentials, options);
+    const result = await api.getEnv(cardKey);
+    envs = result.data.result.variables ?? {};
+    normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
+  } finally {
+  stopSpinner(spinner, spinnerEnabled);
+  }
+
+  if (envs === undefined) {
+    return;
+  }
+
   console.log(`💾 saving to file: ${normalizedFilename}`);
   await fsPromises.writeFile(normalizedFilename, JSON.stringify(envs, null, 4), 'utf8');
   console.log('🎉 envs saved to file');
