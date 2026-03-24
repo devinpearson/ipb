@@ -1,10 +1,8 @@
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import {
   access,
   chmod,
   constants,
-  mkdir,
   open,
   readdir,
   readFile,
@@ -12,7 +10,7 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
 import type { BasicOptions, Credentials } from './cmds/types.js';
@@ -83,6 +81,13 @@ import {
   warnAboutSecretUsage,
 } from './utils/security.js';
 import { handleCliError, withCommandContext } from './utils/cli-errors.js';
+import {
+  confirmDestructiveOperation,
+  getModuleDirname,
+  getTempDir,
+  openInEditor,
+  pageOutput,
+} from './utils/interaction.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -114,22 +119,7 @@ export { normalizeInvestecError };
  * @param content - Content to page
  * @param options - Options including whether output is piped
  */
-export async function pageOutput(
-  content: string,
-  options: { isPiped?: boolean } = {}
-): Promise<void> {
-  // Don't page if output is piped (would interfere with piping)
-  if (options.isPiped || isStdoutPiped()) {
-    process.stdout.write(content);
-    return;
-  }
-
-  // For now, just output directly
-  // Note: PAGER environment variable is detected but paging not yet fully implemented
-  // TODO: Implement actual paging with spawn when terminal supports it
-  // This would require detecting terminal height and only paging if content exceeds it
-  console.log(content);
-}
+export { pageOutput };
 
 export { getTerminalDimensions };
 
@@ -146,11 +136,7 @@ export { getTerminalDimensions };
  * const tempFile = path.join(tempDir, 'my-temp-file.txt');
  * ```
  */
-export function getTempDir(): string {
-  // os.tmpdir() automatically respects TMPDIR environment variable
-  // Falls back to OS default (/tmp on Unix, %TEMP% on Windows) if not set
-  return tmpdir();
-}
+export { getTempDir };
 
 /**
  * Gets the directory name of the current module.
@@ -159,23 +145,7 @@ export function getTempDir(): string {
  * @param metaUrl - The import.meta.url from the calling module (defaults to import.meta.url)
  * @returns The directory path of the current module
  */
-export function getModuleDirname(metaUrl: string = import.meta.url): string {
-  // Normal ESM: use import.meta.url
-  const fileUrl = new URL(metaUrl);
-  let dirPath = path.dirname(fileUrl.pathname);
-  
-  // When packaged with pkg, paths may be in snapshot format
-  // pkg uses snapshot paths like /snapshot/project/...
-  // We need to normalize the path for both cases
-  if (dirPath.startsWith('/snapshot/')) {
-    // In pkg snapshot, paths are relative to the snapshot root
-    // Return the snapshot path as-is since templates are bundled there
-    return dirPath;
-  }
-  
-  // Normal Node.js path
-  return dirPath;
-}
+export { getModuleDirname };
 
 /**
  * Opens a file in the user's editor, respecting the EDITOR environment variable.
@@ -191,86 +161,13 @@ export function getModuleDirname(metaUrl: string = import.meta.url): string {
  * // Uses $EDITOR or defaults to sensible defaults
  * ```
  */
-export async function openInEditor(
-  filepath: string,
-  options: { editor?: string } = {}
-): Promise<void> {
-  // Check for editor in options, then environment variable, then defaults
-  const editor = options.editor || process.env.EDITOR || getDefaultEditor();
-
-  if (!editor) {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'No editor available. Set EDITOR environment variable (e.g., export EDITOR=nano)'
-    );
-  }
-
-  // Ensure file exists or create it
-  const dir = path.dirname(filepath);
-  if (!fs.existsSync(dir)) {
-    await mkdir(dir, { recursive: true });
-  }
-
-  // Split editor command (handles "editor --flag" format)
-  const editorParts = editor.split(/\s+/);
-  const editorCommand = editorParts[0];
-  const editorArgs = [...editorParts.slice(1), filepath];
-
-  // Ensure editor command is not undefined
-  if (!editorCommand) {
-    throw new CliError(
-      ERROR_CODES.FILE_NOT_FOUND,
-      'Invalid editor command. Set EDITOR environment variable to a valid editor.'
-    );
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const editorProcess = spawn(editorCommand, editorArgs, {
-      stdio: 'inherit',
-    });
-
-    editorProcess.on('error', (error: Error) => {
-      reject(
-        new CliError(
-          ERROR_CODES.FILE_NOT_FOUND,
-          `Failed to open editor "${editorCommand}": ${error.message}. Set EDITOR environment variable to a valid editor.`
-        )
-      );
-    });
-
-    editorProcess.on('exit', (code: number | null) => {
-      if (code === 0 || code === null) {
-        resolve();
-      } else {
-        reject(
-          new CliError(
-            ERROR_CODES.FILE_NOT_FOUND,
-            `Editor "${editorCommand}" exited with code ${code}`
-          )
-        );
-      }
-    });
-  });
-}
+export { openInEditor };
 
 /**
  * Gets the default editor based on the platform.
  * @returns Default editor command or null if none available
  */
-function getDefaultEditor(): string | null {
-  // Platform-specific defaults
-  if (process.platform === 'win32') {
-    // Windows: try common editors
-    return 'notepad.exe';
-  }
-
-  // Unix-like: try common editors in order of preference
-  // These are typically available on most systems
-  const unixEditors = ['nano', 'vim', 'vi', 'emacs'];
-  // Note: We can't actually check if they're available without spawning
-  // So we'll just return the first one and let spawn handle the error
-  return unixEditors[0] || null;
-}
+// getDefaultEditor moved to utils/interaction.ts
 
 export {
   detectTerminalCapabilities,
@@ -412,37 +309,7 @@ export { validateAccountId, validateAmount };
  * @param options - Options including `yes` flag to skip confirmation
  * @returns Promise that resolves to true if confirmed, false otherwise
  */
-export async function confirmDestructiveOperation(
-  message: string,
-  options: { yes?: boolean } = {}
-): Promise<boolean> {
-  // Skip confirmation if --yes flag is set
-  if (options.yes === true) {
-    return true;
-  }
-
-  // Only prompt if stdout is a TTY (interactive terminal)
-  // Check if stdout is a TTY directly to avoid circular import
-  const isPiped = !process.stdout.isTTY;
-  if (isPiped) {
-    // In non-interactive mode, require --yes flag
-    return false;
-  }
-
-  // Use dynamic import to avoid loading @inquirer/prompts for all commands
-  const { confirm } = await import('@inquirer/prompts');
-
-  try {
-    const confirmed = await confirm({
-      message,
-      default: false,
-    });
-    return confirmed;
-  } catch {
-    // If confirmation fails (e.g., user cancels), return false
-    return false;
-  }
-}
+export { confirmDestructiveOperation };
 
 export {
   cleanupTempFiles,
