@@ -27,7 +27,6 @@ This repository is crafted with ❤️ by our talented community members. It's a
   - [Run - Local Simulation](#run---local-simulation)
   - [New Project](#new-project)
   - [Enable and Disable Code](#enable-and-disable-code)
-  - [AI and sandbox auth (disabled)](#ai-and-sandbox-auth-commands-disabled)
   - [Countries](#countries)
   - [Currencies](#currencies)
   - [Merchants](#merchants)
@@ -211,7 +210,6 @@ ipb env-list
 
 This command displays:
 - **API Credentials**: `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
-- **Optional credential fields**: `OPENAI_API_KEY`, `SANDBOX_KEY` (stored if set; AI/login commands are disabled in this build)
 - **Development**: `DEBUG`
 - **Security**: `REJECT_UNAUTHORIZED`
 
@@ -412,7 +410,7 @@ ipb config profile delete staging
 - Profiles are stored in `~/.ipb/profiles/<profile-name>.json`
 - The active profile is stored in `~/.ipb/active-profile.json`
 - All profile files use secure permissions (read/write for owner only)
-- Profiles can contain: `clientId`, `clientSecret`, `apiKey`, `cardKey`, `openaiKey`, `sandboxKey`, `host`
+- Profiles can contain: `clientId`, `clientSecret`, `apiKey`, `cardKey`, `host`
 
 **Profile Priority:**
 
@@ -573,12 +571,6 @@ ipb disable -c <card-id> --yes
 These commands allow you to control whether the programmable code is active on your card. This is useful for testing or temporarily disabling functionality.
 
 ![toggle command](assets/toggle.gif)
-
-### AI and sandbox auth commands (disabled)
-
-The **`ipb ai`**, **`ipb bank`**, **`ipb register`**, and **`ipb login`** commands are currently **disabled** in this CLI build (they remain as hidden entry points only so existing scripts get a clear error instead of “unknown command”). Write and deploy card code with your editor and **`ipb deploy`** / **`ipb run`** instead.
-
-Profile fields **`openaiKey`** and **`sandboxKey`** are still stored if you set them via **`ipb config`** for possible future use.
 
 ### Countries
 
@@ -792,7 +784,7 @@ ipb config --client-id <client-id> --client-secret <client-secret> --api-key <ap
 ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
 ```
 
-You can also set card key and optional **`openaiKey`** / **`sandboxKey`** fields on the credentials record using additional options.
+You can also set **card key** and **host** on the credentials record using additional options (see `ipb config --help`).
 
 **Profile Management:**
 
@@ -919,7 +911,6 @@ The CLI uses standardized error codes to help identify and troubleshoot issues. 
 | `E4008` | Invalid Project Name - The project name contains invalid characters |
 | `E4009` | Project Exists - A project with the specified name already exists |
 | `E4010` | File Not Found - The specified file does not exist |
-| `E4011` | Missing Email or Password - Email and password are required for authentication |
 | `E4012` | Missing Account ID - The account ID is required but was not provided |
 | `E5001` | Deploy Failed - Code deployment or API operation failed |
 
