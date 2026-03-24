@@ -40,6 +40,8 @@ import {
 } from './utils/output.js';
 import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
 import { formatFileSize, getFileSize } from './utils/file-size.js';
+import { initializeApi, initializePbApi, normalizeCardKey } from './utils/api.js';
+import { validateCredentialsFile } from './utils/credentials-validation.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -929,6 +931,7 @@ export function showUpdateNotification(currentVersion: string, latestVersion: st
 export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
 export type { OutputOptions, TableData, TableRow };
 export { formatFileSize, getFileSize };
+export { initializeApi, initializePbApi, normalizeCardKey, validateCredentialsFile };
 
 
 /**
@@ -1243,31 +1246,6 @@ export async function ensureCredentialsDirectory(credentialLocation: {
 }
 
 /**
- * Validates that required credential fields are present and non-empty.
- * @param creds - Credentials object to validate
- * @param requiredFields - Array of required field names (defaults to API credentials)
- * @throws {CliError} When required fields are missing or empty
- */
-export function validateCredentialsFile(
-  creds: Credentials | Record<string, string>,
-  requiredFields: string[] = ['clientId', 'clientSecret', 'apiKey']
-): void {
-  const credsRecord = creds as Record<string, string>;
-  const missing = requiredFields.filter(
-    (field) =>
-      !credsRecord[field] ||
-      (typeof credsRecord[field] === 'string' && credsRecord[field].trim() === '')
-  );
-
-  if (missing.length > 0) {
-    throw new CliError(
-      ERROR_CODES.INVALID_CREDENTIALS,
-      `Missing required credential fields: ${missing.join(', ')}. Run 'ipb config' to set your credentials.`
-    );
-  }
-}
-
-/**
  * Loads credentials from a JSON file and merges them with existing credentials.
  * @param credentials - Existing credentials object to merge into
  * @param credentialsFile - Path to the credentials file
@@ -1304,10 +1282,6 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   }
   return credentials;
 }
-
-import { optionCredentials } from './index.js';
-import type { ICardApi } from './mock-card.js';
-import type { IPbApi } from './mock-pb.js';
 
 /**
  * Writes a file atomically using a temporary file and rename.
@@ -1861,113 +1835,3 @@ export async function withRetry<T>(
 export { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome };
 export type { Spinner };
 
-/**
- * Initializes the Programmable Banking API client.
- * @param credentials - API credentials
- * @param options - Basic options including credential overrides
- * @returns Initialized IPbApi instance
- * @throws {Error} When API initialization fails
- */
-export async function initializePbApi(
-  credentials: Credentials,
-  options: BasicOptions
-): Promise<IPbApi> {
-  credentials = await optionCredentials(options, credentials);
-  // Validate required credentials before initializing API
-  validateCredentialsFile(credentials);
-  let api: IPbApi;
-  if (isDebugEnabled()) {
-    const { PbApi } = await import('./mock-pb.js');
-    api = new PbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host
-    );
-  } else {
-    const { InvestecPbApi } = await import('investec-pb-api');
-    api = new InvestecPbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host
-    );
-  }
-  try {
-    await api.getAccessToken();
-  } catch (error) {
-    throw normalizeInvestecError(error, 'pb-api-auth');
-  }
-
-  return api;
-}
-
-/**
- * Normalizes cardKey to a number, handling both string and number inputs.
- * @param cardKey - Card key as string or number
- * @param credentialsCardKey - Fallback card key from credentials (string)
- * @returns Normalized card key as number
- * @throws {CliError} When card key cannot be determined or is invalid
- */
-export function normalizeCardKey(
-  cardKey: string | number | undefined,
-  credentialsCardKey: string
-): number {
-  if (cardKey !== undefined) {
-    const num = typeof cardKey === 'string' ? Number(cardKey) : cardKey;
-    if (Number.isNaN(num)) {
-      throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Invalid card key: must be a number');
-    }
-    return num;
-  }
-  if (credentialsCardKey === '') {
-    throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'card-key is required');
-  }
-  const num = Number(credentialsCardKey);
-  if (Number.isNaN(num)) {
-    throw new CliError(
-      ERROR_CODES.MISSING_CARD_KEY,
-      'Invalid card key in credentials: must be a number'
-    );
-  }
-  return num;
-}
-
-/**
- * Initializes the Card API client.
- * @param credentials - API credentials
- * @param options - Basic options including credential overrides
- * @returns Initialized ICardApi instance
- * @throws {Error} When API initialization fails
- */
-export async function initializeApi(credentials: Credentials, options: BasicOptions): Promise<ICardApi> {
-  const resolvedCredentials = await optionCredentials(options, credentials);
-  validateCredentialsFile(resolvedCredentials);
-
-  let api: ICardApi;
-  if (isDebugEnabled()) {
-    const { CardApi } = await import('./mock-card.js');
-    api = new CardApi(
-      resolvedCredentials.clientId,
-      resolvedCredentials.clientSecret,
-      resolvedCredentials.apiKey,
-      resolvedCredentials.host
-    );
-  } else {
-    const { InvestecCardApi } = await import('investec-card-api');
-    api = new InvestecCardApi(
-      resolvedCredentials.clientId,
-      resolvedCredentials.clientSecret,
-      resolvedCredentials.apiKey,
-      resolvedCredentials.host
-    );
-  }
-
-  try {
-    await api.getAccessToken();
-  } catch (error) {
-    throw normalizeInvestecError(error, 'card-api-auth');
-  }
-
-  return api;
-}
