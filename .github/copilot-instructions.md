@@ -6,7 +6,7 @@ This is a command-line interface (CLI) tool for managing and interacting with In
 
 ## Technology Stack
 
-- **Runtime**: Node.js 22+ (ESM modules)
+- **Runtime**: Node.js 24+ (ESM modules)
 - **Language**: TypeScript 5.9+ with strict mode enabled
 - **CLI Framework**: Commander.js 14.x
 - **Testing**: Vitest 3.x

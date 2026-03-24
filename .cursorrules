@@ -3,7 +3,7 @@
 ## Project Technology Stack
 
 ### Core Technologies
-- **Node.js**: >=22.0.0 (ESM modules only)
+- **Node.js**: >=24.0.0 (ESM modules only)
 - **TypeScript**: 5.9.3 with strict mode
 - **Module System**: ESM (ES Modules) - all imports use `.js` extension
 - **CLI Framework**: Commander.js 14.x
