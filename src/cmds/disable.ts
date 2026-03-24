@@ -5,7 +5,7 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -41,10 +41,7 @@ export async function disableCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🍄 disabling code on card...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const result = await api.toggleCode(cardKey, false);
@@ -53,7 +50,5 @@ export async function disableCommand(options: Options) {
     } else {
       console.log('❌ code disable failed');
     }
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 }

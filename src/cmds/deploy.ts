@@ -11,8 +11,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePath,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -58,9 +58,6 @@ export async function deployCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 starting deployment...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let envObject = {};
   let saveResult:
     | {
@@ -71,9 +68,9 @@ export async function deployCommand(options: Options) {
         };
       }
     | undefined;
-  const api = await initializeApi(credentials, options);
 
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    const api = await initializeApi(credentials, options);
     if (options.env) {
       const envFilePath = `.env.${options.env}`;
       try {
@@ -127,9 +124,7 @@ export async function deployCommand(options: Options) {
       maxRetries: 3,
       verbose,
     });
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!saveResult) {
     return;

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
-import { createSpinner, formatFileSize, getFileSize, stopSpinner, validateFilePath } from '../utils.js';
+import { createSpinner, formatFileSize, getFileSize, validateFilePath, withSpinner } from '../utils.js';
 
 interface Options {
   filename: string;
@@ -64,14 +64,12 @@ export async function runCommand(options: Options) {
     const spinner = createSpinner(
       true,
       `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
-    ).start();
-    try {
+    );
+    await withSpinner(spinner, true, async () => {
       const data = await fsPromises.readFile(envFilePath, 'utf8');
       const lines = data.split('\n');
       environmentvariables = convertToJson(lines);
-    } finally {
-      stopSpinner(spinner, true);
-    }
+    });
   }
   // Convert the environmentvariables to a string
   const environmentvariablesString = JSON.stringify(environmentvariables);
@@ -80,12 +78,13 @@ export async function runCommand(options: Options) {
   const codeSpinner = createSpinner(
     true,
     `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
-  ).start();
-  let code: string;
-  try {
+  );
+  let code = '';
+  await withSpinner(codeSpinner, true, async () => {
     code = await fsPromises.readFile(normalizedFilename, 'utf8');
-  } finally {
-    stopSpinner(codeSpinner, true);
+  });
+  if (code === '') {
+    return;
   }
   // Run the code
   const executionItems = await run(transaction, code, environmentvariablesString);

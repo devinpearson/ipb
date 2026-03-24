@@ -125,7 +125,7 @@ export async function aiCommand(prompt: string, options: Options) {
     formatFileSize,
     getFileSize,
     createSpinner,
-    stopSpinner,
+    withSpinner,
   } = await import(
     '../utils.js'
   );
@@ -135,12 +135,10 @@ export async function aiCommand(prompt: string, options: Options) {
   const spinner = createSpinner(
     true,
     `💾 saving to file: ${chalk.greenBright(normalizedFilename)} (${formatFileSize(outputSize)})...`
-  ).start();
-  try {
+  );
+  await withSpinner(spinner, true, async () => {
     await fsPromises.writeFile(normalizedFilename, output, 'utf8');
-  } finally {
-    stopSpinner(spinner, true);
-  }
+  });
 
   const finalSize = await getFileSize(normalizedFilename);
   console.log(`🎉 generated code saved to file (${formatFileSize(finalSize)})`);
@@ -155,12 +153,10 @@ export async function aiCommand(prompt: string, options: Options) {
     const envSpinner = createSpinner(
       true,
       `💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)} (${formatFileSize(envSize)})...`
-    ).start();
-    try {
+    );
+    await withSpinner(envSpinner, true, async () => {
       await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
-    } finally {
-      stopSpinner(envSpinner, true);
-    }
+    });
 
     const finalEnvSize = await getFileSize(normalizedEnvFilename);
     console.log(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`);

@@ -4,7 +4,7 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -28,13 +28,23 @@ export async function enableCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🍄 enabling code on card...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  const api = await initializeApi(credentials, options);
+  let result:
+    | {
+        data: {
+          result: {
+            Enabled: boolean;
+          };
+        };
+      }
+    | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    const api = await initializeApi(credentials, options);
+    result = await api.toggleCode(cardKey, true);
+  });
 
-  const result = await api.toggleCode(cardKey, true);
-  stopSpinner(spinner, spinnerEnabled);
+  if (!result) {
+    return;
+  }
   if (result.data.result.Enabled) {
     console.log('✅ code enabled');
   } else {
