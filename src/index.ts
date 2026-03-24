@@ -105,12 +105,37 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option('-s,--spinner', 'disable spinner during command execution')
+    .option('-s,--spinner', 'disable spinner during command execution (deprecated: use --no-spinner)')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
     .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
 }
+
+/**
+ * Normalizes spinner flags while preserving backwards compatibility.
+ * Maps `--no-spinner` to legacy `--spinner` behavior and tracks deprecation usage.
+ * @param argv - Raw CLI argv
+ * @returns Normalized argv and deprecation indicator
+ */
+function normalizeSpinnerFlags(argv: string[]): {
+  argv: string[];
+  usedDeprecatedSpinnerFlag: boolean;
+} {
+  const normalized = [...argv];
+  const usedDeprecatedSpinnerFlag = normalized.includes('--spinner') || normalized.includes('-s');
+
+  for (let i = 0; i < normalized.length; i++) {
+    if (normalized[i] === '--no-spinner') {
+      normalized[i] = '--spinner';
+    }
+  }
+
+  return { argv: normalized, usedDeprecatedSpinnerFlag };
+}
+
+const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
+process.argv = spinnerFlagNormalization.argv;
 
 // Show help if no arguments are provided (unless --check-updates is specified)
 if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
@@ -181,6 +206,7 @@ function generateCompletionScript(shell: string): string {
     '--host',
     '--credentials-file',
     '--profile',
+    '--no-spinner',
     '--spinner',
     '--verbose',
     '--json',
@@ -440,6 +466,12 @@ _ipb "$@"
 
 async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
+
+  if (spinnerFlagNormalization.usedDeprecatedSpinnerFlag) {
+    console.warn(
+      chalk.yellow('Warning: `--spinner` / `-s` is deprecated. Use `--no-spinner` instead.')
+    );
+  }
 
   // Add global options
   program.option('--check-updates', 'Check for available updates');

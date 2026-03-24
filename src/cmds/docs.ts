@@ -255,6 +255,7 @@ export function generateCommandDocumentation(program: Command): string {
     '--host',
     '--credentials-file',
     '--profile',
+    '--no-spinner',
     '--spinner',
     '-s',
     '--verbose',
