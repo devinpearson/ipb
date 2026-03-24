@@ -26,6 +26,7 @@ vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');
   return {
     ...actual,
+    isStdoutPiped: vi.fn(() => false),
     validateFilePath: mockUtilsState.validateFilePath,
     getFileSize: mockUtilsState.getFileSize,
     formatFileSize: vi.fn((bytes: number) => `${bytes} B`),

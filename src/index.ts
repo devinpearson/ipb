@@ -249,6 +249,7 @@ function generateCompletionScript(shell: string): string {
       '--city',
       '--country',
       '--verbose',
+      '--spinner',
     ],
     r: [
       '--filename',
@@ -260,6 +261,7 @@ function generateCompletionScript(shell: string): string {
       '--city',
       '--country',
       '--verbose',
+      '--spinner',
     ], // alias for run
     simulate: [
       '--filename',
@@ -726,20 +728,22 @@ Examples:
     .requiredOption('-f,--filename <filename>', 'Output filename for logs (JSON format)')
     .option('-c,--card-key <cardKey>', 'Card identifier to fetch logs from')
     .action(withCommandContext('logs', logsCommand));
-  program
-    .command('run')
-    .alias('r')
-    .description(
-      'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('run')
+      .alias('r')
+      .description(
+        'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb run -f main.js -e prod --amount 60000 --currency ZAR
   $ ipb run -f app.js --amount 10000 --merchant "Test Store" --city "Cape Town"
       `
-    )
+      )
+  )
     .requiredOption('-f,--filename <filename>', 'JavaScript file to execute')
     .option('-e,--env <env>', 'Environment file to load (.env.<env>)')
     .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
@@ -748,7 +752,6 @@ Examples:
     .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
     .option('-i,--city <city>', 'Merchant city', 'Cape Town')
     .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
-    .option('-v,--verbose', 'Show detailed execution logs')
     .action(withCommandContext('run', runCommand));
   addApiCredentialOptions(
     program

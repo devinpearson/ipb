@@ -7,6 +7,9 @@ import {
   createSpinner,
   formatFileSize,
   getFileSize,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
   validateFilePath,
   withSpinner,
 } from '../utils.js';
@@ -21,6 +24,7 @@ interface Options {
   city: string;
   country: string;
   verbose: boolean;
+  spinner?: boolean;
 }
 
 /**
@@ -29,7 +33,16 @@ interface Options {
  * @throws {CliError} When file doesn't exist or code execution fails
  */
 export async function runCommand(options: Options) {
-  printTitleBox();
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
+
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
 
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
@@ -68,10 +81,10 @@ export async function runCommand(options: Options) {
 
     const envFileSize = await getFileSize(envFilePath);
     const spinner = createSpinner(
-      true,
-      `📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
+      spinnerEnabled,
+      getSafeText(`📖 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`)
     );
-    await withSpinner(spinner, true, async () => {
+    await withSpinner(spinner, spinnerEnabled, async () => {
       const data = await fsPromises.readFile(envFilePath, 'utf8');
       const lines = data.split('\n');
       environmentvariables = convertToJson(lines);
@@ -82,11 +95,11 @@ export async function runCommand(options: Options) {
 
   const codeFileSize = await getFileSize(normalizedFilename);
   const codeSpinner = createSpinner(
-    true,
-    `📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
+    spinnerEnabled,
+    getSafeText(`📖 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`)
   );
   let code = '';
-  await withSpinner(codeSpinner, true, async () => {
+  await withSpinner(codeSpinner, spinnerEnabled, async () => {
     code = await fsPromises.readFile(normalizedFilename, 'utf8');
   });
   if (code === '') {
