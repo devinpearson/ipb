@@ -1403,6 +1403,34 @@ export async function runListCommand<TFull, TSimple = TFull>(
   });
 }
 
+interface RunWriteCommandOptions {
+  spinnerEnabled: boolean;
+  filename: string;
+  content: string;
+  progressMessage: (sizeLabel: string) => string;
+  successMessage: (sizeLabel: string) => string;
+}
+
+/**
+ * Handles common file-write command behavior with spinner progress and final size output.
+ * @param options - Write command rendering options
+ */
+export async function runWriteCommand(options: RunWriteCommandOptions): Promise<void> {
+  const { spinnerEnabled, filename, content, progressMessage, successMessage } = options;
+  const contentSize = Buffer.byteLength(content, 'utf8');
+
+  const writeSpinner = createSpinner(
+    spinnerEnabled,
+    progressMessage(formatFileSize(contentSize))
+  );
+  await withSpinner(writeSpinner, spinnerEnabled, async () => {
+    await writeFile(filename, content, 'utf8');
+  });
+
+  const finalSize = await getFileSize(filename);
+  console.log(successMessage(formatFileSize(finalSize)));
+}
+
 /**
  * Truncates a string to a maximum length, adding ellipsis if truncated.
  * @param value - The value to truncate

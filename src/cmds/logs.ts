@@ -1,12 +1,10 @@
-import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatFileSize,
-  getFileSize,
   initializeApi,
   normalizeCardKey,
+  runWriteCommand,
   resolveSpinnerState,
   validateFilePathForWrite,
   withSpinner,
@@ -39,32 +37,23 @@ export async function logsCommand(options: Options) {
   const spinner = createSpinner(spinnerEnabled, '📊 fetching execution items...');
   let logsDataRaw: string | undefined;
   let normalizedFilename = '';
-  let logsSize = 0;
 
   await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
     const result = await api.getExecutions(cardKey);
     const logs = result.data.result.executionItems ?? [];
     logsDataRaw = JSON.stringify(logs, null, 4);
-    logsSize = Buffer.byteLength(logsDataRaw, 'utf8');
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
   });
 
   if (typeof logsDataRaw !== 'string' || normalizedFilename === '') {
     return;
   }
-  const logsToWrite = logsDataRaw;
-  const targetFilename = normalizedFilename;
-
-  // Show progress with file size for write operation
-  const writeSpinner = createSpinner(
+  await runWriteCommand({
     spinnerEnabled,
-    `💾 saving to file: ${targetFilename} (${formatFileSize(logsSize)})...`
-  );
-  await withSpinner(writeSpinner, spinnerEnabled, async () => {
-    await fsPromises.writeFile(targetFilename, logsToWrite, 'utf8');
+    filename: normalizedFilename,
+    content: logsDataRaw,
+    progressMessage: (size) => `💾 saving to file: ${normalizedFilename} (${size})...`,
+    successMessage: (size) => `🎉 logs saved to file (${size})`,
   });
-
-  const finalSize = await getFileSize(targetFilename);
-  console.log(`🎉 logs saved to file (${formatFileSize(finalSize)})`);
 }

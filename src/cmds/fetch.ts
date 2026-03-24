@@ -1,12 +1,10 @@
-import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatFileSize,
-  getFileSize,
   initializeApi,
   normalizeCardKey,
+  runWriteCommand,
   resolveSpinnerState,
   validateFilePathForWrite,
   withSpinner,
@@ -35,7 +33,6 @@ export async function fetchCommand(options: Options) {
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching code...');
   let code: string | undefined;
-  let codeSize = 0;
   let normalizedFilename = '';
   await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
@@ -66,7 +63,6 @@ export async function fetchCommand(options: Options) {
     }
 
     code = fetchedCode;
-    codeSize = Buffer.byteLength(fetchedCode, 'utf8');
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
   });
 
@@ -76,15 +72,11 @@ export async function fetchCommand(options: Options) {
   const codeToWrite = code;
   const targetFilename = normalizedFilename;
 
-  // Show progress with file size for write operation
-  const writeSpinner = createSpinner(
+  await runWriteCommand({
     spinnerEnabled,
-    `💾 saving to file: ${targetFilename} (${formatFileSize(codeSize)})...`
-  );
-  await withSpinner(writeSpinner, spinnerEnabled, async () => {
-    await fsPromises.writeFile(targetFilename, codeToWrite, 'utf8');
+    filename: targetFilename,
+    content: codeToWrite,
+    progressMessage: (size) => `💾 saving to file: ${targetFilename} (${size})...`,
+    successMessage: (size) => `🎉 code saved to file (${size})`,
   });
-
-  const finalSize = await getFileSize(targetFilename);
-  console.log(`🎉 code saved to file (${formatFileSize(finalSize)})`);
 }
