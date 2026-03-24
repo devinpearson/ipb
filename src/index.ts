@@ -164,6 +164,7 @@ function generateCompletionScript(shell: string): string {
     'deploy',
     'd', // alias for deploy
     'disable',
+    'docs',
     'enable',
     'env',
     'env-list',
@@ -224,6 +225,7 @@ function generateCompletionScript(shell: string): string {
     deploy: ['--filename', '--env', '--card-key', '--yes'],
     d: ['--filename', '--env', '--card-key', '--yes'], // alias for deploy
     disable: ['--card-key', '--yes'],
+    docs: ['--output'],
     enable: ['--card-key'],
     env: ['--filename', '--card-key'],
     'env-list': ['--json', '--yaml', '--output'],
