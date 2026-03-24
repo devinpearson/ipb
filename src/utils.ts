@@ -2552,6 +2552,31 @@ export function stopSpinner(spinner: Spinner, enabled: boolean): void {
 }
 
 /**
+ * Runs an async operation with optional spinner lifecycle management.
+ * Guarantees spinner cleanup via finally.
+ *
+ * @param spinner - Spinner instance returned by createSpinner
+ * @param enabled - Whether spinner lifecycle should run
+ * @param operation - Async operation to execute while spinner is active
+ * @returns Result returned by operation
+ */
+export async function withSpinner<T>(
+  spinner: Spinner,
+  enabled: boolean,
+  operation: () => Promise<T>
+): Promise<T> {
+  if (enabled) {
+    spinner.start();
+  }
+
+  try {
+    return await operation();
+  } finally {
+    stopSpinner(spinner, enabled);
+  }
+}
+
+/**
  * Initializes the Programmable Banking API client.
  * @param credentials - API credentials
  * @param options - Basic options including credential overrides

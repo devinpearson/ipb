@@ -4,10 +4,16 @@ import {
   formatOutput,
   initializeApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
+
+type CardSummary = {
+  CardKey: string | number;
+  CardNumber: string;
+  IsProgrammable: boolean;
+};
 
 /**
  * Fetches and displays a list of cards.
@@ -27,11 +33,8 @@ export async function cardsCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching cards...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  let cards;
-  try {
+  let cards: CardSummary[] | null | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     // Use retry logic with rate limit handling
@@ -40,16 +43,15 @@ export async function cardsCommand(options: CommonOptions) {
       verbose,
     });
     cards = result.data.cards;
-    if (!cards) {
-      if (!isPiped) {
-        console.log('No cards found');
-      } else {
-        process.stdout.write('[]\n');
-      }
-      return;
+  });
+
+  if (!cards || cards.length === 0) {
+    if (!isPiped) {
+      console.log('No cards found');
+    } else {
+      process.stdout.write('[]\n');
     }
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
+    return;
   }
 
   const simpleCards = cards.map(({ CardKey, CardNumber, IsProgrammable }) => ({

@@ -4,7 +4,7 @@ import {
   formatOutput,
   initializePbApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -26,10 +26,6 @@ export async function accountsCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching accounts...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-
   let accounts:
     | Array<{
         accountId: string;
@@ -39,7 +35,7 @@ export async function accountsCommand(options: CommonOptions) {
       }>
     | undefined;
 
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializePbApi(credentials, options);
     if (verbose && !isPiped) console.log('💳 fetching accounts...');
 
@@ -49,9 +45,7 @@ export async function accountsCommand(options: CommonOptions) {
       verbose,
     });
     accounts = result.data.accounts;
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!accounts || accounts.length === 0) {
     if (!isPiped) {
