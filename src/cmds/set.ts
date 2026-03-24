@@ -1,13 +1,18 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../index.js';
 import {
+  createSpinner,
   deleteProfile,
   ensureCredentialsDirectory,
   getActiveProfile,
+  getSafeText,
+  isStdoutPiped,
   listProfiles,
   readCredentialsFile,
   readProfile,
+  resolveSpinnerState,
   setActiveProfile,
+  withSpinner,
   writeCredentialsFile,
   writeProfile,
 } from '../utils.js';
@@ -21,6 +26,7 @@ interface Options {
   sandboxKey: string;
   profile?: string;
   verbose: boolean;
+  spinner?: boolean;
 }
 
 interface ProfileOptions {
@@ -29,6 +35,21 @@ interface ProfileOptions {
   delete?: string;
   set?: string;
   show?: boolean;
+}
+
+async function runWithConfigSpinner<T>(
+  options: Options & ProfileOptions,
+  text: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, getSafeText(text));
+  return withSpinner(spinner, spinnerEnabled, operation);
 }
 
 /**
@@ -84,26 +105,30 @@ export async function configCommand(options: Options & ProfileOptions) {
   }
 
   if (options.delete) {
-    await deleteProfile(options.delete);
+    const profileToDelete = options.delete;
+    await runWithConfigSpinner(options, 'Removing profile...', () =>
+      deleteProfile(profileToDelete)
+    );
     // If the deleted profile was active, clear the active profile
     const activeProfile = await getActiveProfile();
-    if (activeProfile === options.delete) {
+    if (activeProfile === profileToDelete) {
       await setActiveProfile(null);
-      console.log(`✅ Profile "${options.delete}" deleted and cleared from active profile.`);
+      console.log(`✅ Profile "${profileToDelete}" deleted and cleared from active profile.`);
     } else {
-      console.log(`✅ Profile "${options.delete}" deleted.`);
+      console.log(`✅ Profile "${profileToDelete}" deleted.`);
     }
     return;
   }
 
   // Regular config command - save to profile or default credentials
   if (options.profile) {
+    const profileName = options.profile;
     // Save to profile
     const profileData: Record<string, string> = {};
 
     // Read existing profile if it exists
     try {
-      const existing = await readProfile(options.profile);
+      const existing = await readProfile(profileName);
       Object.assign(profileData, existing);
     } catch {
       // Profile doesn't exist yet, start with defaults
@@ -129,8 +154,10 @@ export async function configCommand(options: Options & ProfileOptions) {
       profileData.sandboxKey = options.sandboxKey;
     }
 
-    await writeProfile(options.profile, profileData);
-    console.log(`🔑 Profile "${options.profile}" saved`);
+    await runWithConfigSpinner(options, `Saving profile "${profileName}"...`, () =>
+      writeProfile(profileName, profileData)
+    );
+    console.log(`🔑 Profile "${profileName}" saved`);
   } else {
     // Save to default credentials file
     const cred = await readCredentialsFile(credentialLocation);
@@ -157,7 +184,9 @@ export async function configCommand(options: Options & ProfileOptions) {
     if (options.sandboxKey) {
       cred.sandboxKey = options.sandboxKey;
     }
-    await writeCredentialsFile(credentialLocation.filename, cred);
+    await runWithConfigSpinner(options, 'Saving credentials...', () =>
+      writeCredentialsFile(credentialLocation.filename, cred)
+    );
     console.log('🔑 credentials saved');
   }
 }

@@ -1255,23 +1255,28 @@ Examples:
     });
 
   // Documentation generation command
-  program
-    .command('docs')
-    .description(
-      'Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('docs')
+      .description(
+        'Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb docs
   $ ipb docs --output COMMANDS.md
       `
-    )
+      )
+  )
     .option('--output <file>', 'Output file path (default: GENERATED_README.md)')
-    .action(async (options: { output?: string }) => {
+    .action(async (options: { output?: string; verbose?: boolean; spinner?: boolean }) => {
       const { docsCommand } = await import('./cmds/docs.js');
-      await docsCommand(options.output || 'GENERATED_README.md', program);
+      await docsCommand(options.output || 'GENERATED_README.md', program, {
+        verbose: options.verbose,
+        spinner: options.spinner,
+      });
     });
 
   // Check for --check-updates flag in raw arguments

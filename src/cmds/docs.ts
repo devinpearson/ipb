@@ -2,7 +2,14 @@ import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import { printTitleBox } from '../index.js';
-import { validateFilePathForWrite } from '../utils.js';
+import {
+  createSpinner,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  validateFilePathForWrite,
+  withSpinner,
+} from '../utils.js';
 
 /**
  * Interface for command information extracted from Commander.js
@@ -344,27 +351,41 @@ export function generateCommandDocumentation(program: Command): string {
   return lines.join('\n');
 }
 
+export interface DocsCommandOptions {
+  verbose?: boolean;
+  spinner?: boolean;
+}
+
 /**
  * Generates and writes command documentation to a file.
  * @param outputPath - Path to write the documentation file
  * @param program - Commander.js program instance
+ * @param options - Spinner / verbose (from CLI when wired)
  * @throws {Error} When file operations fail
  */
-export async function docsCommand(outputPath: string, program: Command) {
-  printTitleBox();
+export async function docsCommand(
+  outputPath: string,
+  program: Command,
+  options: DocsCommandOptions = {}
+) {
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
 
-  console.log(chalk.blueBright('📚 Generating command documentation...'));
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, getSafeText('📚 Generating documentation...'));
 
-  // Generate documentation from the program
-  const documentation = generateCommandDocumentation(program);
-
-  // Validate and normalize output path
-  const normalizedPath = await validateFilePathForWrite(outputPath);
-
-  // Write to file
-  await fsPromises.writeFile(normalizedPath, documentation, 'utf8');
-
-  const commandCount = program.commands.length;
-  console.log(chalk.green(`✅ Documentation generated successfully: ${normalizedPath}`));
-  console.log(chalk.gray(`   Total commands documented: ${commandCount}`));
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    const documentation = generateCommandDocumentation(program);
+    const normalizedPath = await validateFilePathForWrite(outputPath);
+    await fsPromises.writeFile(normalizedPath, documentation, 'utf8');
+    const commandCount = program.commands.length;
+    console.log(chalk.green(`✅ Documentation generated successfully: ${normalizedPath}`));
+    console.log(chalk.gray(`   Total commands documented: ${commandCount}`));
+  });
 }

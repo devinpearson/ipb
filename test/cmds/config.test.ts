@@ -29,6 +29,18 @@ vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');
   return {
     ...actual,
+    isStdoutPiped: vi.fn(() => false),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn(function () {
+        return this;
+      }),
+      stop: vi.fn(),
+      clear: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      text: '',
+    })),
+    withSpinner: vi.fn(async (_s, _e, fn: () => Promise<unknown>) => await fn()),
     listProfiles: vi.fn(async () => mockState.profiles),
     getActiveProfile: vi.fn(async () => mockState.activeProfile),
     readProfile: vi.fn(async (_name: string) => ({ clientId: 'existing' })),
