@@ -1,9 +1,7 @@
 import { writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import chalk from 'chalk';
+import cliTable3Module from 'cli-table3';
 import { isStdoutPiped } from './terminal.js';
-
-const require = createRequire(import.meta.url);
 
 interface CliTableLike {
   push: (...rows: unknown[]) => void;
@@ -12,14 +10,11 @@ interface CliTableLike {
 
 type CliTableConstructor = new (options: Record<string, unknown>) => CliTableLike;
 
-let CliTable: CliTableConstructor | undefined;
-
-try {
-  const requiredModule = require('cli-table3');
-  CliTable = (requiredModule?.default ?? requiredModule) as CliTableConstructor;
-} catch {
-  CliTable = undefined;
-}
+const CliTable: CliTableConstructor | undefined = (() => {
+  const mod = cliTable3Module as { default?: CliTableConstructor };
+  const Ctor = mod.default ?? (cliTable3Module as unknown as CliTableConstructor);
+  return typeof Ctor === 'function' ? Ctor : undefined;
+})();
 
 export interface TableRow {
   [key: string]: string | number | boolean | null | undefined;
