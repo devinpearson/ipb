@@ -210,7 +210,7 @@ function generateCompletionScript(shell: string): string {
   const commandOptions: Record<string, string[]> = {
     accounts: ['--json', '--yaml', '--output'],
     acc: ['--json', '--yaml', '--output'], // alias for accounts
-    ai: ['--filename', '--force', '--verbose'],
+    ai: ['--filename', '--force', '--verbose', '--spinner'],
     balances: ['--json', '--yaml', '--output'],
     bal: ['--json', '--yaml', '--output'], // alias for balances
     bank: ['--verbose', '--spinner'],
@@ -233,7 +233,7 @@ function generateCompletionScript(shell: string): string {
     logs: ['--filename', '--card-key'],
     log: ['--filename', '--card-key'], // alias for logs
     merchants: ['--json', '--yaml', '--output'],
-    new: ['--template', '--force', '--verbose'],
+    new: ['--template', '--force', '--verbose', '--spinner'],
     pay: ['--yes'],
     publish: ['--filename', '--code-id', '--card-key', '--yes'],
     pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
@@ -1125,22 +1125,23 @@ Examples:
       )
   ).action(withCommandContext('beneficiaries', beneficiariesCommand));
   // AI & Code Generation
-  program
-    .command('new')
-    .description(
-      'Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('new')
+      .description(
+        'Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb new my-project
   $ ipb new my-app --template petro
   $ ipb new my-project --force
       `
-    )
+      )
+  )
     .argument('name', 'Project name (will create a directory with this name)')
-    .option('-v,--verbose', 'Show detailed output during project creation')
     .option('--force', 'Overwrite existing project directory if it exists')
     .addOption(
       new Option('--template <template>', 'Template to use for project structure')
@@ -1148,23 +1149,24 @@ Examples:
         .choices(['default', 'petro'])
     )
     .action(withCommandContext('new', newCommand));
-  program
-    .command('ai')
-    .description(
-      'Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('ai')
+      .description(
+        'Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb ai "block transactions over R1000"
   $ ipb ai "only allow transactions at Woolworths" -f rules.js
   $ ipb ai "send SMS notification after payment" --force
       `
-    )
+      )
+  )
     .argument('prompt', 'Natural language description of the card code behavior')
     .option('-f,--filename <filename>', 'Output filename for generated code', 'ai-generated.js')
-    .option('-v,--verbose', 'Show detailed generation process')
     .option('--force', 'Overwrite existing file if it exists')
     .action(withCommandContext('ai', generateCommand));
   addSpinnerVerboseOptions(

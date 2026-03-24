@@ -14,6 +14,18 @@ vi.mock('../../src/utils.ts', async () => {
   return {
     ...actual,
     getSafeText: vi.fn((text: string) => text),
+    isStdoutPiped: vi.fn(() => false),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn(function () {
+        return this;
+      }),
+      stop: vi.fn(),
+      clear: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      text: '',
+    })),
+    withSpinner: vi.fn(async (_s, _e, fn: () => Promise<unknown>) => await fn()),
   };
 });
 

@@ -7,6 +7,16 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  formatFileSize,
+  getFileSize,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  validateFilePathForWrite,
+  withSpinner,
+} from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -78,6 +88,7 @@ interface Options {
   credentialsFile: string;
   filename: string;
   verbose: boolean;
+  spinner?: boolean;
 }
 /**
  * Generates card code using an LLM based on a prompt.
@@ -87,7 +98,17 @@ interface Options {
  */
 export async function aiCommand(prompt: string, options: Options) {
   const envFilename = '.env.ai';
-  printTitleBox();
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
+
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+
   // Prompt for prompt if not provided
   if (!prompt) {
     prompt = await input({ message: 'Enter your AI code prompt:' });
@@ -97,7 +118,13 @@ export async function aiCommand(prompt: string, options: Options) {
   console.log(chalk.blueBright('Prompt:'));
   console.log(prompt);
 
-  const response = await generateCode(prompt, instructions);
+  const genSpinner = createSpinner(
+    spinnerEnabled,
+    getSafeText('🤖 generating code with OpenAI...')
+  );
+  const response = await withSpinner(genSpinner, spinnerEnabled, async () =>
+    generateCode(prompt, instructions)
+  );
   if (options.verbose) {
     console.log('');
     console.log(chalk.blueBright('Response from OpenAI:'));
@@ -120,21 +147,19 @@ export async function aiCommand(prompt: string, options: Options) {
   }
 
   const output = response.code;
-  const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner, withSpinner } =
-    await import('../utils.js');
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
 
   const outputSize = Buffer.byteLength(output, 'utf8');
   const spinner = createSpinner(
-    true,
-    `💾 saving to file: ${chalk.greenBright(normalizedFilename)} (${formatFileSize(outputSize)})...`
+    spinnerEnabled,
+    getSafeText(`💾 saving to file: ${normalizedFilename} (${formatFileSize(outputSize)})...`)
   );
-  await withSpinner(spinner, true, async () => {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     await fsPromises.writeFile(normalizedFilename, output, 'utf8');
   });
 
   const finalSize = await getFileSize(normalizedFilename);
-  console.log(`🎉 generated code saved to file (${formatFileSize(finalSize)})`);
+  console.log(getSafeText(`🎉 generated code saved to file (${formatFileSize(finalSize)})`));
 
   if (response?.env_variables) {
     console.log('');
@@ -144,15 +169,17 @@ export async function aiCommand(prompt: string, options: Options) {
       .join('');
     const envSize = Buffer.byteLength(envContent, 'utf8');
     const envSpinner = createSpinner(
-      true,
-      `💾 saving env variables to file: ${chalk.greenBright(normalizedEnvFilename)} (${formatFileSize(envSize)})...`
+      spinnerEnabled,
+      getSafeText(
+        `💾 saving env variables to file: ${normalizedEnvFilename} (${formatFileSize(envSize)})...`
+      )
     );
-    await withSpinner(envSpinner, true, async () => {
+    await withSpinner(envSpinner, spinnerEnabled, async () => {
       await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
     });
 
     const finalEnvSize = await getFileSize(normalizedEnvFilename);
-    console.log(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`);
+    console.log(getSafeText(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`));
   }
   if (response?.example_transaction) {
     console.log('');

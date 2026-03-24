@@ -4,12 +4,19 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
-import { getSafeText } from '../utils.js';
+import {
+  createSpinner,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  withSpinner,
+} from '../utils.js';
 
 interface Options {
   template: string;
   verbose: boolean;
   force: boolean;
+  spinner?: boolean;
 }
 
 /**
@@ -19,7 +26,17 @@ interface Options {
  * @throws {CliError} When template is not found, project name is invalid, or project already exists
  */
 export async function newCommand(name: string, options: Options) {
-  printTitleBox();
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
+
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+
   const dirnameValue = path.dirname(fileURLToPath(import.meta.url));
   const uri = path.join(dirnameValue, '/../templates/', options.template);
   console.log(getSafeText(`📂 Finding template called ${chalk.green(options.template)}`));
@@ -35,15 +52,20 @@ export async function newCommand(name: string, options: Options) {
       )
     );
   }
-  // Add a force option to the Options interface
   if (fs.existsSync(name) && options.force) {
     console.log(chalk.yellowBright(`Warning: Overwriting existing project ${name}`));
-    // Remove existing directory
-    fs.rmSync(name, { recursive: true, force: true });
   } else if (fs.existsSync(name)) {
     throw new CliError(ERROR_CODES.PROJECT_EXISTS, getSafeText('💣 Project already exists'));
   }
-  fs.cpSync(uri, name, { recursive: true });
+
+  const copySpinner = createSpinner(spinnerEnabled, getSafeText('📂 copying template...'));
+  await withSpinner(copySpinner, spinnerEnabled, async () => {
+    if (fs.existsSync(name) && options.force) {
+      fs.rmSync(name, { recursive: true, force: true });
+    }
+    fs.cpSync(uri, name, { recursive: true });
+  });
+
   console.log(getSafeText(`🚀 Created new project from template ${options.template}`));
   console.log('');
   // Provide next steps
