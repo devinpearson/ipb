@@ -1,9 +1,9 @@
-import { promises as fsPromises } from 'node:fs';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  runWriteCommand,
   resolveSpinnerState,
   validateFilePathForWrite,
   withSpinner,
@@ -43,7 +43,11 @@ export async function publishedCommand(options: Options) {
     return;
   }
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
-  console.log(`💾 saving to file: ${normalizedFilename}`);
-  await fsPromises.writeFile(normalizedFilename, code, 'utf8');
-  console.log('🎉 code saved to file');
+  await runWriteCommand({
+    spinnerEnabled,
+    filename: normalizedFilename,
+    content: code,
+    progressMessage: (size) => `💾 saving to file: ${normalizedFilename} (${size})...`,
+    successMessage: (size) => `🎉 code saved to file (${size})`,
+  });
 }

@@ -1,9 +1,9 @@
-import { promises as fsPromises } from 'node:fs';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
+  runWriteCommand,
   resolveSpinnerState,
   validateFilePathForWrite,
   withSpinner,
@@ -43,8 +43,12 @@ export async function envCommand(options: Options) {
   if (envs === undefined || normalizedFilename === '') {
     return;
   }
-
-  console.log(`💾 saving to file: ${normalizedFilename}`);
-  await fsPromises.writeFile(normalizedFilename, JSON.stringify(envs, null, 4), 'utf8');
-  console.log('🎉 envs saved to file');
+  const content = JSON.stringify(envs, null, 4);
+  await runWriteCommand({
+    spinnerEnabled,
+    filename: normalizedFilename,
+    content,
+    progressMessage: (size) => `💾 saving to file: ${normalizedFilename} (${size})...`,
+    successMessage: (size) => `🎉 envs saved to file (${size})`,
+  });
 }
