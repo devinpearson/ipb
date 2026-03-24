@@ -39,6 +39,17 @@ vi.mock('../../src/utils.ts', async () => {
     validateAccountId: vi.fn(),
     validateAmount: vi.fn(),
     initializePbApi: vi.fn(async () => mockUtilsState.pbApi),
+    isStdoutPiped: vi.fn(() => false),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn(function () {
+        return this;
+      }),
+      stop: vi.fn(),
+      clear: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      text: '',
+    })),
     withRetry: vi.fn(async (fn: () => Promise<unknown>) => await fn()),
   };
 });

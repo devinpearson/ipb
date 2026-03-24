@@ -3,10 +3,15 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   confirmDestructiveOperation,
+  createSpinner,
+  getSafeText,
   initializePbApi,
+  isStdoutPiped,
+  resolveSpinnerState,
   validateAccountId,
   validateAmount,
   withRetry,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -49,7 +54,12 @@ export async function payCommand(
   if (!reference) {
     reference = await input({ message: 'Enter reference for the payment:' });
   }
-  printTitleBox();
+
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
+
   const api = await initializePbApi(credentials, options);
 
   // Show transaction summary and require confirmation
@@ -70,23 +80,29 @@ export async function payCommand(
     return;
   }
 
-  console.log('💳 paying');
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, getSafeText('💳 paying...'));
 
-  // Use retry logic with rate limit handling
-  const result = await withRetry(
-    () =>
-      api.payMultiple(accountId, [
-        {
-          beneficiaryId: beneficiaryId,
-          amount: amount.toString(),
-          myReference: reference,
-          theirReference: reference,
-        },
-      ]),
-    {
-      maxRetries: 3,
-      verbose: options.verbose,
-    }
+  const result = await withSpinner(spinner, spinnerEnabled, async () =>
+    withRetry(
+      () =>
+        api.payMultiple(accountId, [
+          {
+            beneficiaryId: beneficiaryId,
+            amount: amount.toString(),
+            myReference: reference,
+            theirReference: reference,
+          },
+        ]),
+      {
+        maxRetries: 3,
+        verbose: options.verbose,
+      }
+    )
   );
   for (const transfer of result.data.TransferResponses) {
     console.log(

@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { availableFunctions, tools } from '../function-calls.js';
 import { credentials, printTitleBox } from '../index.js';
+import { createSpinner, isStdoutPiped, resolveSpinnerState, withSpinner } from '../utils.js';
 
 const agent = new https.Agent({
   rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
@@ -18,6 +19,7 @@ interface Options {
   credentialsFile: string;
   filename: string;
   verbose: boolean;
+  spinner?: boolean;
 }
 
 /**
@@ -49,7 +51,17 @@ export async function bankCommand(prompt: string, options: Options) {
   console.log(chalk.blueBright('Prompt:'));
   console.log(prompt);
 
-  const response = await generateResponse(prompt, instructions);
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, 'Calling OpenAI...');
+
+  const response = await withSpinner(spinner, spinnerEnabled, async () =>
+    generateResponse(prompt, instructions)
+  );
   if (options.verbose) {
     console.log('');
     console.log(chalk.blueBright('Response from OpenAI:'));

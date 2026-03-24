@@ -5,9 +5,14 @@ import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation, printTitleBox } from '../index.js';
 import {
+  createSpinner,
   ensureCredentialsDirectory,
+  getSafeText,
+  isStdoutPiped,
   normalizeFilePath,
   readCredentialsFile,
+  resolveSpinnerState,
+  withSpinner,
   writeCredentialsFile,
 } from '../utils.js';
 
@@ -20,6 +25,7 @@ interface Options {
   password: string;
   credentialsFile: string;
   verbose: boolean;
+  spinner?: boolean;
 }
 
 interface LoginResponse {
@@ -52,18 +58,29 @@ export async function loginCommand(options: Options) {
   if (!options.email || !options.password) {
     throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, 'Email and password are required');
   }
-  console.log('💳 logging into account');
-  const result = await fetch('https://ipb.sandboxpay.co.za/auth/login', {
-    agent,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: options.email,
-      password: options.password,
-    }),
+
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
   });
+  const spinner = createSpinner(spinnerEnabled, getSafeText('💳 logging into account...'));
+
+  const result = await withSpinner(spinner, spinnerEnabled, async () =>
+    fetch('https://ipb.sandboxpay.co.za/auth/login', {
+      agent,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: options.email,
+        password: options.password,
+      }),
+    })
+  );
+
   if (!result.ok) {
     const body = await result.text();
     throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, `Login failed: ${result.status} ${body}`);
@@ -89,5 +106,5 @@ export async function loginCommand(options: Options) {
   // Update and write back to the resolved path
   cred.sandboxKey = loginResponse.access_token;
   await writeCredentialsFile(credentialFilePath, cred);
-  console.log('🔑 access token saved');
+  console.log(getSafeText('🔑 access token saved'));
 }

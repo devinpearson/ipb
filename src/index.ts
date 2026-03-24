@@ -117,6 +117,16 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
 }
 
+/** Spinner + verbose only (for commands that do not use Investec API credential flags). */
+function addSpinnerVerboseOptions(cmd: Command) {
+  return cmd
+    .option(
+      '-s,--spinner',
+      'disable spinner during command execution (deprecated: use --no-spinner)'
+    )
+    .option('-v,--verbose', 'additional debugging information');
+}
+
 const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
 process.argv = spinnerFlagNormalization.argv;
 
@@ -203,7 +213,7 @@ function generateCompletionScript(shell: string): string {
     ai: ['--filename', '--force', '--verbose'],
     balances: ['--json', '--yaml', '--output'],
     bal: ['--json', '--yaml', '--output'], // alias for balances
-    bank: ['--verbose'],
+    bank: ['--verbose', '--spinner'],
     beneficiaries: ['--json', '--yaml', '--output'],
     cards: ['--json', '--yaml', '--output'],
     c: ['--json', '--yaml', '--output'], // alias for cards
@@ -219,7 +229,7 @@ function generateCompletionScript(shell: string): string {
     'env-list': ['--json', '--yaml', '--output'],
     fetch: ['--filename', '--card-key'],
     f: ['--filename', '--card-key'], // alias for fetch
-    login: ['--email', '--password'],
+    login: ['--email', '--password', '--spinner', '--verbose'],
     logs: ['--filename', '--card-key'],
     log: ['--filename', '--card-key'], // alias for logs
     merchants: ['--json', '--yaml', '--output'],
@@ -228,7 +238,7 @@ function generateCompletionScript(shell: string): string {
     publish: ['--filename', '--code-id', '--card-key', '--yes'],
     pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
     published: ['--filename', '--card-key'],
-    register: ['--email', '--password'],
+    register: ['--email', '--password', '--spinner', '--verbose'],
     run: [
       '--filename',
       '--env',
@@ -262,6 +272,16 @@ function generateCompletionScript(shell: string): string {
       '--city',
       '--country',
       '--verbose',
+      '--spinner',
+      '--api-key',
+      '--client-id',
+      '--client-secret',
+      '--host',
+      '--credentials-file',
+      '--profile',
+      '--json',
+      '--yaml',
+      '--output',
     ],
     transfer: ['--yes'],
     transactions: ['--json', '--yaml', '--output'],
@@ -867,19 +887,21 @@ Examples:
     .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
     .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('publish', publishCommand));
-  program
-    .command('simulate')
-    .description(
-      'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addApiCredentialOptions(
+    program
+      .command('simulate')
+      .description(
+        'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb simulate -f main.js -c card-123 --amount 60000 --currency ZAR
   $ ipb simulate -f app.js --card-key card-456 --env production
       `
-    )
+      )
+  )
     .requiredOption('-f,--filename <filename>', 'JavaScript file to simulate (required)')
     .option('-c,--card-key <cardKey>', 'Card identifier for simulation')
     .option('-e,--env <env>', 'Environment name', 'development')
@@ -889,7 +911,6 @@ Examples:
     .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
     .option('-i,--city <city>', 'Merchant city', 'Cape Town')
     .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
-    .option('-v,--verbose', 'Show detailed execution logs')
     .action(withCommandContext('simulate', simulateCommand));
   addApiCredentialOptions(
     program
@@ -1143,58 +1164,60 @@ Examples:
     .option('-v,--verbose', 'Show detailed generation process')
     .option('--force', 'Overwrite existing file if it exists')
     .action(withCommandContext('ai', generateCommand));
-  program
-    .command('bank')
-    .description(
-      'Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('bank')
+      .description(
+        'Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb bank "Show me my last 5 transactions"
   $ ipb bank "What is my account balance?"
   $ ipb bank "Transfer R100 to account acc-123"
       `
-    )
-    .argument('prompt', 'Natural language description of the banking operation to perform')
-    .option('-v,--verbose', 'Show detailed AI interaction and function calls')
-    .action(withCommandContext('bank', bankCommand));
+      )
+      .argument('prompt', 'Natural language description of the banking operation to perform')
+  ).action(withCommandContext('bank', bankCommand));
   // Authentication
-  program
-    .command('register')
-    .description(
-      'Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.'
-    )
-    .addHelpText(
-      'after',
-      `
+  addSpinnerVerboseOptions(
+    program
+      .command('register')
+      .description(
+        'Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb register -e user@example.com -p securepassword
   $ ipb register --email user@example.com --password securepassword
       
 Note: After registration, message in #12_sandbox-playground with your email to activate your account.
       `
-    )
-    .option('-e,--email <email>', 'Email address for registration')
-    .option('-p,--password <password>', 'Password for your account')
-    .action(withCommandContext('register', registerCommand));
-  program
-    .command('login')
-    .description(
-      'Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.'
-    )
-    .addHelpText(
-      'after',
-      `
+      )
+      .option('-e,--email <email>', 'Email address for registration')
+      .option('-p,--password <password>', 'Password for your account')
+  ).action(withCommandContext('register', registerCommand));
+  addSpinnerVerboseOptions(
+    program
+      .command('login')
+      .description(
+        'Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.'
+      )
+      .addHelpText(
+        'after',
+        `
 Examples:
   $ ipb login -e user@example.com -p securepassword
   $ ipb login --email user@example.com --password securepassword
       `
-    )
-    .option('-e,--email <email>', 'Your registered email address')
-    .option('-p,--password <password>', 'Your account password')
-    .action(withCommandContext('login', loginCommand));
+      )
+      .option('-e,--email <email>', 'Your registered email address')
+      .option('-p,--password <password>', 'Your account password')
+  ).action(withCommandContext('login', loginCommand));
   // Utilities
   program
     .command('completion')

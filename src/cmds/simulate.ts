@@ -1,24 +1,28 @@
 import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
-import { credentials } from '../index.js';
-import { initializeApi, normalizeCardKey, validateFilePath } from '../utils.js';
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  getSafeText,
+  initializeApi,
+  isStdoutPiped,
+  normalizeCardKey,
+  resolveSpinnerState,
+  validateFilePath,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-interface Options {
-  cardKey?: string | number;
+export interface SimulateCommandOptions extends CommonOptions {
   filename: string;
+  cardKey?: string | number;
   currency: string;
   amount: number;
   mcc: string;
   merchant: string;
   city: string;
   country: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
 }
 
 /**
@@ -26,15 +30,20 @@ interface Options {
  * @param options - CLI options including card key, filename, transaction details, and API credentials
  * @throws {CliError} When card key is missing, file doesn't exist, or simulation fails
  */
-export async function simulateCommand(options: Options) {
-  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+export async function simulateCommand(options: SimulateCommandOptions) {
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
+    printTitleBox();
+  }
 
-  // Validate and normalize filename
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
 
-  const api = await initializeApi(credentials, options);
-
-  console.log('🚀 uploading code & running simulation');
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
   const code = await fsPromises.readFile(normalizedFilename, 'utf8');
   const transaction = createTransaction(
     options.currency,
@@ -45,7 +54,13 @@ export async function simulateCommand(options: Options) {
     options.country
   );
 
-  const result = await api.executeCode(code, transaction, cardKey);
+  const spinner = createSpinner(spinnerEnabled, getSafeText('🚀 running cloud simulation...'));
+
+  const result = await withSpinner(spinner, spinnerEnabled, async () => {
+    const api = await initializeApi(credentials, options);
+    return await api.executeCode(code, transaction, cardKey);
+  });
+
   const executionItems = result.data.result;
   console.log('');
   console.log(chalk.white(`Simulated code:`), chalk.blueBright(normalizedFilename));
@@ -56,7 +71,6 @@ export async function simulateCommand(options: Options) {
   console.log(chalk.blue(`merchant name:`), chalk.greenBright(transaction.merchant.name));
   console.log(chalk.blue(`merchant city:`), chalk.green(transaction.merchant.city));
   console.log(chalk.blue(`merchant country:`), chalk.green(transaction.merchant.country.code));
-  // Read the template env.json file and replace the values with the process.env values
 
   executionItems.forEach((item) => {
     console.log('\n💻 ', chalk.green(item.type));

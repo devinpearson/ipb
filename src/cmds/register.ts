@@ -3,6 +3,13 @@ import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  withSpinner,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 const agent = new https.Agent({
@@ -37,18 +44,29 @@ export async function registerCommand(options: Options) {
   if (!options.email || !options.password) {
     throw new CliError(ERROR_CODES.MISSING_EMAIL_OR_PASSWORD, 'Email and password are required');
   }
-  console.log('💳 registering account');
-  const result = await fetch('https://ipb.sandboxpay.co.za/auth/register', {
-    agent,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: options.email,
-      password: options.password,
-    }),
+
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
   });
+  const spinner = createSpinner(spinnerEnabled, getSafeText('💳 registering account...'));
+
+  const result = await withSpinner(spinner, spinnerEnabled, async () =>
+    fetch('https://ipb.sandboxpay.co.za/auth/register', {
+      agent,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: options.email,
+        password: options.password,
+      }),
+    })
+  );
+
   if (!result.ok) {
     const body = await result.text();
     throw new CliError(
