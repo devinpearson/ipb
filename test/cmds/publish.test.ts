@@ -53,8 +53,13 @@ const mockFsPromises = vi.hoisted(() => ({
 }));
 
 vi.mock('node:fs', () => ({
-  default: {},
+  default: { promises: mockFsPromises },
   promises: mockFsPromises,
+}));
+
+vi.mock('node:fs/promises', () => ({
+  readFile: mockFsPromises.readFile,
+  stat: mockFsPromises.stat,
 }));
 
 const { initializeApi } = await import('../../src/utils.ts');

@@ -1431,6 +1431,45 @@ export async function runWriteCommand(options: RunWriteCommandOptions): Promise<
   console.log(successMessage(formatFileSize(finalSize)));
 }
 
+interface RunReadUploadCommandOptions<TResult> {
+  spinner: Spinner;
+  spinnerEnabled: boolean;
+  filename: string;
+  readMessage: (sizeLabel: string) => string;
+  uploadMessage: (sizeLabel: string) => string;
+  readFileContent?: (filename: string) => Promise<string>;
+  upload: (content: string) => Promise<TResult>;
+}
+
+/**
+ * Handles common read-file then upload flow with spinner progress text updates.
+ * @param options - Read and upload command options
+ * @returns Upload result
+ */
+export async function runReadUploadCommand<TResult>(
+  options: RunReadUploadCommandOptions<TResult>
+): Promise<TResult> {
+  const {
+    spinner,
+    spinnerEnabled,
+    filename,
+    readMessage,
+    uploadMessage,
+    readFileContent,
+    upload,
+  } = options;
+
+  return await withSpinner(spinner, spinnerEnabled, async () => {
+    const codeFileSize = await getFileSize(filename);
+    spinner.text = readMessage(formatFileSize(codeFileSize));
+    const readContent = readFileContent ?? ((path: string) => readFile(path, 'utf8'));
+    const content = await readContent(filename);
+    const contentSize = Buffer.byteLength(content, 'utf8');
+    spinner.text = uploadMessage(formatFileSize(contentSize));
+    return await upload(content);
+  });
+}
+
 /**
  * Truncates a string to a maximum length, adding ellipsis if truncated.
  * @param value - The value to truncate

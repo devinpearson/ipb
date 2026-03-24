@@ -1,16 +1,13 @@
-import { promises as fsPromises } from 'node:fs';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   confirmDestructiveOperation,
   createSpinner,
-  formatFileSize,
-  getFileSize,
   initializeApi,
   normalizeCardKey,
+  runReadUploadCommand,
   resolveSpinnerState,
   validateFilePath,
-  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -59,6 +56,7 @@ export async function publishCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
+  const api = await initializeApi(credentials, options);
   let result:
     | {
         data: {
@@ -68,15 +66,14 @@ export async function publishCommand(options: Options) {
         };
       }
     | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializeApi(credentials, options);
-
-    const codeFileSize = await getFileSize(normalizedFilename);
-    spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
-    const code = await fsPromises.readFile(normalizedFilename, 'utf8');
-    const codeSize = Buffer.byteLength(code, 'utf8');
-    spinner.text = `🚀 publishing code (${formatFileSize(codeSize)})...`;
-    result = await api.uploadPublishedCode(cardKey, options.codeId, code);
+  result = await runReadUploadCommand({
+    spinner,
+    spinnerEnabled,
+    filename: normalizedFilename,
+    readMessage: (size) => `🚀 reading code from ${normalizedFilename} (${size})...`,
+    uploadMessage: (size) => `🚀 publishing code (${size})...`,
+    upload: async (content) =>
+      await api.uploadPublishedCode(cardKey, options.codeId, content),
   });
 
   if (!result) {
