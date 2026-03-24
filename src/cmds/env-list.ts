@@ -67,7 +67,8 @@ export async function envListCommand(options: CommonOptions) {
     },
     {
       name: 'OPENAI_API_KEY',
-      description: 'OpenAI API key for AI code generation features. Get this from OpenAI Platform.',
+      description:
+        'OpenAI API key (reserved for future use; the `ipb ai` command is currently disabled).',
       required: false,
       example: 'sk-...',
       category: 'AI Generation',
@@ -75,7 +76,7 @@ export async function envListCommand(options: CommonOptions) {
     {
       name: 'SANDBOX_KEY',
       description:
-        'Sandbox access token for AI generation service. Obtained via `ipb login` command.',
+        'Sandbox access token (reserved for future use; `ipb login` and AI commands are currently disabled).',
       required: false,
       example: 'your-sandbox-token',
       category: 'AI Generation',

@@ -1,5 +1,3 @@
-import { aiCommand } from './ai.js';
-import { bankCommand } from './bank.js';
 import { cardsCommand } from './cards.js';
 import { countriesCommand } from './countries.js';
 import { currenciesCommand } from './currencies.js';
@@ -38,6 +36,4 @@ export {
   countriesCommand,
   merchantsCommand,
   newCommand,
-  aiCommand as generateCommand,
-  bankCommand,
 };

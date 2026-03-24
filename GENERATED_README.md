@@ -1,33 +1,33 @@
 # IPB CLI Command Reference
 
 > This documentation is auto-generated from the CLI command definitions.
-> Last generated: 2025-11-05T06:34:44.819Z
+> Last generated: 2026-03-24T17:41:15.060Z
 
 ## Table of Contents
 
-- [cards](#cards)
-- [config](#config)
-- [deploy](#deploy)
-- [logs](#logs)
-- [run](#run)
-- [fetch](#fetch)
-- [upload](#upload)
+- [cards](#cards-aliases-c)
+- [config](#config-aliases-cfg)
+- [deploy](#deploy-aliases-d)
+- [logs](#logs-aliases-log)
+- [run](#run-aliases-r)
+- [fetch](#fetch-aliases-f)
+- [upload](#upload-aliases-up)
 - [env](#env)
 - [env-list](#env-list)
 - [upload-env](#upload-env)
 - [published](#published)
-- [publish](#publish)
+- [publish](#publish-aliases-pub)
 - [simulate](#simulate)
 - [enable](#enable)
 - [disable](#disable)
 - [currencies](#currencies)
 - [countries](#countries)
 - [merchants](#merchants)
-- [accounts](#accounts)
-- [balances](#balances)
+- [accounts](#accounts-aliases-acc)
+- [balances](#balances-aliases-bal)
 - [transfer](#transfer)
 - [pay](#pay)
-- [transactions](#transactions)
+- [transactions](#transactions-aliases-tx)
 - [beneficiaries](#beneficiaries)
 - [new](#new)
 - [ai](#ai)
@@ -62,7 +62,7 @@ Configure authentication credentials. Set API keys, client credentials, and card
 
 Manage configuration profiles
 
-**Usage:** `ipb profile`
+**Usage:** `ipb config profile`
 
 **Subcommands:**
 
@@ -70,13 +70,13 @@ Manage configuration profiles
 
 List all available configuration profiles
 
-**Usage:** `ipb list`
+**Usage:** `ipb config profile list`
 
 #### set
 
 Set the active profile (used when --profile is not specified)
 
-**Usage:** `ipb set <profile>`
+**Usage:** `ipb config profile set <profile>`
 
 **Arguments:**
 
@@ -86,17 +86,23 @@ Set the active profile (used when --profile is not specified)
 
 Show the currently active profile
 
-**Usage:** `ipb show`
+**Usage:** `ipb config profile show`
 
 #### delete (aliases: rm)
 
 Delete a configuration profile
 
-**Usage:** `ipb delete <profile>`
+**Usage:** `ipb config profile delete <profile>`
 
 **Arguments:**
 
 - `<profile>` (required) - Profile name to delete
+
+### edit
+
+Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.
+
+**Usage:** `ipb config edit`
 
 
 ## deploy (aliases: d)

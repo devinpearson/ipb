@@ -13,7 +13,13 @@ import { accountsCommand } from './cmds/accounts.js';
 import { balancesCommand } from './cmds/balances.js';
 import { beneficiariesCommand } from './cmds/beneficiaries.js';
 import {
-  bankCommand,
+  runConfigEdit,
+  runConfigProfileDelete,
+  runConfigProfileList,
+  runConfigProfileSet,
+  runConfigProfileShow,
+} from './cmds/config-subcommands.js';
+import {
   cardsCommand,
   configCommand,
   countriesCommand,
@@ -24,7 +30,6 @@ import {
   envCommand,
   envListCommand,
   fetchCommand,
-  generateCommand,
   logsCommand,
   merchantsCommand,
   newCommand,
@@ -34,14 +39,12 @@ import {
   uploadCommand,
   uploadEnvCommand,
 } from './cmds/index.js';
-import { loginCommand } from './cmds/login.js';
 import { payCommand } from './cmds/pay.js';
-import { registerCommand } from './cmds/register.js';
 import { simulateCommand } from './cmds/simulate.js';
 import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
-import { ExitCode } from './errors.js';
+import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 import {
   checkForUpdates,
@@ -64,6 +67,15 @@ configureChalk();
 
 const version = '0.8.3';
 const program = new Command();
+
+/**
+ * Commander action for commands that are registered but intentionally disabled.
+ */
+function disabledCommandAction(commandName: string) {
+  return withCommandContext(commandName, async () => {
+    throw new CliError(ERROR_CODES.COMMAND_DISABLED, `The ${commandName} command is disabled.`);
+  });
+}
 
 // Improve error output for missing arguments/options
 program.showHelpAfterError();
@@ -150,10 +162,8 @@ function generateCompletionScript(shell: string): string {
   const commands = [
     'accounts',
     'acc', // alias for accounts
-    'ai',
     'balances',
     'bal', // alias for balances
-    'bank',
     'beneficiaries',
     'cards',
     'c', // alias for cards
@@ -171,7 +181,6 @@ function generateCompletionScript(shell: string): string {
     'env-list',
     'fetch',
     'f', // alias for fetch
-    'login',
     'logs',
     'log', // alias for logs
     'merchants',
@@ -180,7 +189,6 @@ function generateCompletionScript(shell: string): string {
     'publish',
     'pub', // alias for publish
     'published',
-    'register',
     'run',
     'r', // alias for run
     'simulate',
@@ -212,10 +220,8 @@ function generateCompletionScript(shell: string): string {
   const commandOptions: Record<string, string[]> = {
     accounts: ['--json', '--yaml', '--output'],
     acc: ['--json', '--yaml', '--output'], // alias for accounts
-    ai: ['--filename', '--force', '--verbose', '--spinner'],
     balances: ['--json', '--yaml', '--output'],
     bal: ['--json', '--yaml', '--output'], // alias for balances
-    bank: ['--verbose', '--spinner'],
     beneficiaries: ['--json', '--yaml', '--output'],
     cards: ['--json', '--yaml', '--output'],
     c: ['--json', '--yaml', '--output'], // alias for cards
@@ -232,7 +238,6 @@ function generateCompletionScript(shell: string): string {
     'env-list': ['--json', '--yaml', '--output'],
     fetch: ['--filename', '--card-key'],
     f: ['--filename', '--card-key'], // alias for fetch
-    login: ['--email', '--password', '--spinner', '--verbose'],
     logs: ['--filename', '--card-key'],
     log: ['--filename', '--card-key'], // alias for logs
     merchants: ['--json', '--yaml', '--output'],
@@ -241,7 +246,6 @@ function generateCompletionScript(shell: string): string {
     publish: ['--filename', '--code-id', '--card-key', '--yes'],
     pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
     published: ['--filename', '--card-key'],
-    register: ['--email', '--password', '--spinner', '--verbose'],
     run: [
       '--filename',
       '--env',
@@ -511,8 +515,7 @@ Command Categories:
   Account Management     accounts, balances, transactions, beneficiaries
   Payments              transfer, pay
   Configuration         config
-  AI & Code Generation  ai, bank, new
-  Authentication        login, register
+  AI & Code Generation  new
   Reference Data        currencies, countries, merchants
   Utilities             completion
 
@@ -593,80 +596,33 @@ Examples:
     .command('list')
     .alias('ls')
     .description('List all available configuration profiles')
-    .action(async () => {
-      const { listProfiles, getActiveProfile } = await import('./utils.js');
-      const profiles = await listProfiles();
-      if (profiles.length === 0) {
-        console.log(
-          'No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
-        );
-      } else {
-        const activeProfile = await getActiveProfile();
-        console.log('Available profiles:');
-        for (const profile of profiles) {
-          const marker = profile === activeProfile ? ' (active)' : '';
-          console.log(`  - ${profile}${marker}`);
-        }
-      }
-    });
+    .action(withCommandContext('config profile list', runConfigProfileList));
 
   profileCmd
     .command('set')
     .description('Set the active profile (used when --profile is not specified)')
     .argument('<profile>', 'Profile name to set as active')
-    .action(async (profileName: string) => {
-      const { readProfile, setActiveProfile } = await import('./utils.js');
-      const { CliError, ERROR_CODES } = await import('./errors.js');
-      try {
-        const { getSafeText } = await import('./utils.js');
-        await readProfile(profileName);
-        await setActiveProfile(profileName);
-        console.log(getSafeText(`✅ Active profile set to: ${profileName}`));
-      } catch (error) {
-        if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
-          throw new CliError(
-            ERROR_CODES.FILE_NOT_FOUND,
-            `Profile "${profileName}" does not exist. Create it first with: ipb config --profile ${profileName} --client-id <id> --client-secret <secret> --api-key <key>`
-          );
-        }
-        throw error;
-      }
-    });
+    .action(
+      withCommandContext('config profile set', (profileName: string) =>
+        runConfigProfileSet(profileName)
+      )
+    );
 
   profileCmd
     .command('show')
     .description('Show the currently active profile')
-    .action(async () => {
-      const { getActiveProfile } = await import('./utils.js');
-      const activeProfile = await getActiveProfile();
-      if (activeProfile) {
-        console.log(`Active profile: ${activeProfile}`);
-      } else {
-        console.log('No active profile set. Using default credentials.');
-      }
-    });
+    .action(withCommandContext('config profile show', runConfigProfileShow));
 
   profileCmd
     .command('delete')
     .alias('rm')
     .description('Delete a configuration profile')
     .argument('<profile>', 'Profile name to delete')
-    .action(async (profileName: string) => {
-      const { deleteProfile, getActiveProfile, getSafeText, setActiveProfile } = await import(
-        './utils.js'
-      );
-      await deleteProfile(profileName);
-      // If the deleted profile was active, clear the active profile
-      const activeProfile = await getActiveProfile();
-      if (activeProfile === profileName) {
-        await setActiveProfile(null);
-        console.log(
-          getSafeText(`✅ Profile "${profileName}" deleted and cleared from active profile.`)
-        );
-      } else {
-        console.log(getSafeText(`✅ Profile "${profileName}" deleted.`));
-      }
-    });
+    .action(
+      withCommandContext('config profile delete', (profileName: string) =>
+        runConfigProfileDelete(profileName)
+      )
+    );
 
   // Edit command - opens credentials file in editor
   configCmd
@@ -685,23 +641,14 @@ Examples:
   $ EDITOR="code --wait" ipb config edit
       `
     )
-    .action(async (options: { profile?: string }) => {
-      const { openInEditor, getProfilePath } = await import('./utils.js');
-      const { credentialLocation } = await import('./index.js');
-
-      let filepath: string;
-      if (options.profile) {
-        filepath = getProfilePath(options.profile);
-      } else {
-        filepath = credentialLocation.filename;
-      }
-
-      const editor = process.env.EDITOR || 'default editor';
-      console.log(`Opening ${filepath} in ${editor}...`);
-      await openInEditor(filepath);
-      const successText = getSafeText('✅ Credentials file saved');
-      console.log(successText);
-    });
+    .action(
+      withCommandContext('config edit', async (options: { profile?: string }) => {
+        await runConfigEdit({
+          profile: options.profile,
+          defaultCredentialsFile: credentialLocation.filename,
+        });
+      })
+    );
 
   // Code Management
   addApiCredentialOptions(
@@ -1169,7 +1116,7 @@ Examples:
     .action(withCommandContext('new', newCommand));
   addSpinnerVerboseOptions(
     program
-      .command('ai')
+      .command('ai', { hidden: true })
       .description(
         'Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.'
       )
@@ -1186,10 +1133,10 @@ Examples:
     .argument('prompt', 'Natural language description of the card code behavior')
     .option('-f,--filename <filename>', 'Output filename for generated code', 'ai-generated.js')
     .option('--force', 'Overwrite existing file if it exists')
-    .action(withCommandContext('ai', generateCommand));
+    .action(disabledCommandAction('ai'));
   addSpinnerVerboseOptions(
     program
-      .command('bank')
+      .command('bank', { hidden: true })
       .description(
         'Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.'
       )
@@ -1203,11 +1150,11 @@ Examples:
       `
       )
       .argument('prompt', 'Natural language description of the banking operation to perform')
-  ).action(withCommandContext('bank', bankCommand));
-  // Authentication
+  ).action(disabledCommandAction('bank'));
+  // Authentication (disabled — hidden commands for backward compatibility with scripts)
   addSpinnerVerboseOptions(
     program
-      .command('register')
+      .command('register', { hidden: true })
       .description(
         'Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.'
       )
@@ -1223,10 +1170,10 @@ Note: After registration, message in #12_sandbox-playground with your email to a
       )
       .option('-e,--email <email>', 'Email address for registration')
       .option('-p,--password <password>', 'Password for your account')
-  ).action(withCommandContext('register', registerCommand));
+  ).action(disabledCommandAction('register'));
   addSpinnerVerboseOptions(
     program
-      .command('login')
+      .command('login', { hidden: true })
       .description(
         'Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.'
       )
@@ -1240,7 +1187,7 @@ Examples:
       )
       .option('-e,--email <email>', 'Your registered email address')
       .option('-p,--password <password>', 'Your account password')
-  ).action(withCommandContext('login', loginCommand));
+  ).action(disabledCommandAction('login'));
   // Utilities
   program
     .command('completion')

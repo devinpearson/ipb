@@ -1,21 +1,23 @@
-import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../index.js';
 import {
   createSpinner,
   deleteProfile,
   ensureCredentialsDirectory,
-  getActiveProfile,
   getSafeText,
   isStdoutPiped,
-  listProfiles,
   readCredentialsFile,
   readProfile,
   resolveSpinnerState,
-  setActiveProfile,
   withSpinner,
   writeCredentialsFile,
   writeProfile,
 } from '../utils.js';
+import {
+  finalizeProfileDeletion,
+  runConfigProfileList,
+  runConfigProfileSet,
+  runConfigProfileShow,
+} from './config-subcommands.js';
 
 interface Options {
   clientId: string;
@@ -60,47 +62,17 @@ async function runWithConfigSpinner<T>(
 export async function configCommand(options: Options & ProfileOptions) {
   // Handle profile management commands
   if (options.list) {
-    const profiles = await listProfiles();
-    if (profiles.length === 0) {
-      console.log(
-        'No profiles found. Create one with: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
-      );
-    } else {
-      const activeProfile = await getActiveProfile();
-      console.log('Available profiles:');
-      for (const profile of profiles) {
-        const marker = profile === activeProfile ? ' (active)' : '';
-        console.log(`  - ${profile}${marker}`);
-      }
-    }
+    await runConfigProfileList();
     return;
   }
 
   if (options.show) {
-    const activeProfile = await getActiveProfile();
-    if (activeProfile) {
-      console.log(`Active profile: ${activeProfile}`);
-    } else {
-      console.log('No active profile set. Using default credentials.');
-    }
+    await runConfigProfileShow();
     return;
   }
 
   if (options.set) {
-    // Verify profile exists
-    try {
-      await readProfile(options.set);
-      await setActiveProfile(options.set);
-      console.log(`✅ Active profile set to: ${options.set}`);
-    } catch (error) {
-      if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
-        throw new CliError(
-          ERROR_CODES.FILE_NOT_FOUND,
-          `Profile "${options.set}" does not exist. Create it first with: ipb config --profile ${options.set} --client-id <id> --client-secret <secret> --api-key <key>`
-        );
-      }
-      throw error;
-    }
+    await runConfigProfileSet(options.set);
     return;
   }
 
@@ -109,14 +81,7 @@ export async function configCommand(options: Options & ProfileOptions) {
     await runWithConfigSpinner(options, 'Removing profile...', () =>
       deleteProfile(profileToDelete)
     );
-    // If the deleted profile was active, clear the active profile
-    const activeProfile = await getActiveProfile();
-    if (activeProfile === profileToDelete) {
-      await setActiveProfile(null);
-      console.log(`✅ Profile "${profileToDelete}" deleted and cleared from active profile.`);
-    } else {
-      console.log(`✅ Profile "${profileToDelete}" deleted.`);
-    }
+    await finalizeProfileDeletion(profileToDelete);
     return;
   }
 

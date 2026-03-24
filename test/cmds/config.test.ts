@@ -151,4 +151,84 @@ describe('configCommand', () => {
       })
     );
   });
+
+  it('prints message when listing profiles and none exist', async () => {
+    mockState.profiles = [];
+    await configCommand({
+      ...baseOptions(),
+      list: true,
+    });
+
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('No profiles found'));
+  });
+
+  it('shows active profile name when --show is used', async () => {
+    mockState.activeProfile = 'prod';
+    await configCommand({
+      ...baseOptions(),
+      show: true,
+    });
+
+    expect(console.log).toHaveBeenCalledWith('Active profile: prod');
+  });
+
+  it('shows default-credentials message when no active profile', async () => {
+    mockState.activeProfile = null;
+    await configCommand({
+      ...baseOptions(),
+      show: true,
+    });
+
+    expect(console.log).toHaveBeenCalledWith('No active profile set. Using default credentials.');
+  });
+
+  it('deletes profile and clears active when deleted profile was active', async () => {
+    const { deleteProfile, setActiveProfile } = await import('../../src/utils.ts');
+    mockState.activeProfile = 'prod';
+
+    await configCommand({
+      ...baseOptions(),
+      delete: 'prod',
+    });
+
+    expect(deleteProfile).toHaveBeenCalledWith('prod');
+    expect(setActiveProfile).toHaveBeenCalledWith(null);
+  });
+
+  it('deletes profile without clearing active when another profile is active', async () => {
+    const { deleteProfile, setActiveProfile } = await import('../../src/utils.ts');
+    mockState.activeProfile = 'staging';
+
+    await configCommand({
+      ...baseOptions(),
+      delete: 'prod',
+    });
+
+    expect(deleteProfile).toHaveBeenCalledWith('prod');
+    expect(setActiveProfile).not.toHaveBeenCalled();
+  });
+
+  it('merges new fields into existing profile data', async () => {
+    const { readProfile, writeProfile } = await import('../../src/utils.ts');
+    (readProfile as vi.Mock).mockResolvedValueOnce({
+      clientId: 'existing-id',
+      apiKey: 'existing-key',
+      clientSecret: 'old-secret',
+    });
+
+    await configCommand({
+      ...baseOptions(),
+      profile: 'prod',
+      clientSecret: 'rotated-secret',
+    });
+
+    expect(writeProfile).toHaveBeenCalledWith(
+      'prod',
+      expect.objectContaining({
+        clientId: 'existing-id',
+        apiKey: 'existing-key',
+        clientSecret: 'rotated-secret',
+      })
+    );
+  });
 });

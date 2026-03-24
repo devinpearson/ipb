@@ -40,6 +40,8 @@ export const ERROR_CODES = {
   INVESTEC_API_ERROR: 'E4016', // Added for Investec API communication failures
   /** File or directory exists but cannot be read or written (e.g. EACCES, EPERM). */
   PERMISSION_DENIED: 'E4017',
+  /** Command exists but is intentionally disabled in this build. */
+  COMMAND_DISABLED: 'E4018',
   // Add more as needed
 };
 
