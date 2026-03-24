@@ -1,6 +1,9 @@
 /// <reference types="vitest" />
 
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { promises as fsPromises } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { CliError, ERROR_CODES } from '../src/errors.ts';
 
 vi.mock('../src/index.ts', () => ({
@@ -210,11 +213,13 @@ describe('runReadUploadCommand', () => {
       text: '',
     };
     const uploadSpy = vi.fn(async (_content: string) => ({ ok: true }));
+    const tempFile = path.join(os.tmpdir(), `ipb-run-read-upload-${Date.now()}.js`);
+    await fsPromises.writeFile(tempFile, 'console.log("test");', 'utf8');
 
     const result = await runReadUploadCommand({
       spinner,
       spinnerEnabled: true,
-      filename: '/Users/devinpearson/projects/js/ipb/package.json',
+      filename: tempFile,
       readMessage: (size) => `reading ${size}`,
       uploadMessage: (size) => `uploading ${size}`,
       readFileContent: async () => 'const x = 1;',
@@ -226,6 +231,8 @@ describe('runReadUploadCommand', () => {
     expect(spinner.start).toHaveBeenCalled();
     expect(spinner.stop).toHaveBeenCalled();
     expect(spinner.text).toContain('uploading');
+
+    await fsPromises.rm(tempFile, { force: true });
   });
 });
 

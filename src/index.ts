@@ -52,6 +52,7 @@ import {
   loadCredentialsFile,
   logCommandHistory,
   readCredentialsFileSync,
+  shouldDisplayUpdateNotification,
   showUpdateNotification,
   warnAboutSecretUsage,
   withCommandContext,
@@ -1327,31 +1328,40 @@ Examples:
   }
 
   // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
+  const updateNotificationAllowed = shouldDisplayUpdateNotification({
+    isPiped,
+    json: typeof commandOptions.json === 'boolean' ? commandOptions.json : undefined,
+    yaml: typeof commandOptions.yaml === 'boolean' ? commandOptions.yaml : undefined,
+    output: typeof commandOptions.output === 'string' ? commandOptions.output : undefined,
+  });
+
   if (hasCheckUpdatesFlag && process.argv.length > 3) {
     // --check-updates flag with a command - check after command execution
     const latestVersion = await checkForUpdates(version, true);
-    if (latestVersion) {
+    if (latestVersion && updateNotificationAllowed) {
       showUpdateNotification(version, latestVersion);
-    } else {
+    } else if (!latestVersion) {
       console.log(chalk.green('✓ You are using the latest version.'));
     }
   } else if (process.argv.length === 2) {
     // No arguments provided (shouldn't happen due to early exit, but just in case)
     const latestVersion = await checkForUpdates(version, false);
-    if (latestVersion) {
+    if (latestVersion && updateNotificationAllowed) {
       showUpdateNotification(version, latestVersion);
     }
   } else if (!hasCheckUpdatesFlag) {
     // Background check for regular commands (non-blocking, cached for 24 hours)
-    checkForUpdates(version, false)
-      .then((latest) => {
-        if (latest) {
-          showUpdateNotification(version, latest);
-        }
-      })
-      .catch(() => {
-        // Silent failure for background checks
-      });
+    if (updateNotificationAllowed) {
+      checkForUpdates(version, false)
+        .then((latest) => {
+          if (latest) {
+            showUpdateNotification(version, latest);
+          }
+        })
+        .catch(() => {
+          // Silent failure for background checks
+        });
+    }
   }
 
   // Only add newline if not piped (to avoid corrupting JSON output)

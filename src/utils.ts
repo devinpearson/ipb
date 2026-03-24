@@ -76,7 +76,12 @@ import {
   readStdin,
   safeLog,
 } from './utils/terminal.js';
-import { checkForUpdates, checkLatestVersion, showUpdateNotification } from './utils/update.js';
+import {
+  checkForUpdates,
+  checkLatestVersion,
+  shouldDisplayUpdateNotification,
+  showUpdateNotification,
+} from './utils/update.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -272,7 +277,7 @@ function _determineExitCode(
 
 export { handleCliError, withCommandContext };
 
-export { checkForUpdates, checkLatestVersion, showUpdateNotification };
+export { checkForUpdates, checkLatestVersion, shouldDisplayUpdateNotification, showUpdateNotification };
 
 export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
 export type { OutputOptions, TableData, TableRow };

@@ -5,6 +5,13 @@ import chalk from 'chalk';
 import { writeFileAtomic } from './credentials-store.js';
 import { getSafeText } from './terminal.js';
 
+interface UpdateNotificationOptions {
+  isPiped: boolean;
+  json?: boolean;
+  yaml?: boolean;
+  output?: string;
+}
+
 function getUpdateCheckCachePath(): string {
   return path.join(homedir(), '.ipb', 'update-check.json');
 }
@@ -104,4 +111,12 @@ export function showUpdateNotification(currentVersion: string, latestVersion: st
   );
   console.error(chalk.yellow(`\n${warningText}`));
   console.error(chalk.yellow('   Run: npm install -g investec-ipb@latest\n'));
+}
+
+/**
+ * Determines whether update notifications should be displayed for the current output mode.
+ * Suppresses notifications when output is intended for machine consumption.
+ */
+export function shouldDisplayUpdateNotification(options: UpdateNotificationOptions): boolean {
+  return !options.isPiped && !options.json && !options.yaml && !options.output;
 }
