@@ -102,6 +102,27 @@ describe('resolveSpinnerState', () => {
     });
     expect(state.spinnerEnabled).toBe(false);
   });
+
+  it('enables spinner when output is interactive and flags allow', () => {
+    const state = resolveSpinnerState({
+      spinnerFlag: false,
+      verboseFlag: false,
+      isPiped: false,
+    });
+    expect(state.spinnerEnabled).toBe(true);
+    expect(state.verbose).toBe(false);
+  });
+
+  it('disables spinner when DEBUG env enables verbose mode', () => {
+    process.env.DEBUG = '1';
+    const state = resolveSpinnerState({
+      spinnerFlag: false,
+      verboseFlag: undefined,
+      isPiped: false,
+    });
+    expect(state.verbose).toBe(true);
+    expect(state.spinnerEnabled).toBe(false);
+  });
 });
 
 describe('stopSpinner', () => {

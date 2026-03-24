@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError, ERROR_CODES } from '../../src/errors';
 import { configCommand } from '../../src/cmds/set';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   credentialLocation: {

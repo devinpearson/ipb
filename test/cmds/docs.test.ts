@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Command } from 'commander';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { docsCommand, generateCommandDocumentation } from '../../src/cmds/docs';
 
 vi.mock('../../src/index.ts', () => ({

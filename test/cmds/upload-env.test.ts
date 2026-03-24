@@ -73,7 +73,9 @@ describe('uploadEnvCommand', () => {
       verbose: false,
     };
 
-    mockFsPromises.readFile.mockResolvedValue('{"NODE_ENV":"prod","API_URL":"https://example.test"}');
+    mockFsPromises.readFile.mockResolvedValue(
+      '{"NODE_ENV":"prod","API_URL":"https://example.test"}'
+    );
     mockApi.uploadEnv.mockResolvedValue({ data: { ok: true } });
 
     await uploadEnvCommand(options);

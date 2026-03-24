@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError, ERROR_CODES } from '../../src/errors';
 import { runCommand } from '../../src/cmds/run';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 const mockCreateTransaction = vi.hoisted(() => vi.fn());
 const mockRun = vi.hoisted(() => vi.fn());
@@ -84,9 +84,7 @@ describe('runCommand', () => {
     mockFsPromises.readFile
       .mockResolvedValueOnce('API_KEY=abc123\nEMPTY=\nQUOTED="hello"')
       .mockResolvedValueOnce('console.log("hello");');
-    mockRun.mockResolvedValue([
-      { type: 'INFO', logs: [{ level: 'info', content: 'ran' }] },
-    ]);
+    mockRun.mockResolvedValue([{ type: 'INFO', logs: [{ level: 'info', content: 'ran' }] }]);
 
     await runCommand({
       filename: 'code.js',

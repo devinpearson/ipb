@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError } from '../../src/errors';
 import { registerCommand } from '../../src/cmds/register';
+import { CliError } from '../../src/errors';
 
 const mockInput = vi.hoisted(() => vi.fn());
 const mockPassword = vi.hoisted(() => vi.fn());

@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError, ERROR_CODES } from '../../src/errors';
 import { newCommand } from '../../src/cmds/new';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   printTitleBox: vi.fn(),
@@ -44,7 +44,9 @@ describe('newCommand', () => {
       force: false,
     });
 
-    expect(mockFs.cpSync).toHaveBeenCalledWith(expect.any(String), 'my-project', { recursive: true });
+    expect(mockFs.cpSync).toHaveBeenCalledWith(expect.any(String), 'my-project', {
+      recursive: true,
+    });
   });
 
   it('throws for invalid project names', async () => {

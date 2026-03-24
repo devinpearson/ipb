@@ -1,8 +1,8 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError, ERROR_CODES } from '../../src/errors';
 import { simulateCommand } from '../../src/cmds/simulate';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 const mockCreateTransaction = vi.hoisted(() => vi.fn());
 

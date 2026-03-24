@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CliError, ERROR_CODES } from '../../src/errors';
 import { envCommand } from '../../src/cmds/env';
 import { logsCommand } from '../../src/cmds/logs';
 import { publishedCommand } from '../../src/cmds/published';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/index.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
