@@ -5,9 +5,17 @@ name: Node.js CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "improvements"]
   pull_request:
-    branches: ["main"]
+    branches: ["*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -28,3 +36,29 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test --if-present
+
+  packaging-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+      - run: npm ci
+      - run: npm run bundle
+      - name: Build Linux standalone binary
+        run: npx pkg dist-bundle/index.cjs --targets node20-linux-x64 --out-path dist --no-bytecode --public
+      - name: Smoke test packaged binary
+        run: |
+          if [ -f dist/investec-ipb-linux-x64 ]; then
+            chmod +x dist/investec-ipb-linux-x64
+            ./dist/investec-ipb-linux-x64 --version
+          elif [ -f dist/index ]; then
+            chmod +x dist/index
+            ./dist/index --version
+          else
+            echo "Packaged binary not found"
+            exit 1
+          fi

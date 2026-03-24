@@ -12,7 +12,7 @@ This guide covers multiple methods to distribute the IPB CLI on Ubuntu.
 
 ## Method 1: .deb Package (Recommended for Distribution)
 
-### Prerequisites
+### PPA Prerequisites
 
 ```bash
 sudo apt-get install -y build-essential fakeroot dpkg-dev
@@ -73,7 +73,7 @@ sudo apt-get install -f
 
 A PPA allows users to add your repository and install/update via `apt`.
 
-### Prerequisites
+### Snap Prerequisites
 
 1. **Launchpad Account** - Sign up at [Launchpad](https://launchpad.net)
 2. **GPG Key** - For signing packages
@@ -175,6 +175,43 @@ sudo snap install ipb_0.8.3_amd64.snap --dangerous
 2. Upload snap: `snapcraft upload --release=stable ipb_0.8.3_amd64.snap`
 3. Users install: `sudo snap install ipb`
 
+### GitHub Actions: Automatic Snap Store Publish
+
+The workflow `.github/workflows/snap-release.yml` can publish to Snap Store automatically
+when `SNAPCRAFT_STORE_CREDENTIALS` is configured.
+
+1. Log in to Snapcraft locally:
+
+   ```bash
+   snapcraft login
+   ```
+
+2. Export CI credentials (replace values as needed):
+
+   ```bash
+   snapcraft export-login --snaps ipb --channels stable snapcraft-login.txt
+   ```
+
+3. Base64-encode the file (single line output):
+
+   ```bash
+   base64 -w 0 snapcraft-login.txt
+   ```
+
+   On macOS, use:
+
+   ```bash
+   base64 -i snapcraft-login.txt | tr -d '\n'
+   ```
+
+4. In GitHub, add a repository secret:
+   - Name: `SNAPCRAFT_STORE_CREDENTIALS`
+   - Value: the base64 output from step 3
+5. Push a release tag (for example `v0.8.4`) to trigger automatic build + publish.
+
+If the secret is not set, the workflow still builds the `.snap` file and uploads it to
+the GitHub Release, but skips Snap Store publishing.
+
 ## Method 4: AppImage
 
 AppImage is a portable format that doesn't require installation.
@@ -245,7 +282,7 @@ Add to `.github/workflows/release.yml` to automatically build Ubuntu packages on
 ## Comparison
 
 | Method | Pros | Cons | Best For |
-|--------|------|------|----------|
+| -------- | ---- | ---- | -------- |
 | **.deb** | Native, familiar, good integration | Manual distribution | Direct distribution |
 | **PPA** | Easy updates, automatic | Launchpad setup required | Long-term distribution |
 | **Snap** | Universal, auto-updates, sandboxed | Larger size, slower startup | Modern Ubuntu |
@@ -267,4 +304,3 @@ For Ubuntu distribution, I recommend:
 3. Create build scripts
 4. Test on clean Ubuntu systems
 5. Document installation instructions for users
-
