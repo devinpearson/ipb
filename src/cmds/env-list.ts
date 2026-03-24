@@ -93,7 +93,7 @@ export async function envListCommand(options: CommonOptions) {
     {
       name: 'IPB_MOCK_APIS',
       description:
-        'Use in-process mock Programmable Banking and Card API clients (no network). Does not enable verbose output. Pair with fixture credentials (see tapes/fixtures) for VHS tape generation.',
+        'Use in-process mock Programmable Banking and Card API clients (no network). Does not enable verbose output. For offline demos, set dummy INVESTEC_* credentials or use a local credentials file.',
       required: false,
       default: 'false',
       example: '1',
