@@ -1,6 +1,13 @@
 import { promises as fsPromises } from 'node:fs';
 import { credentials, printTitleBox } from '../index.js';
-import { createSpinner, initializeApi, normalizeCardKey, resolveSpinnerState, validateFilePath } from '../utils.js';
+import {
+  createSpinner,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  validateFilePath,
+  withSpinnerOutcome,
+} from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
@@ -27,24 +34,13 @@ export async function uploadEnvCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 uploading env...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   const api = await initializeApi(credentials, options);
 
-  try {
+  await withSpinnerOutcome(spinner, spinnerEnabled, async () => {
     const raw = { variables: {} };
     const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
     raw.variables = JSON.parse(variables);
-    const result = await api.uploadEnv(cardKey, raw);
-    if (spinnerEnabled) {
-      spinner.succeed();
-    }
-    console.log(`🎉 env uploaded`);
-  } catch (error) {
-    if (spinnerEnabled) {
-      spinner.fail();
-    }
-    throw error;
-  }
+    return await api.uploadEnv(cardKey, raw);
+  });
+  console.log(`🎉 env uploaded`);
 }

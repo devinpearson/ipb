@@ -2577,6 +2577,38 @@ export async function withSpinner<T>(
 }
 
 /**
+ * Runs an async operation and marks spinner success/failure automatically.
+ * Intended for commands that want persisted success/failure symbols.
+ *
+ * @param spinner - Spinner instance returned by createSpinner
+ * @param enabled - Whether spinner lifecycle should run
+ * @param operation - Async operation to execute while spinner is active
+ * @returns Result returned by operation
+ */
+export async function withSpinnerOutcome<T>(
+  spinner: Spinner,
+  enabled: boolean,
+  operation: () => Promise<T>
+): Promise<T> {
+  if (enabled) {
+    spinner.start();
+  }
+
+  try {
+    const result = await operation();
+    if (enabled) {
+      spinner.succeed();
+    }
+    return result;
+  } catch (error) {
+    if (enabled) {
+      spinner.fail();
+    }
+    throw error;
+  }
+}
+
+/**
  * Initializes the Programmable Banking API client.
  * @param credentials - API credentials
  * @param options - Basic options including credential overrides

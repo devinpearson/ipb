@@ -7,6 +7,7 @@ import {
   resolveSpinnerState,
   validateAccountId,
   validateAmount,
+  withSpinnerOutcome,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -77,14 +78,11 @@ export async function transferCommand(
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 transferring...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   const api = await initializePbApi(credentials, options);
 
-  try {
+  const result = await withSpinnerOutcome(spinner, spinnerEnabled, async () => {
     // Use retry logic with rate limit handling
-    const result = await withRetry(
+    return await withRetry(
       () =>
         api.transferMultiple(accountId, [
           {
@@ -99,16 +97,9 @@ export async function transferCommand(
         verbose,
       }
     );
-    if (spinnerEnabled) {
-      spinner.succeed();
-    }
-    for (const transfer of result.data.TransferResponses) {
-      console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
-    }
-  } catch (error) {
-    if (spinnerEnabled) {
-      spinner.fail();
-    }
-    throw error;
+  });
+
+  for (const transfer of result.data.TransferResponses) {
+    console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
   }
 }
