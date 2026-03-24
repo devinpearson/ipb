@@ -55,6 +55,7 @@ import {
   warnAboutSecretUsage,
   withCommandContext,
 } from './utils.js';
+import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 
 // Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
 configureChalk();
@@ -110,28 +111,6 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
     .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
-}
-
-/**
- * Normalizes spinner flags while preserving backwards compatibility.
- * Maps `--no-spinner` to legacy `--spinner` behavior and tracks deprecation usage.
- * @param argv - Raw CLI argv
- * @returns Normalized argv and deprecation indicator
- */
-function normalizeSpinnerFlags(argv: string[]): {
-  argv: string[];
-  usedDeprecatedSpinnerFlag: boolean;
-} {
-  const normalized = [...argv];
-  const usedDeprecatedSpinnerFlag = normalized.includes('--spinner') || normalized.includes('-s');
-
-  for (let i = 0; i < normalized.length; i++) {
-    if (normalized[i] === '--no-spinner') {
-      normalized[i] = '--spinner';
-    }
-  }
-
-  return { argv: normalized, usedDeprecatedSpinnerFlag };
 }
 
 const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
