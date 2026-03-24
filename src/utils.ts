@@ -18,6 +18,8 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
+import { normalizeInvestecError } from './utils/investec-errors.js';
+import { getVerboseMode, isDebugEnabled, resolveSpinnerState } from './utils/runtime-flags.js';
 
 const require = createRequire(import.meta.url);
 
@@ -57,132 +59,9 @@ export function configureChalk(): void {
   // This function exists for documentation and future extensibility
 }
 
-/**
- * Checks if DEBUG environment variable is set (supports any truthy value).
- * According to clig.dev guidelines, DEBUG can be set to any value to enable verbose output.
- * @returns True if DEBUG is set to any truthy value
- */
-export function isDebugEnabled(): boolean {
-  const debug = process.env.DEBUG;
-  if (debug === undefined || debug === '') {
-    return false;
-  }
-  const normalized = debug.trim().toLowerCase();
-  const falseValues = new Set(['0', 'false', 'off', 'no', 'disabled']);
-  return !falseValues.has(normalized);
-}
+export { getVerboseMode, isDebugEnabled, resolveSpinnerState };
 
-/**
- * Gets the effective verbose setting, checking both --verbose flag and DEBUG env var.
- * DEBUG environment variable takes precedence if --verbose is not explicitly set.
- * @param verboseFlag - Value from --verbose flag (can be undefined)
- * @returns True if verbose mode should be enabled
- */
-export function getVerboseMode(verboseFlag?: boolean): boolean {
-  // If --verbose flag is explicitly set, use it
-  if (verboseFlag !== undefined) {
-    return verboseFlag;
-  }
-  // Otherwise, check DEBUG environment variable
-  return isDebugEnabled();
-}
-
-export function resolveSpinnerState({
-  spinnerFlag,
-  verboseFlag,
-  isPiped,
-}: {
-  spinnerFlag?: boolean;
-  verboseFlag?: boolean;
-  isPiped: boolean;
-}): { spinnerEnabled: boolean; verbose: boolean } {
-  const verbose = getVerboseMode(verboseFlag);
-  const spinnerEnabled = !isPiped && spinnerFlag !== true && !verbose;
-  return { spinnerEnabled, verbose };
-}
-
-type InvestecErrorContext =
-  | 'card-api-auth'
-  | 'card-api-request'
-  | 'pb-api-auth'
-  | 'pb-api-request';
-
-const INVESTEC_ERROR_CONTEXT_MESSAGES: Record<InvestecErrorContext, string> = {
-  'card-api-auth': 'Failed to authenticate with the Investec Card API',
-  'card-api-request': 'Investec Card API request failed',
-  'pb-api-auth': 'Failed to authenticate with the Investec Programmable Banking API',
-  'pb-api-request': 'Investec Programmable Banking API request failed',
-};
-
-function extractInvestecErrorMessage(error: unknown): string | null {
-  if (!error) {
-    return null;
-  }
-
-  if (error instanceof CliError) {
-    return error.message;
-  }
-
-  if (typeof error === 'string') {
-    return error;
-  }
-
-  if (error instanceof Error) {
-    const axiosResponse = (error as { response?: { status?: number; statusText?: string; data?: unknown } })
-      .response;
-    if (axiosResponse) {
-      const parts: string[] = [];
-      if (typeof axiosResponse.status === 'number') {
-        parts.push(`status ${axiosResponse.status}`);
-      }
-      if (typeof axiosResponse.statusText === 'string' && axiosResponse.statusText !== '') {
-        parts.push(axiosResponse.statusText);
-      }
-      const responseData = axiosResponse.data;
-      if (typeof responseData === 'string' && responseData.trim() !== '') {
-        parts.push(responseData.trim());
-      } else if (
-        responseData &&
-        typeof responseData === 'object' &&
-        Object.keys(responseData as Record<string, unknown>).length > 0
-      ) {
-        try {
-          parts.push(JSON.stringify(responseData));
-        } catch {
-          // Ignore serialization errors
-        }
-      }
-      if (parts.length > 0) {
-        return parts.join(' - ');
-      }
-    }
-
-    if (error.message) {
-      return error.message;
-    }
-  }
-
-  if (typeof error === 'object' && 'message' in (error as Record<string, unknown>)) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim() !== '') {
-      return message;
-    }
-  }
-
-  return null;
-}
-
-export function normalizeInvestecError(error: unknown, context: InvestecErrorContext): CliError {
-  if (error instanceof CliError) {
-    return error;
-  }
-
-  const baseMessage = INVESTEC_ERROR_CONTEXT_MESSAGES[context] ?? 'Investec API error';
-  const detail = extractInvestecErrorMessage(error);
-  const message = detail ? `${baseMessage}: ${detail}` : baseMessage;
-
-  return new CliError(ERROR_CODES.INVESTEC_API_ERROR, message);
-}
+export { normalizeInvestecError };
 
 /**
  * Pages output using the PAGER environment variable or default pager.
