@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializePbApi,
   resolveSpinnerState,
+  runListCommand,
   validateAccountId,
   withSpinner,
   withRetry,
@@ -92,25 +92,18 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
     return;
   }
 
-  const simpleTransactions = transactions.map(
-    ({ uuid, amount, transactionDate, description }: Transaction) => ({
-      uuid,
-      amount,
-      transactionDate,
-      description,
-    })
-  );
-
-  // Use raw transactions for structured output, simplified for table
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? transactions : simpleTransactions;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} transaction(s) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: transactions,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No transactions found',
+    countMessage: (count) => `${count} transaction(s) found.`,
+    mapSimple: (rows) =>
+      rows.map(({ uuid, amount, transactionDate, description }: Transaction) => ({
+        uuid,
+        amount,
+        transactionDate,
+        description,
+      })),
+  });
 }

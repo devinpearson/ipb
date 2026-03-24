@@ -21,6 +21,7 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     formatOutput: vi.fn(),
+    runListCommand: vi.fn(),
     printTable: vi.fn(),
   };
 });
@@ -56,12 +57,16 @@ describe('transactionsCommand', () => {
     mockApi.getAccountTransactions.mockResolvedValue({ data: { transactions: mockTransactions } });
 
     console.log = vi.fn();
-    const { formatOutput } = await import('../../src/utils.ts');
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await transactionsCommand('acc-123', options);
 
     expect(mockApi.getAccountTransactions).toHaveBeenCalledWith('acc-123');
-    expect(formatOutput).toHaveBeenCalled();
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: mockTransactions,
+      })
+    );
   });
 
   it('should propagate errors', async () => {

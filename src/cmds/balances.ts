@@ -2,9 +2,9 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializePbApi,
   resolveSpinnerState,
+  runListCommand,
   validateAccountId,
   withSpinner,
   withRetry,
@@ -89,23 +89,22 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
     return;
   }
 
-  // Always use structured output when piped or when explicitly requested
-  if (options.json || options.yaml || options.output || isPiped) {
-    await formatOutput(result.data, {
-      json: options.json,
-      yaml: options.yaml,
-      output: options.output,
-    });
-    return;
-  }
-
-  // Default formatted text output (only when not piped)
-  console.log(`Account Id ${result.data.accountId}`);
-  console.log(`Currency: ${result.data.currency}`);
-  console.log('Balances:');
-  console.log(`Current: ${result.data.currentBalance}`);
-  console.log(`Available: ${result.data.availableBalance}`);
-  console.log(`Budget: ${result.data.budgetBalance}`);
-  console.log(`Straight: ${result.data.straightBalance}`);
-  console.log(`Cash: ${result.data.cashBalance}`);
+  // Keep single-record behavior while using shared list output flow.
+  await runListCommand({
+    isPiped,
+    items: [result.data],
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No balances found',
+    countMessage: () => '1 balance record found.',
+    mapSimple: (rows) =>
+      rows.map((row) => ({
+        accountId: row.accountId,
+        currency: row.currency,
+        currentBalance: row.currentBalance,
+        availableBalance: row.availableBalance,
+        budgetBalance: row.budgetBalance,
+        straightBalance: row.straightBalance,
+        cashBalance: row.cashBalance,
+      })),
+  });
 }

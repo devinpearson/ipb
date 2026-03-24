@@ -21,6 +21,7 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     isStdoutPiped: vi.fn(() => false), // Mock as not piped for tests
+    runListCommand: vi.fn(),
     readStdin: vi.fn(async () => null),
   };
 });
@@ -53,12 +54,16 @@ describe('balancesCommand', () => {
 
     mockApi.getAccountBalances.mockResolvedValue({ data: mockBalance });
 
-    console.log = vi.fn();
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await balancesCommand('acc-123', options);
 
     expect(mockApi.getAccountBalances).toHaveBeenCalledWith('acc-123');
-    expect(console.log).toHaveBeenCalled();
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [mockBalance],
+      })
+    );
   });
 
   it('should propagate errors', async () => {
