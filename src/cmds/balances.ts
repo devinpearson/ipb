@@ -5,8 +5,8 @@ import {
   formatOutput,
   initializePbApi,
   resolveSpinnerState,
-  stopSpinner,
   validateAccountId,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -61,11 +61,21 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching balances...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  let result;
-  try {
+  let result:
+    | {
+        data: {
+          accountId: string;
+          currency: string;
+          currentBalance: number;
+          availableBalance: number;
+          budgetBalance: number;
+          straightBalance: number;
+          cashBalance: number;
+        };
+      }
+    | undefined;
+
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializePbApi(credentials, options);
 
     // Use retry logic with rate limit handling
@@ -73,9 +83,7 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
       maxRetries: 3,
       verbose,
     });
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!result) {
     return;

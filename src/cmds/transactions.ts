@@ -4,8 +4,8 @@ import {
   formatOutput,
   initializePbApi,
   resolveSpinnerState,
-  stopSpinner,
   validateAccountId,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -71,11 +71,8 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching transactions...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let transactions: Transaction[] | undefined;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializePbApi(credentials, options);
 
     // Use retry logic with rate limit handling
@@ -84,9 +81,7 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
       verbose,
     });
     transactions = result.data.transactions;
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!transactions || transactions.length === 0) {
     if (!isPiped) {
