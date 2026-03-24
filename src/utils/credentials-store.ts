@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import {
   access,
   chmod,
@@ -15,6 +16,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import type { Credentials } from '../cmds/types.js';
 import { CliError, ERROR_CODES } from '../errors.js';
+import { normalizeFilePath } from './file-validation.js';
 
 const defaultCreds = {
   clientId: '',
@@ -70,9 +72,11 @@ export async function ensureCredentialsDirectory(credentialLocation: {
 export async function loadCredentialsFile(credentials: Credentials, credentialsFile: string) {
   if (credentialsFile) {
     try {
-      const file = await import(`file://${credentialsFile}`, {
+      const normalizedPath = normalizeFilePath(credentialsFile);
+      const file = (await import(pathToFileURL(normalizedPath).href, {
         with: { type: 'json' },
-      });
+      })) as Credentials | { default?: Credentials };
+      const loadedCredentials = 'default' in file ? file.default : file;
 
       const credentialKeys: (keyof Credentials)[] = [
         'host',
@@ -85,8 +89,8 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
       ];
 
       credentialKeys.forEach((key) => {
-        if (file[key] !== undefined) {
-          credentials[key] = file[key];
+        if (loadedCredentials?.[key] !== undefined) {
+          credentials[key] = loadedCredentials[key];
         }
       });
     } catch (error) {

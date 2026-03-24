@@ -94,17 +94,32 @@ function sanitizeOptions(options: Record<string, unknown>): Record<string, unkno
 }
 
 function sanitizeArgs(args: string[]): string[] {
-  return args.map((arg) => {
-    if (
-      arg.length > 20 &&
-      (arg.includes('key') ||
-        arg.includes('token') ||
-        arg.includes('secret') ||
-        arg.includes('password'))
-    ) {
-      return `${arg.substring(0, 4)}***${arg.substring(arg.length - 4)}`;
+  const sensitivePattern =
+    /(client[-_]?id|client[-_]?secret|api[-_]?key|openai[-_]?key|sandbox[-_]?key|card[-_]?key|password|token|secret|auth|credential|key)/i;
+
+  const maskValue = (value: string): string => {
+    if (value.length > 8) {
+      return `${value.substring(0, 4)}***${value.substring(value.length - 4)}`;
     }
-    return arg;
+    return '***';
+  };
+
+  return args.map((arg) => {
+    if (!sensitivePattern.test(arg)) {
+      return arg;
+    }
+
+    const equalsIndex = arg.indexOf('=');
+    if (equalsIndex > 0) {
+      const key = arg.slice(0, equalsIndex);
+      const value = arg.slice(equalsIndex + 1);
+      if (value.length === 0) {
+        return `${key}=***`;
+      }
+      return `${key}=${maskValue(value)}`;
+    }
+
+    return maskValue(arg);
   });
 }
 

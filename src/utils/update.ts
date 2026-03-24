@@ -102,6 +102,6 @@ export function showUpdateNotification(currentVersion: string, latestVersion: st
   const warningText = getSafeText(
     `⚠️  New version available: ${latestVersion} (current: ${currentVersion})`
   );
-  console.log(chalk.yellow(`\n${warningText}`));
-  console.log(chalk.yellow('   Run: npm install -g investec-ipb@latest\n'));
+  console.error(chalk.yellow(`\n${warningText}`));
+  console.error(chalk.yellow('   Run: npm install -g investec-ipb@latest\n'));
 }

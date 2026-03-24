@@ -1,6 +1,7 @@
 import { access, constants } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import type { ErrnoException } from 'node:util';
 import { CliError, ERROR_CODES } from '../errors.js';
 
 export function normalizeFilePath(filePath: string): string {
@@ -44,7 +45,11 @@ export async function checkFilePermissions(
       try {
         await access(normalizedPath, constants.F_OK);
         await access(normalizedPath, constants.W_OK);
-      } catch {
+      } catch (error) {
+        const code = (error as ErrnoException).code;
+        if (code !== 'ENOENT') {
+          throw error;
+        }
         // File doesn't exist yet, fine for write.
       }
     }
