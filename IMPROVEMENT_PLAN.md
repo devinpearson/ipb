@@ -1,95 +1,74 @@
-# CLI Improvement Plan
+# CLI improvement plan (status)
 
-> **Note:** Much of this roadmap is already implemented on the current branch (shared command runners, integration-style tests under `test/cmds/integration-safety.test.ts`, partial `src/utils/*` split, `--no-spinner`). Treat the phases below as **historical intent plus any remaining follow-ups**, not a from-scratch checklist.
+This file tracks the original multi-phase refactor and **what is already done** in the current codebase. Use it for orientation and **optional follow-ups**, not as a from-scratch checklist.
 
-## Phase 1: Stabilize UX + Errors (1-2 sessions)
+---
 
-**Goal:** Stop regressions in spinner/output/error behavior before deeper refactors.
+## Summary
 
-### Tasks
-- Add tests for `isDebugEnabled`, `resolveSpinnerState`, `stopSpinner`, and `normalizeInvestecError`.
-- Add terminal-output tests for `printTable` (narrow width, no-color, piped).
-- Normalize API error handling for both Card and PB auth/request paths.
+| Area                         | Status      | Where to look |
+|-----------------------------|-------------|----------------|
+| Spinner / debug / errors    | **Done**    | `test/utils.test.ts`, `test/utils/investec-errors.test.ts`, `src/utils/spinner.ts`, `src/utils/cli-errors.ts` |
+| Table / structured output   | **Done**    | `test/utils/output.test.ts` (`printTable` narrow width, `NO_COLOR`, `formatOutput` piped JSON) |
+| Shared command runners      | **Done**    | `src/utils/command-runners.ts` (`withSpinner`, `runListCommand`, `runWriteCommand`, …) |
+| Core list-style commands    | **Done**    | `accounts`, `cards`, `balances`, `transactions`, etc. use shared patterns |
+| `utils.ts` decomposition    | **Done**    | `src/utils/*.ts` modules; `src/utils.ts` re-exports for compatibility |
+| `--no-spinner` + deprecation | **Done**   | `src/utils/spinner-flags.ts`, warning in `src/index.ts` |
+| Integration-style CLI tests | **Done**    | `test/cmds/integration-safety.test.ts` (TTY vs piped, spinner, core flows) |
+| Config / profile UX         | **Done**    | `src/cmds/config-subcommands.ts`, `test/cmds/config-subcommands.test.ts` |
 
-### Deliverable
-- A CLI behavior baseline test suite with consistent user-facing error behavior.
+---
 
-## Phase 2: Introduce Shared Command Runners (2-3 sessions)
+## Original phases (archived intent)
 
-**Goal:** Remove command-level duplication and enforce consistent command lifecycle behavior.
+### Phase 1 — Stabilize UX + errors
 
-### Tasks
-- Create reusable helpers:
-  - `withSpinner(...)`
-  - `runListCommand(...)`
-  - `runWriteCommand(...)`
-- Migrate high-impact commands first: `accounts`, `cards`, `balances`, `transactions`.
-- Verify output parity and remove per-command spinner boilerplate.
+- **Intent:** Baseline tests for spinners, debug flags, `normalizeInvestecError`, `printTable` edge cases.
+- **Status:** Covered by unit tests above; PB/Card errors go through `normalizeInvestecError` where integrated.
 
-### Deliverable
-- Reduced duplicate code in core commands and fewer spinner regressions.
+### Phase 2 — Shared command runners
 
-## Phase 3: Split `src/utils.ts` by Responsibility (3-5 sessions)
+- **Intent:** `withSpinner`, `runListCommand`, `runWriteCommand`; migrate high-traffic commands.
+- **Status:** Helpers exist; core commands migrated over time.
 
-**Goal:** Improve maintainability and testability.
+### Phase 3 — Split `utils.ts`
 
-### Tasks
-- Extract modules incrementally:
-  - `utils/terminal.ts`
-  - `utils/output.ts`
-  - `utils/errors.ts`
-  - `utils/api.ts`
-  - `utils/credentials.ts`
-  - `utils/history.ts`
-- Keep `src/utils.ts` as compatibility re-export during migration.
-- Move tests with each extracted module.
+- **Intent:** Extract terminal, output, api, history, credentials, etc.
+- **Status:** Extraction done under `src/utils/`; credential logic lives in `credentials-store.ts` / `credentials-validation.ts` (naming differs slightly from the original “credentials.ts” bullet).
 
-### Deliverable
-- Modular utility architecture with clear ownership boundaries.
+### Phase 4 — CLI option consistency
 
-## Phase 4: CLI Option Consistency + Compatibility (1 session)
+- **Intent:** `--no-spinner` with deprecation for legacy `-s/--spinner`.
+- **Status:** Implemented.
 
-**Goal:** Improve developer experience without breaking users.
+### Phase 5 — Integration safety net
 
-### Tasks
-- Introduce `--no-spinner` while preserving existing `-s,--spinner` behavior.
-- Add deprecation warning text and update docs.
+- **Intent:** Integration coverage for accounts, cards, deploy, fetch; TTY vs piped.
+- **Status:** `integration-safety.test.ts` covers several of these patterns; extend only if new regressions appear.
 
-### Deliverable
-- Clearer option semantics and migration path.
+---
 
-## Phase 5: Integration Safety Net (2 sessions)
+## Definition of done (original)
 
-**Goal:** Catch real-user flow regressions.
+| Criterion | Notes |
+|-----------|--------|
+| Less per-command spinner boilerplate | Largely met via `command-runners` + shared patterns |
+| `utils.ts` mostly re-exports | Met |
+| Error details only in verbose/debug | **Spot-check** when touching `handleCliError` / new commands |
+| Spinner cleared after success/failure | Enforced by patterns + integration tests |
+| Integration tests for core flows | Met for selected commands; expandable |
 
-### Tasks
-- Add integration tests for `accounts`, `cards`, `deploy`, `fetch`.
-- Validate TTY vs piped output, spinner cleanup, and error display modes.
+---
 
-### Deliverable
-- End-to-end confidence for core workflows.
+## Optional follow-ups (not blocking)
 
-## Prioritization Order
-1. Phase 1 (tests + error normalization)
-2. Phase 2 (shared command helpers)
-3. Phase 3 (modularize `utils.ts`)
-4. Phase 5 (integration hardening; can begin in parallel)
-5. Phase 4 (option polish)
+1. **Verbose error audit** — When adding or refactoring commands, confirm stack traces / debug lines only appear with `--verbose` or `DEBUG`, consistent with `handleCliError`.
+2. **More integration cases** — Add scenarios to `integration-safety.test.ts` if a specific command regresses (e.g. new file-write or spinner path).
+3. **Docs** — Run `npm run docs` after changing Commander definitions so `GENERATED_README.md` stays aligned.
+4. **Coverage target (80%+)** — Optional; use `vitest --coverage` if you want a numeric goal in CI.
 
-## Suggested Working Cadence
-- Per PR rule: one logical slice, tests included, no mixed concerns.
+---
 
-### PR Sequence Example
-1. `test: add spinner/debug/error unit coverage`
-2. `refactor: add withSpinner + migrate accounts/cards`
-3. `refactor: migrate balances/transactions`
-4. `refactor: extract utils/error + api modules`
-5. `test: add integration coverage for core commands`
-6. `feat: add --no-spinner alias + docs`
+## Working rule for future PRs
 
-## Definition of Done
-- Core command flows no longer duplicate spinner/error boilerplate.
-- `utils.ts` is decomposed and mostly re-exports.
-- Error details show only in verbose/debug mode, consistently.
-- Spinner text never remains on screen after success/error.
-- Integration tests cover core commands and terminal modes.
+One logical change per PR, tests included, no unrelated refactors—same as before.
