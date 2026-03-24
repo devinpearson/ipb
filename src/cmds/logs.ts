@@ -8,8 +8,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePathForWrite,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -37,39 +37,34 @@ export async function logsCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '📊 fetching execution items...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let logsDataRaw: string | undefined;
   let normalizedFilename = '';
   let logsSize = 0;
 
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
     const result = await api.getExecutions(cardKey);
     const logs = result.data.result.executionItems ?? [];
     logsDataRaw = JSON.stringify(logs, null, 4);
     logsSize = Buffer.byteLength(logsDataRaw, 'utf8');
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
-  if (!logsDataRaw || normalizedFilename === '') {
+  if (typeof logsDataRaw !== 'string' || normalizedFilename === '') {
     return;
   }
+  const logsToWrite = logsDataRaw;
+  const targetFilename = normalizedFilename;
 
   // Show progress with file size for write operation
   const writeSpinner = createSpinner(
     spinnerEnabled,
-    `💾 saving to file: ${normalizedFilename} (${formatFileSize(logsSize)})...`
+    `💾 saving to file: ${targetFilename} (${formatFileSize(logsSize)})...`
   );
-  if (spinnerEnabled) {
-    writeSpinner.start();
-  }
-  await fsPromises.writeFile(normalizedFilename, logsDataRaw, 'utf8');
-  stopSpinner(writeSpinner, spinnerEnabled);
+  await withSpinner(writeSpinner, spinnerEnabled, async () => {
+    await fsPromises.writeFile(targetFilename, logsToWrite, 'utf8');
+  });
 
-  const finalSize = await getFileSize(normalizedFilename);
+  const finalSize = await getFileSize(targetFilename);
   console.log(`🎉 logs saved to file (${formatFileSize(finalSize)})`);
 }

@@ -5,8 +5,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePathForWrite,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -31,21 +31,16 @@ export async function envCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💎 fetching envs...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let envs: Record<string, unknown> | undefined;
-  let normalizedFilename: string;
-  try {
+  let normalizedFilename = '';
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
     const result = await api.getEnv(cardKey);
     envs = result.data.result.variables ?? {};
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.json']);
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
-  if (envs === undefined) {
+  if (envs === undefined || normalizedFilename === '') {
     return;
   }
 

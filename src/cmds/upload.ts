@@ -7,8 +7,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePath,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -36,25 +36,27 @@ export async function uploadCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
-  const api = await initializeApi(credentials, options);
+  let result:
+    | {
+        data: {
+          result: {
+            codeId: string;
+          };
+        };
+      }
+    | undefined;
 
-  const codeFileSize = await getFileSize(normalizedFilename);
-  spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-
-  let result;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    const api = await initializeApi(credentials, options);
+    const codeFileSize = await getFileSize(normalizedFilename);
+    spinner.text = `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`;
     const raw = { code: '' };
     const code = await fsPromises.readFile(normalizedFilename, 'utf8');
     raw.code = code;
     const codeSize = Buffer.byteLength(code, 'utf8');
     spinner.text = `🚀 uploading code (${formatFileSize(codeSize)})...`;
     result = await api.uploadCode(cardKey, raw);
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!result) {
     return;

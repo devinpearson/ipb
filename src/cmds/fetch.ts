@@ -8,8 +8,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePathForWrite,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -34,13 +34,10 @@ export async function fetchCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching code...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let code: string | undefined;
   let codeSize = 0;
   let normalizedFilename = '';
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
@@ -71,25 +68,23 @@ export async function fetchCommand(options: Options) {
     code = fetchedCode;
     codeSize = Buffer.byteLength(fetchedCode, 'utf8');
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
-  if (code === undefined || normalizedFilename === '') {
+  if (typeof code !== 'string' || normalizedFilename === '') {
     return;
   }
+  const codeToWrite = code;
+  const targetFilename = normalizedFilename;
 
   // Show progress with file size for write operation
   const writeSpinner = createSpinner(
     spinnerEnabled,
-    `💾 saving to file: ${normalizedFilename} (${formatFileSize(codeSize)})...`
+    `💾 saving to file: ${targetFilename} (${formatFileSize(codeSize)})...`
   );
-  if (spinnerEnabled) {
-    writeSpinner.start();
-  }
-  await fsPromises.writeFile(normalizedFilename, code, 'utf8');
-  stopSpinner(writeSpinner, spinnerEnabled);
+  await withSpinner(writeSpinner, spinnerEnabled, async () => {
+    await fsPromises.writeFile(targetFilename, codeToWrite, 'utf8');
+  });
 
-  const finalSize = await getFileSize(normalizedFilename);
+  const finalSize = await getFileSize(targetFilename);
   console.log(`🎉 code saved to file (${formatFileSize(finalSize)})`);
 }

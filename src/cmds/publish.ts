@@ -8,9 +8,9 @@ import {
   getFileSize,
   initializeApi,
   normalizeCardKey,
-  stopSpinner,
   resolveSpinnerState,
   validateFilePath,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -59,11 +59,16 @@ export async function publishCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  let result;
-  try {
+  let result:
+    | {
+        data: {
+          result: {
+            codeId: string;
+          };
+        };
+      }
+    | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const codeFileSize = await getFileSize(normalizedFilename);
@@ -72,9 +77,7 @@ export async function publishCommand(options: Options) {
     const codeSize = Buffer.byteLength(code, 'utf8');
     spinner.text = `🚀 publishing code (${formatFileSize(codeSize)})...`;
     result = await api.uploadPublishedCode(cardKey, options.codeId, code);
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!result) {
     return;

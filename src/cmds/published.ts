@@ -5,8 +5,8 @@ import {
   initializeApi,
   normalizeCardKey,
   resolveSpinnerState,
-  stopSpinner,
   validateFilePathForWrite,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -31,17 +31,16 @@ export async function publishedCommand(options: Options) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 fetching code...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
-  let code: string;
-  try {
+  let code = '';
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const result = await api.getPublishedCode(cardKey);
     code = result.data.result.code;
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
+  });
+
+  if (code === '') {
+    return;
   }
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
   console.log(`💾 saving to file: ${normalizedFilename}`);
