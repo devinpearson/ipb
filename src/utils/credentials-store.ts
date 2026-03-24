@@ -73,10 +73,14 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   if (credentialsFile) {
     try {
       const normalizedPath = normalizeFilePath(credentialsFile);
-      const file = (await import(pathToFileURL(normalizedPath).href, {
+      const mod = (await import(pathToFileURL(normalizedPath).href, {
         with: { type: 'json' },
-      })) as Credentials | { default?: Credentials };
-      const loadedCredentials = 'default' in file ? file.default : file;
+      })) as { default?: unknown };
+      const payload = mod.default !== undefined ? mod.default : mod;
+      const loaded =
+        payload !== null && typeof payload === 'object'
+          ? (payload as Record<string, unknown>)
+          : {};
 
       const credentialKeys: (keyof Credentials)[] = [
         'host',
@@ -89,8 +93,9 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
       ];
 
       credentialKeys.forEach((key) => {
-        if (loadedCredentials?.[key] !== undefined) {
-          credentials[key] = loadedCredentials[key];
+        const value = loaded[key];
+        if (value !== undefined && typeof value === 'string') {
+          credentials[key] = value;
         }
       });
     } catch (error) {

@@ -1,7 +1,6 @@
 import { access, constants } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import type { ErrnoException } from 'node:util';
 import { CliError, ERROR_CODES } from '../errors.js';
 
 export function normalizeFilePath(filePath: string): string {
@@ -46,7 +45,10 @@ export async function checkFilePermissions(
         await access(normalizedPath, constants.F_OK);
         await access(normalizedPath, constants.W_OK);
       } catch (error) {
-        const code = (error as ErrnoException).code;
+        const code =
+          error && typeof error === 'object' && 'code' in error
+            ? (error as NodeJS.ErrnoException).code
+            : undefined;
         if (code !== 'ENOENT') {
           throw error;
         }

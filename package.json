@@ -19,6 +19,7 @@
     "type-check": "tsc",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "ci": "npm run build && npm run type-check && npm run lint && npm run format:check && npm run test:run && npm audit",
+    "verify:ci": "npm run build && npm run test:run && npm run bundle",
     "dev": "vitest",
     "tapes": "./scripts/tapes.sh",
     "docs": "npm run build && node bin/index.js docs",
@@ -31,7 +32,8 @@
     "pkg:linux": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-linux-x64,node20-linux-arm64 --out-path dist --no-bytecode --public",
     "pkg:windows": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-win-x64 --out-path dist --no-bytecode --public",
     "pkg:all": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --targets node20-macos-x64,node20-macos-arm64,node20-linux-x64,node20-linux-arm64,node20-win-x64 --out-path dist --no-bytecode --public",
-    "pkg:clean": "rimraf ./dist ./dist-bundle"
+    "pkg:clean": "rimraf ./dist ./dist-bundle",
+    "prepare": "husky"
   },
   "keywords": [
     "investec",
@@ -78,6 +80,7 @@
     "@types/node": "^22.19.0",
     "@yao-pkg/pkg": "^6.10.1",
     "esbuild": "^0.25.12",
+    "husky": "^9.1.7",
     "rimraf": "^6.1.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
