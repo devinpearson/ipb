@@ -61,7 +61,7 @@ This repository is crafted with ❤️ by our talented community members. It's a
 
 ### npm (Recommended - requires Node.js)
 
-Before installing, [download and install Node.js](https://nodejs.org/en/download/) (version 20 or higher).
+Before installing, [download and install Node.js](https://nodejs.org/en/download/) (version 22 or higher).
 
 To install or upgrade the CLI, run the following command:
 
