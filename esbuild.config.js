@@ -69,7 +69,7 @@ async function buildApp(options = {}) {
       bundle: true,
       outfile,
       platform: 'node',
-      target: 'node20',
+      target: 'node24',
       format: 'cjs', // Use CommonJS for better pkg compatibility
       mainFields: ['module', 'main'],
       sourcemap: false,

@@ -22,10 +22,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22.x
+      - name: Setup Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 24.x
           cache: npm
 
       - name: Install dependencies
@@ -35,7 +35,7 @@ jobs:
         run: npm run bundle
 
       - name: Build Linux binary for snap
-        run: npx pkg dist-bundle/index.cjs --targets node20-linux-x64 --out-path dist --no-bytecode --public
+        run: npx pkg dist-bundle/index.cjs --targets node24-linux-x64 --out-path dist --no-bytecode --public
 
       - name: Normalize binary name
         run: |

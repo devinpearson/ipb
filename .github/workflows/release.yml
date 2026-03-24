@@ -25,27 +25,27 @@ jobs:
           - os: macos-latest
             platform: macos
             arch: x64
-            target: node20-macos-x64
+            target: node24-macos-x64
             binary-name: ipb-macos-x64
           - os: macos-latest
             platform: macos
             arch: arm64
-            target: node20-macos-arm64
+            target: node24-macos-arm64
             binary-name: ipb-macos-arm64
           - os: ubuntu-latest
             platform: linux
             arch: x64
-            target: node20-linux-x64
+            target: node24-linux-x64
             binary-name: ipb-linux-x64
           - os: ubuntu-latest
             platform: linux
             arch: arm64
-            target: node20-linux-arm64
+            target: node24-linux-arm64
             binary-name: ipb-linux-arm64
           - os: windows-latest
             platform: win
             arch: x64
-            target: node20-win-x64
+            target: node24-win-x64
             binary-name: ipb-win-x64.exe
 
     steps:
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: npm ci
