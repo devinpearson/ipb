@@ -58,7 +58,13 @@ import {
   type RateLimitInfo,
   withRetry,
 } from './utils/retry.js';
-import { getVerboseMode, isDebugEnabled, resolveSpinnerState } from './utils/runtime-flags.js';
+import {
+  getVerboseMode,
+  isDebugEnabled,
+  isMockApisEnabled,
+  isUpdateCheckDisabled,
+  resolveSpinnerState,
+} from './utils/runtime-flags.js';
 import {
   detectSecretUsageFromEnv,
   isNonInteractiveEnvironment,
@@ -103,7 +109,13 @@ export function configureChalk(): void {
   // This function exists for documentation and future extensibility
 }
 
-export { getVerboseMode, isDebugEnabled, resolveSpinnerState };
+export {
+  getVerboseMode,
+  isDebugEnabled,
+  isMockApisEnabled,
+  isUpdateCheckDisabled,
+  resolveSpinnerState,
+};
 
 export { normalizeInvestecError };
 

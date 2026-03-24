@@ -79,4 +79,24 @@ describe('loadCredentialsFile', () => {
     expect(loaded.host).toBe('https://example.test');
     expect((loaded as Credentials & { unknownField?: string }).unknownField).toBeUndefined();
   });
+
+  it('unwraps ESM-style { default: { ... } } when no credential keys exist at top level', async () => {
+    const tempDir = await createTempDir('ipb-creds-default-export');
+    const credentialsPath = path.join(tempDir, 'credentials.json');
+    await writeFile(
+      credentialsPath,
+      JSON.stringify({
+        default: {
+          clientId: 'nested-client-id',
+          clientSecret: 'nested-secret',
+          apiKey: 'nested-api-key',
+        },
+      })
+    );
+
+    const loaded = await loadCredentialsFile(getBaseCredentials(), credentialsPath);
+    expect(loaded.clientId).toBe('nested-client-id');
+    expect(loaded.clientSecret).toBe('nested-secret');
+    expect(loaded.apiKey).toBe('nested-api-key');
+  });
 });

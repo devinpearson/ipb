@@ -5,7 +5,7 @@ import type { ICardApi } from '../mock-card.js';
 import type { IPbApi } from '../mock-pb.js';
 import { validateCredentialsFile } from './credentials-validation.js';
 import { normalizeInvestecError } from './investec-errors.js';
-import { isDebugEnabled } from './runtime-flags.js';
+import { isMockApisEnabled } from './runtime-flags.js';
 
 /**
  * Initializes the Programmable Banking API client.
@@ -21,7 +21,7 @@ export async function initializePbApi(
   validateCredentialsFile(credentials);
 
   let api: IPbApi;
-  if (isDebugEnabled()) {
+  if (isMockApisEnabled()) {
     const { PbApi } = await import('../mock-pb.js');
     api = new PbApi(
       credentials.clientId,
@@ -91,7 +91,7 @@ export async function initializeApi(
   validateCredentialsFile(resolvedCredentials);
 
   let api: ICardApi;
-  if (isDebugEnabled()) {
+  if (isMockApisEnabled()) {
     const { CardApi } = await import('../mock-card.js');
     api = new CardApi(
       resolvedCredentials.clientId,

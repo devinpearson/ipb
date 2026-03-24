@@ -49,6 +49,7 @@ import {
   getSafeText,
   getVerboseMode,
   handleCliError,
+  isUpdateCheckDisabled,
   loadCredentialsFile,
   logCommandHistory,
   readCredentialsFileSync,
@@ -1302,11 +1303,15 @@ Examples:
   // If --check-updates flag is present, handle it before parsing
   if (hasCheckUpdatesFlag && process.argv.length === 3) {
     // Only --check-updates flag, no command
-    const latestVersion = await checkForUpdates(version, true);
-    if (latestVersion) {
-      showUpdateNotification(version, latestVersion);
+    if (!isUpdateCheckDisabled()) {
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion) {
+        showUpdateNotification(version, latestVersion);
+      } else {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
     } else {
-      console.log(chalk.green('✓ You are using the latest version.'));
+      console.log(chalk.dim('Skipping version check (IPB_NO_UPDATE_CHECK is set).'));
     }
     process.exit(0);
   }
@@ -1385,32 +1390,34 @@ Examples:
     output: typeof commandOptions.output === 'string' ? commandOptions.output : undefined,
   });
 
-  if (hasCheckUpdatesFlag && process.argv.length > 3) {
-    // --check-updates flag with a command - check after command execution
-    const latestVersion = await checkForUpdates(version, true);
-    if (latestVersion && updateNotificationAllowed) {
-      showUpdateNotification(version, latestVersion);
-    } else if (!latestVersion) {
-      console.log(chalk.green('✓ You are using the latest version.'));
-    }
-  } else if (process.argv.length === 2) {
-    // No arguments provided (shouldn't happen due to early exit, but just in case)
-    const latestVersion = await checkForUpdates(version, false);
-    if (latestVersion && updateNotificationAllowed) {
-      showUpdateNotification(version, latestVersion);
-    }
-  } else if (!hasCheckUpdatesFlag) {
-    // Background check for regular commands (non-blocking, cached for 24 hours)
-    if (updateNotificationAllowed) {
-      checkForUpdates(version, false)
-        .then((latest) => {
-          if (latest) {
-            showUpdateNotification(version, latest);
-          }
-        })
-        .catch(() => {
-          // Silent failure for background checks
-        });
+  if (!isUpdateCheckDisabled()) {
+    if (hasCheckUpdatesFlag && process.argv.length > 3) {
+      // --check-updates flag with a command - check after command execution
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      } else if (!latestVersion) {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
+    } else if (process.argv.length === 2) {
+      // No arguments provided (shouldn't happen due to early exit, but just in case)
+      const latestVersion = await checkForUpdates(version, false);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      }
+    } else if (!hasCheckUpdatesFlag) {
+      // Background check for regular commands (non-blocking, cached for 24 hours)
+      if (updateNotificationAllowed) {
+        checkForUpdates(version, false)
+          .then((latest) => {
+            if (latest) {
+              showUpdateNotification(version, latest);
+            }
+          })
+          .catch(() => {
+            // Silent failure for background checks
+          });
+      }
     }
   }
 

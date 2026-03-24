@@ -1,15 +1,37 @@
+const TRUTHY_ENV_FALSE_VALUES = new Set(['0', 'false', 'off', 'no', 'disabled']);
+
+/**
+ * Returns true when an environment flag is set to a truthy value (empty and common falsey strings are false).
+ */
+function isTruthyEnv(raw: string | undefined): boolean {
+  if (raw === undefined || raw === '') {
+    return false;
+  }
+  const normalized = raw.trim().toLowerCase();
+  return !TRUTHY_ENV_FALSE_VALUES.has(normalized);
+}
+
 /**
  * Checks if DEBUG environment variable is set (supports common falsey values).
  * @returns True if DEBUG is effectively enabled
  */
 export function isDebugEnabled(): boolean {
-  const debug = process.env.DEBUG;
-  if (debug === undefined || debug === '') {
-    return false;
-  }
-  const normalized = debug.trim().toLowerCase();
-  const falseValues = new Set(['0', 'false', 'off', 'no', 'disabled']);
-  return !falseValues.has(normalized);
+  return isTruthyEnv(process.env.DEBUG);
+}
+
+/**
+ * When true, the CLI uses in-process mock Programmable Banking and Card API clients (no network to Investec).
+ * Enabled when DEBUG is set or `IPB_MOCK_APIS` is truthy; use the latter for tape generation without verbose output.
+ */
+export function isMockApisEnabled(): boolean {
+  return isDebugEnabled() || isTruthyEnv(process.env.IPB_MOCK_APIS);
+}
+
+/**
+ * When true, skips npm registry version checks (no network). Used for VHS tape generation and fully offline runs.
+ */
+export function isUpdateCheckDisabled(): boolean {
+  return isTruthyEnv(process.env.IPB_NO_UPDATE_CHECK);
 }
 
 /**

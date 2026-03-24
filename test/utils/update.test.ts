@@ -58,3 +58,28 @@ describe('shouldDisplayUpdateNotification', () => {
     ).toBe(true);
   });
 });
+
+/**
+ * Contract for `main()` in index.ts: background update checks must not call
+ * `showUpdateNotification` when these modes are active (stdout reserved for command data).
+ */
+describe('update notification gate (automation / stdout contract)', () => {
+  it.each([
+    { label: 'piped stdout', options: { isPiped: true as const } },
+    { label: '--json', options: { isPiped: false as const, json: true as const } },
+    { label: '--yaml', options: { isPiped: false as const, yaml: true as const } },
+    { label: '--output', options: { isPiped: false as const, output: 'report.json' as const } },
+  ])('suppresses update banner for $label', ({ options }) => {
+    expect(shouldDisplayUpdateNotification(options)).toBe(false);
+  });
+
+  it('allows update banner only for interactive, human-oriented terminal output', () => {
+    expect(
+      shouldDisplayUpdateNotification({
+        isPiped: false,
+        json: false,
+        yaml: false,
+      })
+    ).toBe(true);
+  });
+});

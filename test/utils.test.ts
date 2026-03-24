@@ -15,6 +15,8 @@ vi.mock('../src/index.ts', () => ({
 }));
 
 let isDebugEnabled: typeof import('../src/utils.ts').isDebugEnabled;
+let isMockApisEnabled: typeof import('../src/utils.ts').isMockApisEnabled;
+let isUpdateCheckDisabled: typeof import('../src/utils.ts').isUpdateCheckDisabled;
 let normalizeInvestecError: typeof import('../src/utils.ts').normalizeInvestecError;
 let resolveSpinnerState: typeof import('../src/utils.ts').resolveSpinnerState;
 let runListCommand: typeof import('../src/utils.ts').runListCommand;
@@ -25,6 +27,8 @@ let withSpinnerOutcome: typeof import('../src/utils.ts').withSpinnerOutcome;
 beforeAll(async () => {
   const utils = await import('../src/utils.ts');
   isDebugEnabled = utils.isDebugEnabled;
+  isMockApisEnabled = utils.isMockApisEnabled;
+  isUpdateCheckDisabled = utils.isUpdateCheckDisabled;
   normalizeInvestecError = utils.normalizeInvestecError;
   resolveSpinnerState = utils.resolveSpinnerState;
   runListCommand = utils.runListCommand;
@@ -70,9 +74,46 @@ describe('isDebugEnabled', () => {
   });
 });
 
+describe('isMockApisEnabled', () => {
+  afterEach(() => {
+    delete process.env.DEBUG;
+    delete process.env.IPB_MOCK_APIS;
+  });
+
+  it('is false when DEBUG and IPB_MOCK_APIS are unset', () => {
+    expect(isMockApisEnabled()).toBe(false);
+  });
+
+  it('is true when IPB_MOCK_APIS is truthy without DEBUG', () => {
+    process.env.IPB_MOCK_APIS = '1';
+    expect(isMockApisEnabled()).toBe(true);
+  });
+
+  it('is true when DEBUG is truthy', () => {
+    process.env.DEBUG = '1';
+    expect(isMockApisEnabled()).toBe(true);
+  });
+});
+
+describe('isUpdateCheckDisabled', () => {
+  afterEach(() => {
+    delete process.env.IPB_NO_UPDATE_CHECK;
+  });
+
+  it('is false when IPB_NO_UPDATE_CHECK is unset', () => {
+    expect(isUpdateCheckDisabled()).toBe(false);
+  });
+
+  it('is true when IPB_NO_UPDATE_CHECK is truthy', () => {
+    process.env.IPB_NO_UPDATE_CHECK = '1';
+    expect(isUpdateCheckDisabled()).toBe(true);
+  });
+});
+
 describe('resolveSpinnerState', () => {
   afterEach(() => {
     delete process.env.DEBUG;
+    delete process.env.IPB_MOCK_APIS;
   });
 
   it('disables spinner when output is piped', () => {
@@ -122,6 +163,17 @@ describe('resolveSpinnerState', () => {
     });
     expect(state.verbose).toBe(true);
     expect(state.spinnerEnabled).toBe(false);
+  });
+
+  it('does not enable verbose when only IPB_MOCK_APIS is set', () => {
+    process.env.IPB_MOCK_APIS = '1';
+    const state = resolveSpinnerState({
+      spinnerFlag: false,
+      verboseFlag: undefined,
+      isPiped: false,
+    });
+    expect(state.verbose).toBe(false);
+    expect(state.spinnerEnabled).toBe(true);
   });
 });
 

@@ -83,10 +83,28 @@ export async function envListCommand(options: CommonOptions) {
     {
       name: 'DEBUG',
       description:
-        'Enable debug mode. When set to "true", uses mock APIs instead of real API calls. Useful for testing without API access.',
+        'Verbose / debug output (equivalent to --verbose when no flag is passed). Also enables mock Investec APIs together with in-process test data. For recordings without verbose logs, use IPB_MOCK_APIS instead.',
       required: false,
       default: 'false',
       example: 'true',
+      category: 'Development',
+    },
+    {
+      name: 'IPB_MOCK_APIS',
+      description:
+        'Use in-process mock Programmable Banking and Card API clients (no network). Does not enable verbose output. Pair with fixture credentials (see tapes/fixtures) for VHS tape generation.',
+      required: false,
+      default: 'false',
+      example: '1',
+      category: 'Development',
+    },
+    {
+      name: 'IPB_NO_UPDATE_CHECK',
+      description:
+        'Skip npm registry version checks (no network). Recommended when generating terminal recordings or running fully offline.',
+      required: false,
+      default: 'false',
+      example: '1',
       category: 'Development',
     },
     {

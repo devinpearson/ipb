@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-export DEBUG=true
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+set -a
+source "${SCRIPT_DIR}/../tapes/fixtures/credentials.env"
+set +a
+export IPB_MOCK_APIS=1
+export IPB_NO_UPDATE_CHECK=1
 vhs tapes/cards.tape
 vhs tapes/deploy.tape
 vhs tapes/env.tape
