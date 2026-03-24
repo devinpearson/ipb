@@ -13,7 +13,6 @@ import {
 } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type { Credentials } from '../cmds/types.js';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { normalizeFilePath } from './file-validation.js';
@@ -73,15 +72,8 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   if (credentialsFile) {
     try {
       const normalizedPath = normalizeFilePath(credentialsFile);
-      const mod = (await import(pathToFileURL(normalizedPath).href, {
-        with: { type: 'json' },
-      })) as { default?: unknown };
-      const payload = mod.default !== undefined ? mod.default : mod;
-      const loaded =
-        payload !== null && typeof payload === 'object'
-          ? (payload as Record<string, unknown>)
-          : {};
-
+      const text = await readFile(normalizedPath, 'utf8');
+      const parsed = JSON.parse(text) as unknown;
       const credentialKeys: (keyof Credentials)[] = [
         'host',
         'apiKey',
@@ -91,6 +83,23 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
         'sandboxKey',
         'cardKey',
       ];
+
+      let loaded: Record<string, unknown> = {};
+      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const obj = parsed as Record<string, unknown>;
+        const hasTopLevelCred = credentialKeys.some((k) => obj[k as string] !== undefined);
+        const inner = obj.default;
+        if (
+          !hasTopLevelCred &&
+          inner !== null &&
+          typeof inner === 'object' &&
+          !Array.isArray(inner)
+        ) {
+          loaded = inner as Record<string, unknown>;
+        } else {
+          loaded = obj;
+        }
+      }
 
       credentialKeys.forEach((key) => {
         const value = loaded[key];

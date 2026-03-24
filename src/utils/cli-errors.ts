@@ -38,6 +38,10 @@ function determineExitCode(
     return ExitCode.AUTH_ERROR;
   }
 
+  if (errorCode === ERROR_CODES.PERMISSION_DENIED) {
+    return ExitCode.PERMISSION_ERROR;
+  }
+
   if (
     errorCode === ERROR_CODES.FILE_NOT_FOUND ||
     errorCode === ERROR_CODES.TEMPLATE_NOT_FOUND ||
@@ -169,6 +173,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   ) {
     suggestion = '\n💡 Tip: Check your internet connection and verify the API host is accessible.';
   } else if (
+    errorCode === ERROR_CODES.PERMISSION_DENIED ||
     lowerMessage.includes('permission') ||
     lowerMessage.includes('eacces') ||
     lowerMessage.includes('access denied')

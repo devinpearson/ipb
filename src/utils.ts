@@ -226,6 +226,10 @@ function _determineExitCode(
     return ExitCode.AUTH_ERROR;
   }
 
+  if (errorCode === ERROR_CODES.PERMISSION_DENIED) {
+    return ExitCode.PERMISSION_ERROR;
+  }
+
   // File system errors
   if (
     errorCode === ERROR_CODES.FILE_NOT_FOUND ||

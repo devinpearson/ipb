@@ -38,6 +38,8 @@ export const ERROR_CODES = {
   RATE_LIMIT_EXCEEDED: 'E4014', // Added for rate limiting errors
   MISSING_CODE_ID: 'E4015', // Added for missing code ID
   INVESTEC_API_ERROR: 'E4016', // Added for Investec API communication failures
+  /** File or directory exists but cannot be read or written (e.g. EACCES, EPERM). */
+  PERMISSION_DENIED: 'E4017',
   // Add more as needed
 };
 

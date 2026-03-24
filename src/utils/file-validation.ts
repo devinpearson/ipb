@@ -3,6 +3,18 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import { CliError, ERROR_CODES } from '../errors.js';
 
+function getErrnoCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    return typeof code === 'string' ? code : undefined;
+  }
+  return undefined;
+}
+
+function isPermissionErrno(code: string | undefined): boolean {
+  return code === 'EACCES' || code === 'EPERM';
+}
+
 export function normalizeFilePath(filePath: string): string {
   if (filePath.startsWith('~/') || filePath === '~') {
     filePath = filePath.replace('~', homedir());
@@ -45,10 +57,7 @@ export async function checkFilePermissions(
         await access(normalizedPath, constants.F_OK);
         await access(normalizedPath, constants.W_OK);
       } catch (error) {
-        const code =
-          error && typeof error === 'object' && 'code' in error
-            ? (error as NodeJS.ErrnoException).code
-            : undefined;
+        const code = getErrnoCode(error);
         if (code !== 'ENOENT') {
           throw error;
         }
@@ -56,8 +65,9 @@ export async function checkFilePermissions(
       }
     }
   } catch (error) {
+    const errnoCode = getErrnoCode(error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('ENOENT')) {
+    if (errnoCode === 'ENOENT' || errorMessage.includes('ENOENT')) {
       if (operation === 'read') {
         throw new CliError(
           ERROR_CODES.FILE_NOT_FOUND,
@@ -68,9 +78,15 @@ export async function checkFilePermissions(
         ERROR_CODES.FILE_NOT_FOUND,
         `Directory "${path.dirname(normalizedPath)}" does not exist. Create the directory first.`
       );
-    } else if (errorMessage.includes('EACCES') || errorMessage.includes('permission')) {
+    }
+    if (
+      isPermissionErrno(errnoCode) ||
+      errorMessage.includes('EACCES') ||
+      errorMessage.includes('EPERM') ||
+      errorMessage.toLowerCase().includes('permission')
+    ) {
       throw new CliError(
-        ERROR_CODES.FILE_NOT_FOUND,
+        ERROR_CODES.PERMISSION_DENIED,
         `Permission denied: Cannot ${operation} file "${normalizedPath}". Check file permissions.`
       );
     }

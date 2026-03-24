@@ -50,7 +50,9 @@ describe('file-validation utilities', () => {
     await writeFile(targetFile, 'console.log("test");', 'utf8');
     await chmod(targetFile, 0o444);
 
-    await expect(validateFilePathForWrite(targetFile, ['.js'])).rejects.toThrow(CliError);
+    await expect(validateFilePathForWrite(targetFile, ['.js'])).rejects.toMatchObject({
+      code: ERROR_CODES.PERMISSION_DENIED,
+    });
 
     await chmod(targetFile, 0o644);
   });
