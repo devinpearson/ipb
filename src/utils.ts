@@ -2583,7 +2583,12 @@ export async function initializePbApi(
       credentials.host
     );
   }
-  await api.getAccessToken();
+  try {
+    await api.getAccessToken();
+  } catch (error) {
+    throw normalizeInvestecError(error, 'pb-api-auth');
+  }
+
   return api;
 }
 
