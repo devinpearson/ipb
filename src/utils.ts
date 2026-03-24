@@ -12,7 +12,6 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
@@ -20,24 +19,27 @@ import type { BasicOptions, Credentials } from './cmds/types.js';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
 import { normalizeInvestecError } from './utils/investec-errors.js';
 import { getVerboseMode, isDebugEnabled, resolveSpinnerState } from './utils/runtime-flags.js';
-
-const require = createRequire(import.meta.url);
-
-interface CliTableLike {
-  push: (...rows: unknown[]) => void;
-  toString(): string;
-}
-
-type CliTableConstructor = new (options: Record<string, unknown>) => CliTableLike;
-
-let CliTable: CliTableConstructor | undefined;
-
-try {
-  const requiredModule = require('cli-table3');
-  CliTable = (requiredModule?.default ?? requiredModule) as CliTableConstructor;
-} catch {
-  CliTable = undefined;
-}
+import type { Spinner } from './utils/spinner.js';
+import { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome } from './utils/spinner.js';
+import {
+  detectTerminalCapabilities,
+  getSafeText,
+  getTerminalCapabilities,
+  getTerminalDimensions,
+  isStdinPiped,
+  isStdoutPiped,
+  readStdin,
+  safeLog,
+} from './utils/terminal.js';
+import {
+  formatOutput,
+  printTable,
+  type OutputOptions,
+  type TableData,
+  type TableRow,
+} from './utils/output.js';
+import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
+import { formatFileSize, getFileSize } from './utils/file-size.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -86,29 +88,7 @@ export async function pageOutput(
   console.log(content);
 }
 
-/**
- * Gets terminal dimensions from LINES and COLUMNS environment variables.
- * Falls back to process.stdout.columns/rows if available.
- * @returns Object with lines and columns, or null if not available
- */
-export function getTerminalDimensions(): { lines: number; columns: number } | null {
-  const lines = process.env.LINES ? parseInt(process.env.LINES, 10) : null;
-  const columns = process.env.COLUMNS ? parseInt(process.env.COLUMNS, 10) : null;
-
-  if (lines !== null && columns !== null && !Number.isNaN(lines) && !Number.isNaN(columns)) {
-    return { lines, columns };
-  }
-
-  // Fallback to process.stdout if available
-  if (process.stdout.isTTY && process.stdout.rows && process.stdout.columns) {
-    return {
-      lines: process.stdout.rows,
-      columns: process.stdout.columns,
-    };
-  }
-
-  return null;
-}
+export { getTerminalDimensions };
 
 /**
  * Gets the temporary directory path, respecting TMPDIR environment variable.
@@ -249,182 +229,15 @@ function getDefaultEditor(): string | null {
   return unixEditors[0] || null;
 }
 
-/**
- * Terminal capability information.
- */
-interface TerminalCapabilities {
-  supportsUnicode: boolean;
-  supportsEmoji: boolean;
-  termType: string | null;
-}
-
-/**
- * Detects terminal capabilities based on TERM environment variable and terminal type.
- * According to clig.dev guidelines, should check TERM and TERMINFO/TERMCAP for terminal capabilities.
- *
- * @returns Terminal capability information
- */
-export function detectTerminalCapabilities(): TerminalCapabilities {
-  const term = process.env.TERM;
-  // Note: TERMINFO and TERMCAP are environment variables that may be set by the system
-  // but are not directly used in our terminal capability detection logic
-
-  // Check if we're in a TTY
-  const isTTY = process.stdout.isTTY === true;
-
-  // Default: assume limited capabilities if not a TTY
-  if (!isTTY) {
-    return {
-      supportsUnicode: false,
-      supportsEmoji: false,
-      termType: term || null,
-    };
-  }
-
-  // Check TERM environment variable for terminal type
-  // Common terminals that support Unicode/emoji:
-  // - xterm-256color, xterm-kitty, xterm (modern versions)
-  // - screen-256color, tmux-256color
-  // - iterm2, alacritty, wezterm
-  // - linux, vt220, dumb (usually don't support Unicode well)
-
-  const termLower = term?.toLowerCase() || '';
-
-  // Terminals known to NOT support Unicode/emoji well
-  const noUnicodeTerms = ['dumb', 'vt220', 'vt100', 'vt102', 'ansi'];
-  const likelyNoUnicode = noUnicodeTerms.some((t) => termLower.includes(t));
-
-  // Check for NO_COLOR (if set, probably want plain text anyway)
-  const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
-
-  // Check if terminal explicitly supports Unicode
-  // Modern terminals usually support Unicode if they support 256 colors
-  const supports256Colors =
-    termLower.includes('256color') ||
-    termLower.includes('truecolor') ||
-    termLower.includes('kitty') ||
-    termLower.includes('iterm') ||
-    termLower.includes('alacritty') ||
-    termLower.includes('wezterm');
-
-  // Assume Unicode support if:
-  // - Terminal supports 256 colors
-  // - Not a known problematic terminal
-  // - Not explicitly disabled via NO_COLOR
-  const supportsUnicode = !likelyNoUnicode && !noColor && (supports256Colors || term === undefined);
-
-  // Emoji support is generally a subset of Unicode support
-  // Some terminals support Unicode but not emoji (e.g., older xterm)
-  // Assume emoji support if Unicode is supported and terminal is modern
-  const modernTerms = ['kitty', 'iterm', 'alacritty', 'wezterm', 'foot', 'rio'];
-  const supportsEmoji =
-    supportsUnicode &&
-    (modernTerms.some((t) => termLower.includes(t)) ||
-      termLower.includes('256color') ||
-      term === undefined); // Assume modern if TERM not set
-
-  return {
-    supportsUnicode,
-    supportsEmoji,
-    termType: term || null,
-  };
-}
-
-/**
- * Emoji/Unicode mapping with ASCII fallbacks.
- */
-const EMOJI_FALLBACKS: Record<string, string> = {
-  '💳': '[CARD]',
-  '💎': '[ENV]',
-  '🚀': '[DEPLOY]',
-  '📦': '[UPLOAD]',
-  '🎉': '[OK]',
-  '📖': '[READ]',
-  '💾': '[SAVE]',
-  '🔑': '[KEY]',
-  '✅': '[OK]',
-  '⚠️': '[WARN]',
-  '🙀': '[ERROR]',
-  '💻': '[CODE]',
-  '📂': '[DIR]',
-  '💣': '[ERR]',
-  '📝': '[EDIT]',
-  '🧪': '[TEST]',
+export {
+  detectTerminalCapabilities,
+  getSafeText,
+  getTerminalCapabilities,
+  isStdinPiped,
+  isStdoutPiped,
+  readStdin,
+  safeLog,
 };
-
-/**
- * Gets a safe version of text with emoji/Unicode, falling back to ASCII if terminal doesn't support it.
- *
- * @param text - Text that may contain emojis/Unicode
- * @param options - Options including force ASCII
- * @returns Text with emojis replaced if terminal doesn't support them
- *
- * @example
- * ```typescript
- * const text = getSafeText('💳 fetching accounts...');
- * // Returns '[CARD] fetching accounts...' if terminal doesn't support emoji
- * ```
- */
-export function getSafeText(text: string, options: { forceASCII?: boolean } = {}): string {
-  // If NO_COLOR is set, prefer ASCII
-  if (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '') {
-    options.forceASCII = true;
-  }
-
-  // If forcing ASCII, replace all emojis
-  if (options.forceASCII) {
-    let result = text;
-    for (const [emoji, fallback] of Object.entries(EMOJI_FALLBACKS)) {
-      result = result.replace(new RegExp(emoji, 'g'), fallback);
-    }
-    return result;
-  }
-
-  // Check terminal capabilities
-  const capabilities = detectTerminalCapabilities();
-
-  // If terminal doesn't support emoji, replace them
-  if (!capabilities.supportsEmoji) {
-    let result = text;
-    for (const [emoji, fallback] of Object.entries(EMOJI_FALLBACKS)) {
-      result = result.replace(new RegExp(emoji, 'g'), fallback);
-    }
-    return result;
-  }
-
-  // Terminal supports emoji, return original text
-  return text;
-}
-
-/**
- * Checks if the terminal supports Unicode characters (including emojis).
- * Cached for performance - checks once per process.
- * @returns True if terminal supports Unicode/emoji
- */
-let terminalCapabilitiesCache: TerminalCapabilities | null = null;
-
-/**
- * Gets cached terminal capabilities or detects them.
- * @returns Terminal capability information
- */
-export function getTerminalCapabilities(): TerminalCapabilities {
-  if (terminalCapabilitiesCache === null) {
-    terminalCapabilitiesCache = detectTerminalCapabilities();
-  }
-  return terminalCapabilitiesCache;
-}
-
-/**
- * Logs a message with automatic emoji/Unicode fallback based on terminal capabilities.
- * This is a convenience wrapper around console.log that applies getSafeText automatically.
- *
- * @param message - Message to log (may contain emojis)
- * @param args - Additional arguments to pass to console.log
- */
-export function safeLog(message: string, ...args: unknown[]): void {
-  const safeMessage = getSafeText(message);
-  console.log(safeMessage, ...args);
-}
 
 /**
  * Secret fields that should not be read from environment variables for security reasons.
@@ -1113,396 +926,10 @@ export function showUpdateNotification(currentVersion: string, latestVersion: st
   console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
 }
 
-export interface TableRow {
-  [key: string]: string | number | boolean | null | undefined;
-}
+export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
+export type { OutputOptions, TableData, TableRow };
+export { formatFileSize, getFileSize };
 
-export type TableData = TableRow[];
-
-/**
- * Output formatting options for structured output.
- */
-export interface OutputOptions {
-  json?: boolean;
-  yaml?: boolean;
-  output?: string;
-}
-
-/**
- * Checks if stdout is piped (not a TTY).
- * @returns True if stdout is piped to another command
- */
-export function isStdoutPiped(): boolean {
-  return !process.stdout.isTTY && process.stdout.writable;
-}
-
-/**
- * Checks if stdin has data available (for piping).
- * @returns True if stdin has data piped from another command
- */
-export function isStdinPiped(): boolean {
-  return !process.stdin.isTTY && process.stdin.readable;
-}
-
-/**
- * Reads data from stdin if available.
- * @returns Promise that resolves to the stdin data, or null if no data available
- */
-export async function readStdin(): Promise<string | null> {
-  if (!isStdinPiped()) {
-    return null;
-  }
-
-  return new Promise((resolve) => {
-    let data = '';
-    process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', (chunk: string) => {
-      data += chunk;
-    });
-
-    process.stdin.on('end', () => {
-      resolve(data.trim() || null);
-    });
-
-    // Timeout after 100ms if no data arrives
-    setTimeout(() => {
-      if (!data) {
-        resolve(null);
-      }
-    }, 100);
-  });
-}
-
-/**
- * Formats and outputs data in JSON, YAML, or table format, optionally writing to a file.
- * Automatically detects pipe mode and outputs JSON when piped.
- * @param data - Data to output (can be any JSON-serializable value)
- * @param options - Output options including JSON/YAML flags and output file path
- * @param showCount - Optional function to show count message after table output
- */
-export async function formatOutput(
-  data: unknown,
-  options: OutputOptions,
-  showCount?: (count: number) => void
-): Promise<void> {
-  // Auto-detect pipe mode: if stdout is piped, use JSON format
-  const isPiped = isStdoutPiped();
-  const autoJson = isPiped && !options.yaml && !options.output;
-
-  // Determine output format: YAML takes precedence over JSON if both are specified
-  const outputFormat = options.yaml ? 'yaml' : options.json || autoJson ? 'json' : null;
-  const shouldOutputStructured = outputFormat || options.output;
-
-  if (shouldOutputStructured) {
-    let output: string;
-
-    if (outputFormat === 'yaml') {
-      const yaml = await import('js-yaml');
-      output = yaml.dump(data, { indent: 2, lineWidth: -1 });
-    } else {
-      // Default to JSON if output file is specified without format flag
-      output = JSON.stringify(data, null, 2);
-    }
-
-    if (options.output) {
-      const { writeFile } = await import('node:fs/promises');
-      await writeFile(options.output, output, 'utf8');
-      if (!isPiped) {
-        console.log(`Output written to ${options.output}`);
-      }
-    } else {
-      // When piped, output directly to stdout without extra messages
-      process.stdout.write(output);
-    }
-  } else {
-    // Default table format for array data (only when not piped)
-    if (Array.isArray(data)) {
-      if (data.length === 0) {
-        if (!isPiped) {
-          console.log('No data to display.');
-        }
-        return;
-      }
-      if (!isPiped) {
-        printTable(data as TableData);
-        if (showCount) {
-          showCount(data.length);
-        }
-      } else {
-        // When piped, output as JSON
-        process.stdout.write(JSON.stringify(data, null, 2));
-      }
-    } else {
-      // For non-array data, output as JSON
-      if (isPiped) {
-        process.stdout.write(JSON.stringify(data, null, 2));
-      } else {
-        console.log(JSON.stringify(data, null, 2));
-      }
-    }
-  }
-}
-
-interface RunListCommandOptions<TFull, TSimple = TFull> {
-  isPiped: boolean;
-  items: TFull[] | null | undefined;
-  outputOptions: OutputOptions;
-  emptyMessage: string;
-  countMessage: (count: number) => string;
-  mapSimple?: (items: TFull[]) => TSimple[];
-}
-
-/**
- * Handles common list command output behavior (empty, table, structured output).
- * @param options - List command rendering options
- */
-export async function runListCommand<TFull, TSimple = TFull>(
-  options: RunListCommandOptions<TFull, TSimple>
-): Promise<void> {
-  const { isPiped, items, outputOptions, emptyMessage, countMessage, mapSimple } = options;
-
-  if (!items || items.length === 0) {
-    if (!isPiped) {
-      console.log(emptyMessage);
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleItems = mapSimple ? mapSimple(items) : (items as unknown as TSimple[]);
-  const dataToOutput =
-    outputOptions.json || outputOptions.yaml || outputOptions.output || isPiped ? items : simpleItems;
-
-  await formatOutput(dataToOutput, outputOptions, (count) => {
-    if (!isPiped) {
-      console.log(`\n${countMessage(count)}`);
-    }
-  });
-}
-
-interface RunWriteCommandOptions {
-  spinnerEnabled: boolean;
-  filename: string;
-  content: string;
-  progressMessage: (sizeLabel: string) => string;
-  successMessage: (sizeLabel: string) => string;
-}
-
-/**
- * Handles common file-write command behavior with spinner progress and final size output.
- * @param options - Write command rendering options
- */
-export async function runWriteCommand(options: RunWriteCommandOptions): Promise<void> {
-  const { spinnerEnabled, filename, content, progressMessage, successMessage } = options;
-  const contentSize = Buffer.byteLength(content, 'utf8');
-
-  const writeSpinner = createSpinner(
-    spinnerEnabled,
-    progressMessage(formatFileSize(contentSize))
-  );
-  await withSpinner(writeSpinner, spinnerEnabled, async () => {
-    await writeFile(filename, content, 'utf8');
-  });
-
-  const finalSize = await getFileSize(filename);
-  console.log(successMessage(formatFileSize(finalSize)));
-}
-
-interface RunReadUploadCommandOptions<TResult> {
-  spinner: Spinner;
-  spinnerEnabled: boolean;
-  filename: string;
-  readMessage: (sizeLabel: string) => string;
-  uploadMessage: (sizeLabel: string) => string;
-  readFileContent?: (filename: string) => Promise<string>;
-  upload: (content: string) => Promise<TResult>;
-}
-
-/**
- * Handles common read-file then upload flow with spinner progress text updates.
- * @param options - Read and upload command options
- * @returns Upload result
- */
-export async function runReadUploadCommand<TResult>(
-  options: RunReadUploadCommandOptions<TResult>
-): Promise<TResult> {
-  const {
-    spinner,
-    spinnerEnabled,
-    filename,
-    readMessage,
-    uploadMessage,
-    readFileContent,
-    upload,
-  } = options;
-
-  return await withSpinner(spinner, spinnerEnabled, async () => {
-    const codeFileSize = await getFileSize(filename);
-    spinner.text = readMessage(formatFileSize(codeFileSize));
-    const readContent = readFileContent ?? ((path: string) => readFile(path, 'utf8'));
-    const content = await readContent(filename);
-    const contentSize = Buffer.byteLength(content, 'utf8');
-    spinner.text = uploadMessage(formatFileSize(contentSize));
-    return await upload(content);
-  });
-}
-
-/**
- * Truncates a string to a maximum length, adding ellipsis if truncated.
- * @param value - The value to truncate
- * @param maxLength - Maximum length before truncation
- * @returns Truncated string
- */
-function truncateValue(value: unknown, maxLength: number): string {
-  const str = String(value ?? '');
-  if (str.length <= maxLength) {
-    return str;
-  }
-  return `${str.substring(0, maxLength - 3)}...`;
-}
-
-/**
- * Converts a value to a string representation, handling nested objects.
- * @param value - The value to convert
- * @param maxLength - Maximum length for string values
- * @returns String representation
- */
-function formatCellValue(value: unknown, maxLength: number = 50): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  if (typeof value === 'object') {
-    // Handle nested objects by converting to JSON
-    try {
-      const json = JSON.stringify(value);
-      return truncateValue(json, maxLength);
-    } catch {
-      return String(value);
-    }
-  }
-  return truncateValue(value, maxLength);
-}
-
-/**
- * Determines column alignment based on data type.
- * @param header - Column header name
- * @param sampleData - Sample data to analyze
- * @returns Alignment ('left' | 'right' | 'center')
- */
-function determineAlignment(header: string, sampleData: TableData): 'left' | 'right' | 'center' {
-  // Check if header name suggests numeric data
-  const numericPattern = /^(amount|balance|price|cost|total|count|id|key|number)$/i;
-  if (numericPattern.test(header)) {
-    return 'right';
-  }
-
-  // Check actual data types in sample
-  const sampleValues = sampleData.slice(0, 10).map((row) => row[header]);
-  const allNumeric =
-    sampleValues.length > 0 &&
-    sampleValues.every((val) => {
-      if (val === null || val === undefined || val === '') return false;
-      const num = Number(val);
-      return !Number.isNaN(num) && Number.isFinite(num);
-    });
-
-  if (allNumeric) {
-    return 'right';
-  }
-
-  // Boolean values can be centered
-  if (sampleValues.every((val) => typeof val === 'boolean')) {
-    return 'center';
-  }
-
-  return 'left';
-}
-
-function stripAnsi(value: string): string {
-  return value.replace(/\u001b\[[0-9;]*m/g, '');
-}
-
-/**
- * Prints tabular data to the console in a formatted table with improved formatting.
- * Uses cli-table3 for better column alignment, borders, and handling of long values.
- * @param data - Array of row objects to display
- */
-export function printTable(data: TableData): void {
-  if (!data || data.length === 0) {
-    console.log('No data to display.');
-    return;
-  }
-
-  if (CliTable) {
-    const headers: string[] = Object.keys(data[0] as TableRow);
-    const rows = data as TableRow[];
-    const terminalWidth = process.stdout.columns || 120;
-    const minColumnWidth = 10;
-    const maxColumnWidth = 36;
-
-    const colWidths = headers.map((header) => {
-      const values = rows.map((row) => formatCellValue(row[header], 256));
-      const longest = Math.max(
-        header.length,
-        ...values.map((value) => stripAnsi(value).length)
-      );
-      const widthWithPadding = longest + 2;
-      return Math.min(
-        maxColumnWidth,
-        Math.max(minColumnWidth, Math.min(widthWithPadding, Math.floor(terminalWidth / headers.length)))
-      );
-    });
-
-    const tableOptions: Record<string, unknown> = {
-      head: headers.map((h) => chalk.bold.cyan(h)),
-      style: {
-        head: [],
-        border: ['gray'],
-        compact: true,
-      },
-      colWidths,
-      colAligns: headers.map((header) => determineAlignment(header, data)),
-      wordWrap: false,
-    };
-    const table = new CliTable(tableOptions);
-
-    // Add rows with formatted values
-    rows.forEach((row) => {
-      const rowData = headers.map((header, index) => {
-        const value = row[header];
-        const columnWidth = Math.max(colWidths[index] ?? minColumnWidth, minColumnWidth) - 2;
-        return formatCellValue(value, columnWidth);
-      });
-      table.push(rowData);
-    });
-
-    console.log(table.toString());
-    return;
-  }
-
-  // Fallback to basic formatting if cli-table3 is not available
-  const headers: string[] = Object.keys(data[0] as TableRow);
-  const colWidths: number[] = headers.map((header) =>
-    Math.max(header.length, ...data.map((row) => String(row[header] ?? '').length))
-  );
-
-  // Print header row
-  const headerRow: string = headers
-    .map((header, index) => header.padEnd(colWidths[index] ?? 0))
-    .join(' | ');
-  console.log(headerRow);
-  console.log('-'.repeat(headerRow.length));
-
-  // Print data rows
-  data.forEach((row) => {
-    const dataRow: string = headers
-      .map((header, index) => String(row[header] ?? '').padEnd(colWidths[index] ?? 0))
-      .join(' | ');
-    console.log(dataRow);
-  });
-}
 
 /**
  * Normalizes a file path by expanding ~ to home directory and resolving relative paths.
@@ -1878,7 +1305,6 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
   return credentials;
 }
 
-import ora from 'ora';
 import { optionCredentials } from './index.js';
 import type { ICardApi } from './mock-card.js';
 import type { IPbApi } from './mock-pb.js';
@@ -2431,166 +1857,9 @@ export async function withRetry<T>(
   throw lastError;
 }
 
-/**
- * Formats file size in bytes to human-readable format.
- * @param bytes - File size in bytes
- * @returns Formatted string (e.g., "1.5 KB", "2.3 MB")
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) {
-    return '0 B';
-  }
 
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const size = bytes / k ** i;
-
-  // Round to 1 decimal place for KB/MB/GB, no decimals for bytes
-  const rounded = i === 0 ? Math.round(size) : Math.round(size * 10) / 10;
-
-  return `${rounded} ${sizes[i]}`;
-}
-
-/**
- * Gets the size of a file in bytes.
- * @param filepath - Path to the file
- * @returns File size in bytes
- * @throws {Error} When file doesn't exist or cannot be accessed
- */
-export async function getFileSize(filepath: string): Promise<number> {
-  const stats = await fs.promises.stat(filepath);
-  return stats.size;
-}
-
-// Spinner abstraction for testability and control
-export interface Spinner {
-  start: (text?: string) => Spinner;
-  stop: () => Spinner;
-  clear: () => Spinner;
-  succeed: (text?: string) => Spinner;
-  fail: (text?: string) => Spinner;
-  text?: string;
-}
-
-/**
- * Creates a spinner instance for displaying loading indicators.
- * @param enabled - Whether the spinner should be enabled (animated) or disabled (no-op)
- * @param text - Initial text to display
- * @returns A Spinner instance
- */
-export function createSpinner(enabled: boolean, text: string): Spinner {
-  // Use safe text that respects terminal capabilities
-  const safeText = getSafeText(text);
-
-  if (!enabled) {
-    // No-op spinner: does not log anything (for pipe mode)
-    return {
-      start(_msg?: string) {
-        // Don't log anything when disabled (pipe mode)
-        return this;
-      },
-      stop() {
-        // Don't log anything when disabled
-        return this;
-      },
-      clear() {
-        return this;
-      },
-      succeed(_text?: string) {
-        // Don't log anything when disabled
-        return this;
-      },
-      fail(_text?: string) {
-        // Don't log anything when disabled
-        return this;
-      },
-    };
-  }
-  // Real spinner - use safe text that respects terminal capabilities
-  return ora({
-    text: safeText,
-    discardStdin: false,
-    isEnabled: enabled && process.stderr.isTTY,
-  });
-}
-
-/**
- * Stops a spinner if it was enabled and ensures the terminal cursor advances to a new line.
- * @param spinner - Spinner instance returned by createSpinner
- * @param enabled - Whether the spinner was enabled
- */
-export function stopSpinner(spinner: Spinner, enabled: boolean): void {
-  if (!enabled) {
-    return;
-  }
-
-  spinner.stop();
-
-  const stream = process.stderr.isTTY ? process.stderr : process.stdout;
-  try {
-    stream.write('\n');
-  } catch {
-    // Ignore stream write errors (e.g., when output is piped)
-  }
-}
-
-/**
- * Runs an async operation with optional spinner lifecycle management.
- * Guarantees spinner cleanup via finally.
- *
- * @param spinner - Spinner instance returned by createSpinner
- * @param enabled - Whether spinner lifecycle should run
- * @param operation - Async operation to execute while spinner is active
- * @returns Result returned by operation
- */
-export async function withSpinner<T>(
-  spinner: Spinner,
-  enabled: boolean,
-  operation: () => Promise<T>
-): Promise<T> {
-  if (enabled) {
-    spinner.start();
-  }
-
-  try {
-    return await operation();
-  } finally {
-    stopSpinner(spinner, enabled);
-  }
-}
-
-/**
- * Runs an async operation and marks spinner success/failure automatically.
- * Intended for commands that want persisted success/failure symbols.
- *
- * @param spinner - Spinner instance returned by createSpinner
- * @param enabled - Whether spinner lifecycle should run
- * @param operation - Async operation to execute while spinner is active
- * @returns Result returned by operation
- */
-export async function withSpinnerOutcome<T>(
-  spinner: Spinner,
-  enabled: boolean,
-  operation: () => Promise<T>
-): Promise<T> {
-  if (enabled) {
-    spinner.start();
-  }
-
-  try {
-    const result = await operation();
-    if (enabled) {
-      spinner.succeed();
-    }
-    return result;
-  } catch (error) {
-    if (enabled) {
-      spinner.fail();
-    }
-    throw error;
-  }
-}
+export { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome };
+export type { Spinner };
 
 /**
  * Initializes the Programmable Banking API client.
