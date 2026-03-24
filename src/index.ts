@@ -312,6 +312,7 @@ function generateBashCompletion(
 ): string {
   const commandsList = commands.join(' ');
   const globalOptionsList = globalOptions.join(' ');
+  const configCommandOpts = `${commandOptions.config?.join(' ') || ''} ${globalOptionsList}`.trim();
 
   return `#!/usr/bin/env bash
 # Bash completion script for ipb CLI
@@ -360,6 +361,20 @@ _ipb() {
 
   # Get the command name
   local cmd="\${words[1]}"
+
+  # Nested: ipb config|cfg [profile|edit|...options]
+  if [[ "\${cmd}" == "config" || "\${cmd}" == "cfg" ]]; then
+    if [[ \${cword} -eq 2 ]]; then
+      local cfg_subcmds="profile edit"
+      local cfg_opts="${configCommandOpts}"
+      COMPREPLY=($(compgen -W "\${cfg_subcmds} \${cfg_opts}" -- "\${cur}"))
+      return 0
+    fi
+    if [[ "\${words[2]}" == "profile" && \${cword} -eq 3 ]]; then
+      COMPREPLY=($(compgen -W "list ls set show delete rm" -- "\${cur}"))
+      return 0
+    fi
+  fi
 
   # Complete options for specific commands
   case "\${cmd}" in
