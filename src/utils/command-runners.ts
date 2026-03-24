@@ -1,8 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { formatFileSize, getFileSize } from './file-size.js';
-import { createSpinner, withSpinner, type Spinner } from './spinner.js';
 import type { OutputOptions } from './output.js';
 import { formatOutput } from './output.js';
+import { createSpinner, type Spinner, withSpinner } from './spinner.js';
 
 interface RunListCommandOptions<TFull, TSimple = TFull> {
   isPiped: boolean;
@@ -51,7 +51,9 @@ export async function runListCommand<TFull, TSimple = TFull>(
 
   const simpleItems = mapSimple ? mapSimple(items) : (items as unknown as TSimple[]);
   const dataToOutput =
-    outputOptions.json || outputOptions.yaml || outputOptions.output || isPiped ? items : simpleItems;
+    outputOptions.json || outputOptions.yaml || outputOptions.output || isPiped
+      ? items
+      : simpleItems;
 
   await formatOutput(dataToOutput, outputOptions, (count) => {
     if (!isPiped) {
@@ -68,10 +70,7 @@ export async function runWriteCommand(options: RunWriteCommandOptions): Promise<
   const { spinnerEnabled, filename, content, progressMessage, successMessage } = options;
   const contentSize = Buffer.byteLength(content, 'utf8');
 
-  const writeSpinner = createSpinner(
-    spinnerEnabled,
-    progressMessage(formatFileSize(contentSize))
-  );
+  const writeSpinner = createSpinner(spinnerEnabled, progressMessage(formatFileSize(contentSize)));
   await withSpinner(writeSpinner, spinnerEnabled, async () => {
     await writeFile(filename, content, 'utf8');
   });
@@ -88,15 +87,8 @@ export async function runWriteCommand(options: RunWriteCommandOptions): Promise<
 export async function runReadUploadCommand<TResult>(
   options: RunReadUploadCommandOptions<TResult>
 ): Promise<TResult> {
-  const {
-    spinner,
-    spinnerEnabled,
-    filename,
-    readMessage,
-    uploadMessage,
-    readFileContent,
-    upload,
-  } = options;
+  const { spinner, spinnerEnabled, filename, readMessage, uploadMessage, readFileContent, upload } =
+    options;
 
   return await withSpinner(spinner, spinnerEnabled, async () => {
     const codeFileSize = await getFileSize(filename);

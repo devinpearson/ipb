@@ -42,6 +42,7 @@ import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
 import type { BasicOptions, Credentials } from './cmds/types.js';
 import { ExitCode } from './errors.js';
+import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 import {
   checkForUpdates,
   configureChalk,
@@ -55,7 +56,6 @@ import {
   warnAboutSecretUsage,
   withCommandContext,
 } from './utils.js';
-import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 
 // Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
 configureChalk();
@@ -106,7 +106,10 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option('-s,--spinner', 'disable spinner during command execution (deprecated: use --no-spinner)')
+    .option(
+      '-s,--spinner',
+      'disable spinner during command execution (deprecated: use --no-spinner)'
+    )
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')

@@ -3,8 +3,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
-  runWriteCommand,
   resolveSpinnerState,
+  runWriteCommand,
   validateFilePathForWrite,
   withSpinner,
 } from '../utils.js';

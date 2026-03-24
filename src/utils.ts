@@ -1,52 +1,7 @@
-import fs from 'node:fs';
-import {
-  access,
-  chmod,
-  constants,
-  open,
-  readdir,
-  readFile,
-  rename,
-  unlink,
-  writeFile,
-} from 'node:fs/promises';
-import { homedir } from 'node:os';
-import path from 'node:path';
-import chalk from 'chalk';
-import type { BasicOptions, Credentials } from './cmds/types.js';
-import { CliError, ERROR_CODES, ExitCode } from './errors.js';
-import { normalizeInvestecError } from './utils/investec-errors.js';
-import { getVerboseMode, isDebugEnabled, resolveSpinnerState } from './utils/runtime-flags.js';
-import type { Spinner } from './utils/spinner.js';
-import { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome } from './utils/spinner.js';
-import {
-  detectTerminalCapabilities,
-  getSafeText,
-  getTerminalCapabilities,
-  getTerminalDimensions,
-  isStdinPiped,
-  isStdoutPiped,
-  readStdin,
-  safeLog,
-} from './utils/terminal.js';
-import {
-  formatOutput,
-  printTable,
-  type OutputOptions,
-  type TableData,
-  type TableRow,
-} from './utils/output.js';
-import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
-import { formatFileSize, getFileSize } from './utils/file-size.js';
+import { ERROR_CODES, ExitCode } from './errors.js';
 import { initializeApi, initializePbApi, normalizeCardKey } from './utils/api.js';
-import { validateCredentialsFile } from './utils/credentials-validation.js';
-import {
-  getHistoryFilePath,
-  logCommandHistory,
-  readCommandHistory,
-  type CommandHistoryEntry,
-} from './utils/history.js';
-import { checkForUpdates, checkLatestVersion, showUpdateNotification } from './utils/update.js';
+import { handleCliError, withCommandContext } from './utils/cli-errors.js';
+import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
 import {
   cleanupTempFiles,
   deleteProfile,
@@ -66,7 +21,8 @@ import {
   writeFileAtomic,
   writeProfile,
 } from './utils/credentials-store.js';
-import { detectRateLimit, formatRateLimitInfo, withRetry, type RateLimitInfo } from './utils/retry.js';
+import { validateCredentialsFile } from './utils/credentials-validation.js';
+import { formatFileSize, getFileSize } from './utils/file-size.js';
 import {
   checkFilePermissions,
   normalizeFilePath,
@@ -74,13 +30,13 @@ import {
   validateFilePath,
   validateFilePathForWrite,
 } from './utils/file-validation.js';
-import { validateAccountId, validateAmount } from './utils/input-validation.js';
 import {
-  detectSecretUsageFromEnv,
-  isNonInteractiveEnvironment,
-  warnAboutSecretUsage,
-} from './utils/security.js';
-import { handleCliError, withCommandContext } from './utils/cli-errors.js';
+  type CommandHistoryEntry,
+  getHistoryFilePath,
+  logCommandHistory,
+  readCommandHistory,
+} from './utils/history.js';
+import { validateAccountId, validateAmount } from './utils/input-validation.js';
 import {
   confirmDestructiveOperation,
   getModuleDirname,
@@ -88,6 +44,39 @@ import {
   openInEditor,
   pageOutput,
 } from './utils/interaction.js';
+import { normalizeInvestecError } from './utils/investec-errors.js';
+import {
+  formatOutput,
+  type OutputOptions,
+  printTable,
+  type TableData,
+  type TableRow,
+} from './utils/output.js';
+import {
+  detectRateLimit,
+  formatRateLimitInfo,
+  type RateLimitInfo,
+  withRetry,
+} from './utils/retry.js';
+import { getVerboseMode, isDebugEnabled, resolveSpinnerState } from './utils/runtime-flags.js';
+import {
+  detectSecretUsageFromEnv,
+  isNonInteractiveEnvironment,
+  warnAboutSecretUsage,
+} from './utils/security.js';
+import type { Spinner } from './utils/spinner.js';
+import { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome } from './utils/spinner.js';
+import {
+  detectTerminalCapabilities,
+  getSafeText,
+  getTerminalCapabilities,
+  getTerminalDimensions,
+  isStdinPiped,
+  isStdoutPiped,
+  readStdin,
+  safeLog,
+} from './utils/terminal.js';
+import { checkForUpdates, checkLatestVersion, showUpdateNotification } from './utils/update.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -195,7 +184,7 @@ configureChalk();
  * @param errorMessage - The error message
  * @returns Exit code from ExitCode enum
  */
-function determineExitCode(
+function _determineExitCode(
   _error: unknown,
   errorCode: string | undefined,
   _errorMessage: string
@@ -292,7 +281,6 @@ export { initializeApi, initializePbApi, normalizeCardKey, validateCredentialsFi
 export { getHistoryFilePath, logCommandHistory, readCommandHistory };
 export type { CommandHistoryEntry };
 
-
 export {
   checkFilePermissions,
   normalizeFilePath,
@@ -334,7 +322,5 @@ export {
 export { detectRateLimit, formatRateLimitInfo, withRetry };
 export type { RateLimitInfo };
 
-
 export { createSpinner, stopSpinner, withSpinner, withSpinnerOutcome };
 export type { Spinner };
-

@@ -70,22 +70,22 @@ export async function loginCommand(options: Options) {
   }
   const loginResponse: LoginResponse = (await result.json()) as LoginResponse;
   console.log('Login successful');
-  
+
   // Resolve credential file path from options or use default
   const credentialFilePath = options.credentialsFile
     ? normalizeFilePath(options.credentialsFile)
     : credentialLocation.filename;
   const credentialFolder = path.dirname(credentialFilePath);
-  
+
   // Ensure directory exists before any read/write operations
   await ensureCredentialsDirectory({ folder: credentialFolder });
-  
+
   // Read credentials from the resolved path
   const cred = await readCredentialsFile({
     filename: credentialFilePath,
     folder: credentialFolder,
   });
-  
+
   // Update and write back to the resolved path
   cred.sandboxKey = loginResponse.access_token;
   await writeCredentialsFile(credentialFilePath, cred);

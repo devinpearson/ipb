@@ -3,8 +3,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
-  runReadUploadCommand,
   resolveSpinnerState,
+  runReadUploadCommand,
   validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -34,17 +34,7 @@ export async function uploadCommand(options: Options) {
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
   const api = await initializeApi(credentials, options);
-  let result:
-    | {
-        data: {
-          result: {
-            codeId: string;
-          };
-        };
-      }
-    | undefined;
-
-  result = await runReadUploadCommand({
+  const result = await runReadUploadCommand({
     spinner,
     spinnerEnabled,
     filename: normalizedFilename,
@@ -53,8 +43,5 @@ export async function uploadCommand(options: Options) {
     upload: async (content) => await api.uploadCode(cardKey, { code: content }),
   });
 
-  if (!result) {
-    return;
-  }
   console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
 }

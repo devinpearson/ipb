@@ -1,10 +1,6 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 
-type InvestecErrorContext =
-  | 'card-api-auth'
-  | 'card-api-request'
-  | 'pb-api-auth'
-  | 'pb-api-request';
+type InvestecErrorContext = 'card-api-auth' | 'card-api-request' | 'pb-api-auth' | 'pb-api-request';
 
 const INVESTEC_ERROR_CONTEXT_MESSAGES: Record<InvestecErrorContext, string> = {
   'card-api-auth': 'Failed to authenticate with the Investec Card API',
@@ -27,8 +23,9 @@ function extractInvestecErrorMessage(error: unknown): string | null {
   }
 
   if (error instanceof Error) {
-    const axiosResponse = (error as { response?: { status?: number; statusText?: string; data?: unknown } })
-      .response;
+    const axiosResponse = (
+      error as { response?: { status?: number; statusText?: string; data?: unknown } }
+    ).response;
     if (axiosResponse) {
       const parts: string[] = [];
       if (typeof axiosResponse.status === 'number') {

@@ -1,5 +1,16 @@
 import fs from 'node:fs';
-import { access, chmod, constants, mkdir, open, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
+import {
+  access,
+  chmod,
+  constants,
+  mkdir,
+  open,
+  readdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import type { Credentials } from '../cmds/types.js';

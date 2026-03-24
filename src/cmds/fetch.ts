@@ -4,8 +4,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
-  runWriteCommand,
   resolveSpinnerState,
+  runWriteCommand,
   validateFilePathForWrite,
   withSpinner,
 } from '../utils.js';
@@ -54,12 +54,18 @@ export async function fetchCommand(options: Options) {
       !result.data.result ||
       typeof result.data.result.code !== 'string'
     ) {
-      throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'Failed to fetch code: Unexpected API response'
+      );
     }
 
     const fetchedCode = result.data.result.code;
     if (typeof fetchedCode !== 'string') {
-      throw new CliError(ERROR_CODES.DEPLOY_FAILED, 'Failed to fetch code: Unexpected API response');
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'Failed to fetch code: Unexpected API response'
+      );
     }
 
     code = fetchedCode;

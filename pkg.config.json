@@ -1,12 +1,6 @@
 {
-  "scripts": [
-    "bin/index.js"
-  ],
-  "assets": [
-    "bin/templates/**/*",
-    "bin/assets/**/*",
-    "bin/instructions.txt"
-  ],
+  "scripts": ["bin/index.js"],
+  "assets": ["bin/templates/**/*", "bin/assets/**/*", "bin/instructions.txt"],
   "targets": [
     "node20-macos-x64",
     "node20-macos-arm64",
@@ -16,6 +10,3 @@
   ],
   "outputPath": "dist"
 }
-
-
-

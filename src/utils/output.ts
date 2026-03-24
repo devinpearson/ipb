@@ -83,7 +83,8 @@ function determineAlignment(header: string, sampleData: TableData): 'left' | 'ri
 }
 
 function stripAnsi(value: string): string {
-  return value.replace(/\u001b\[[0-9;]*m/g, '');
+  // biome-ignore lint/complexity/useRegexLiterals: using constructor avoids control-character literal lint conflict
+  return value.replace(new RegExp('\\u001b\\[[0-9;]*m', 'g'), '');
 }
 
 export function printTable(data: TableData): void {
@@ -105,7 +106,10 @@ export function printTable(data: TableData): void {
       const widthWithPadding = longest + 2;
       return Math.min(
         maxColumnWidth,
-        Math.max(minColumnWidth, Math.min(widthWithPadding, Math.floor(terminalWidth / headers.length)))
+        Math.max(
+          minColumnWidth,
+          Math.min(widthWithPadding, Math.floor(terminalWidth / headers.length))
+        )
       );
     });
 
@@ -203,4 +207,3 @@ export async function formatOutput(
     console.log(JSON.stringify(data, null, 2));
   }
 }
-

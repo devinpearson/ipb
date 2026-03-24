@@ -297,24 +297,24 @@ export function generateCommandDocumentation(program: Command): string {
   // Generate table of contents with GitHub-compatible slugs
   // Track base slugs to handle duplicates (GitHub appends -1, -2, etc. to duplicates)
   const slugCounts = new Map<string, number>();
-  
+
   for (const cmd of commands) {
     // Build the heading text (same as what will be in the markdown)
     let headingText = cmd.name;
     if (cmd.aliases.length > 0) {
       headingText += ` (aliases: ${cmd.aliases.join(', ')})`;
     }
-    
+
     // Generate base slug
     const baseSlug = githubSlug(headingText);
-    
+
     // Handle duplicate slugs by appending -n (GitHub behavior)
     const count = slugCounts.get(baseSlug) || 0;
     slugCounts.set(baseSlug, count + 1);
-    
+
     // First occurrence uses base slug, subsequent ones get -1, -2, etc.
     const slug = count > 0 ? `${baseSlug}-${count}` : baseSlug;
-    
+
     lines.push(`- [${cmd.name}](#${slug})`);
   }
   lines.push('');

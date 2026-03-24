@@ -7,8 +7,8 @@ import {
   resolveSpinnerState,
   validateAccountId,
   validateAmount,
-  withSpinnerOutcome,
   withRetry,
+  withSpinnerOutcome,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 

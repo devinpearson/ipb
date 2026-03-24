@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { getSafeText } from './terminal.js';
 import { isDebugEnabled } from './runtime-flags.js';
+import { getSafeText } from './terminal.js';
 
 const SECRET_ENV_VARS = [
   'INVESTEC_CLIENT_SECRET',

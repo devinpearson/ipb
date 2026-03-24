@@ -3,7 +3,13 @@ import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../index.js';
-import { createSpinner, formatFileSize, getFileSize, validateFilePath, withSpinner } from '../utils.js';
+import {
+  createSpinner,
+  formatFileSize,
+  getFileSize,
+  validateFilePath,
+  withSpinner,
+} from '../utils.js';
 
 interface Options {
   filename: string;

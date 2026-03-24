@@ -109,7 +109,7 @@ export async function aiCommand(prompt: string, options: Options) {
     console.log(response?.description);
   }
   console.log('');
-  
+
   // Validate OpenAI response before using it
   if (!response || typeof response.code !== 'string' || response.code.trim() === '') {
     console.error(chalk.red('Error: Invalid or missing code in OpenAI response'));
@@ -118,17 +118,10 @@ export async function aiCommand(prompt: string, options: Options) {
       'OpenAI response is missing or invalid. The response must contain a non-empty code string.'
     );
   }
-  
+
   const output = response.code;
-  const {
-    validateFilePathForWrite,
-    formatFileSize,
-    getFileSize,
-    createSpinner,
-    withSpinner,
-  } = await import(
-    '../utils.js'
-  );
+  const { validateFilePathForWrite, formatFileSize, getFileSize, createSpinner, withSpinner } =
+    await import('../utils.js');
   const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
 
   const outputSize = Buffer.byteLength(output, 'utf8');

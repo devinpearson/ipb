@@ -24,7 +24,7 @@ export function getTempDir(): string {
 
 export function getModuleDirname(metaUrl: string = import.meta.url): string {
   const fileUrl = new URL(metaUrl);
-  let dirPath = path.dirname(fileUrl.pathname);
+  const dirPath = path.dirname(fileUrl.pathname);
 
   if (dirPath.startsWith('/snapshot/')) {
     return dirPath;

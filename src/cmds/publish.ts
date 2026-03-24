@@ -5,8 +5,8 @@ import {
   createSpinner,
   initializeApi,
   normalizeCardKey,
-  runReadUploadCommand,
   resolveSpinnerState,
+  runReadUploadCommand,
   validateFilePath,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -57,27 +57,14 @@ export async function publishCommand(options: Options) {
   });
   const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
   const api = await initializeApi(credentials, options);
-  let result:
-    | {
-        data: {
-          result: {
-            codeId: string;
-          };
-        };
-      }
-    | undefined;
-  result = await runReadUploadCommand({
+  const result = await runReadUploadCommand({
     spinner,
     spinnerEnabled,
     filename: normalizedFilename,
     readMessage: (size) => `🚀 reading code from ${normalizedFilename} (${size})...`,
     uploadMessage: (size) => `🚀 publishing code (${size})...`,
-    upload: async (content) =>
-      await api.uploadPublishedCode(cardKey, options.codeId, content),
+    upload: async (content) => await api.uploadPublishedCode(cardKey, options.codeId, content),
   });
 
-  if (!result) {
-    return;
-  }
   console.log(`🎉 code published with codeId: ${result.data.result.codeId}`);
 }

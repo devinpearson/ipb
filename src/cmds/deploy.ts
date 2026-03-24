@@ -12,8 +12,8 @@ import {
   normalizeCardKey,
   resolveSpinnerState,
   validateFilePath,
-  withSpinner,
   withRetry,
+  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 

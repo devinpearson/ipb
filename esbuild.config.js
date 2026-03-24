@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+import { promises as fs } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 // esbuild configuration for bundling the CLI application
 import { build } from 'esbuild';
-import { promises as fs } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 async function copyAssets() {
   const bundleDir = join(__dirname, 'dist-bundle');
   await fs.mkdir(bundleDir, { recursive: true });
-  
+
   // Copy templates
   const templatesSrc = join(__dirname, 'bin/templates');
   const templatesDest = join(bundleDir, 'templates');
@@ -24,7 +24,7 @@ async function copyAssets() {
   } catch (error) {
     console.warn('⚠️  Could not copy templates:', error.message);
   }
-  
+
   // Copy assets
   const assetsSrc = join(__dirname, 'bin/assets');
   const assetsDest = join(bundleDir, 'assets');
@@ -34,7 +34,7 @@ async function copyAssets() {
   } catch (error) {
     console.warn('⚠️  Could not copy assets:', error.message);
   }
-  
+
   // Copy instructions.txt
   const instructionsSrc = join(__dirname, 'bin/instructions.txt');
   const instructionsDest = join(bundleDir, 'instructions.txt');
@@ -53,21 +53,18 @@ async function copyAssets() {
  * @param {boolean} options.minify - Whether to minify the output
  */
 async function buildApp(options = {}) {
-  const {
-    outfile = join(__dirname, 'dist-bundle/index.cjs'),
-    minify = false,
-  } = options;
+  const { outfile = join(__dirname, 'dist-bundle/index.cjs'), minify = false } = options;
 
   try {
     // Ensure output directory exists
     const outDir = dirname(outfile);
     await fs.mkdir(outDir, { recursive: true });
-    
+
     // Copy assets first
     await copyAssets();
-    
+
     // Bundle the application as CommonJS for better pkg compatibility
-    const result = await build({
+    const _result = await build({
       entryPoints: ['bin/index.js'],
       bundle: true,
       outfile,
@@ -103,7 +100,7 @@ async function buildApp(options = {}) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const minify = args.includes('--minify');
-  
+
   buildApp({ minify }).catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
@@ -111,4 +108,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 export { buildApp };
-

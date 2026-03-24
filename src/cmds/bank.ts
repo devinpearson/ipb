@@ -91,10 +91,7 @@ async function generateResponse(prompt: string, instructions: string): Promise<s
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error generating code:', error);
-    throw new CliError(
-      ERROR_CODES.INVALID_INPUT,
-      `Error generating code: ${errorMessage}`
-    );
+    throw new CliError(ERROR_CODES.INVALID_INPUT, `Error generating code: ${errorMessage}`);
   }
 }
 

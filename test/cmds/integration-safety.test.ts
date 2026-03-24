@@ -89,7 +89,11 @@ describe('integration safety net', () => {
   it('accounts writes structured output when piped', async () => {
     mockState.isPiped = true;
     mockState.pbApi.getAccounts.mockResolvedValue({
-      data: { accounts: [{ accountId: 'acc-1', accountNumber: '123', referenceName: 'Main', productName: 'PB' }] },
+      data: {
+        accounts: [
+          { accountId: 'acc-1', accountNumber: '123', referenceName: 'Main', productName: 'PB' },
+        ],
+      },
     });
 
     const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);

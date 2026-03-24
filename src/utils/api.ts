@@ -3,9 +3,9 @@ import { CliError, ERROR_CODES } from '../errors.js';
 import { optionCredentials } from '../index.js';
 import type { ICardApi } from '../mock-card.js';
 import type { IPbApi } from '../mock-pb.js';
+import { validateCredentialsFile } from './credentials-validation.js';
 import { normalizeInvestecError } from './investec-errors.js';
 import { isDebugEnabled } from './runtime-flags.js';
-import { validateCredentialsFile } from './credentials-validation.js';
 
 /**
  * Initializes the Programmable Banking API client.
@@ -83,7 +83,10 @@ export function normalizeCardKey(
  * @param options - Basic options including credential overrides
  * @returns Initialized ICardApi instance
  */
-export async function initializeApi(credentials: Credentials, options: BasicOptions): Promise<ICardApi> {
+export async function initializeApi(
+  credentials: Credentials,
+  options: BasicOptions
+): Promise<ICardApi> {
   const resolvedCredentials = await optionCredentials(options, credentials);
   validateCredentialsFile(resolvedCredentials);
 
