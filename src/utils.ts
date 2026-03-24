@@ -1365,6 +1365,44 @@ export async function formatOutput(
   }
 }
 
+interface RunListCommandOptions<TFull, TSimple = TFull> {
+  isPiped: boolean;
+  items: TFull[] | null | undefined;
+  outputOptions: OutputOptions;
+  emptyMessage: string;
+  countMessage: (count: number) => string;
+  mapSimple?: (items: TFull[]) => TSimple[];
+}
+
+/**
+ * Handles common list command output behavior (empty, table, structured output).
+ * @param options - List command rendering options
+ */
+export async function runListCommand<TFull, TSimple = TFull>(
+  options: RunListCommandOptions<TFull, TSimple>
+): Promise<void> {
+  const { isPiped, items, outputOptions, emptyMessage, countMessage, mapSimple } = options;
+
+  if (!items || items.length === 0) {
+    if (!isPiped) {
+      console.log(emptyMessage);
+    } else {
+      process.stdout.write('[]\n');
+    }
+    return;
+  }
+
+  const simpleItems = mapSimple ? mapSimple(items) : (items as unknown as TSimple[]);
+  const dataToOutput =
+    outputOptions.json || outputOptions.yaml || outputOptions.output || isPiped ? items : simpleItems;
+
+  await formatOutput(dataToOutput, outputOptions, (count) => {
+    if (!isPiped) {
+      console.log(`\n${countMessage(count)}`);
+    }
+  });
+}
+
 /**
  * Truncates a string to a maximum length, adding ellipsis if truncated.
  * @param value - The value to truncate

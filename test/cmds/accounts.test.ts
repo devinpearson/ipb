@@ -21,6 +21,7 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     formatOutput: vi.fn(),
+    runListCommand: vi.fn(),
     printTable: vi.fn(),
   };
 });
@@ -64,11 +65,11 @@ describe('accountsCommand', () => {
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
     consoleLogSpy = vi.spyOn(console, 'log');
-    const { formatOutput } = await import('../../src/utils.ts');
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
 
-    expect(formatOutput).toHaveBeenCalled();
+    expect(runListCommand).toHaveBeenCalled();
   });
 
   it('should handle JSON output option', async () => {
@@ -93,14 +94,15 @@ describe('accountsCommand', () => {
     mockApi.getAccounts.mockResolvedValue({ data: { accounts: mockAccounts } });
 
     consoleLogSpy = vi.spyOn(console, 'log');
-    const { formatOutput } = await import('../../src/utils.ts');
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await accountsCommand(options);
 
-    expect(formatOutput).toHaveBeenCalledWith(
-      mockAccounts,
-      { json: true, yaml: undefined, output: undefined },
-      expect.any(Function)
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: mockAccounts,
+        outputOptions: { json: true, yaml: undefined, output: undefined },
+      })
     );
   });
 

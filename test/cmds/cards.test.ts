@@ -21,6 +21,7 @@ vi.mock('../../src/utils.ts', async () => {
       stop: vi.fn(),
     })),
     formatOutput: vi.fn(),
+    runListCommand: vi.fn(),
     printTable: vi.fn(),
     isStdoutPiped: vi.fn(() => false), // Mock as not piped for tests
   };
@@ -61,17 +62,15 @@ describe('cardsCommand', () => {
     mockApi.getCards.mockResolvedValue({ data: { cards: mockCards } });
 
     console.log = vi.fn();
-    const { formatOutput } = await import('../../src/utils.ts');
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await cardsCommand(options);
 
-    expect(formatOutput).toHaveBeenCalledWith(
-      [
-        { CardKey: '123', CardNumber: '4567 8901 2345 6789', IsProgrammable: true },
-        { CardKey: '456', CardNumber: '9876 5432 1098 7654', IsProgrammable: false },
-      ],
-      { json: undefined, yaml: undefined, output: undefined },
-      expect.any(Function)
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: mockCards,
+        outputOptions: { json: undefined, yaml: undefined, output: undefined },
+      })
     );
   });
 
@@ -87,11 +86,16 @@ describe('cardsCommand', () => {
 
     mockApi.getCards.mockResolvedValue({ data: { cards: null } });
 
-    console.log = vi.fn();
+    const { runListCommand } = await import('../../src/utils.ts');
 
     await cardsCommand(options);
 
-    expect(console.log).toHaveBeenCalledWith('No cards found');
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: null,
+        emptyMessage: 'No cards found',
+      })
+    );
   });
 
   it('should propagate errors (error handling is done at top level)', async () => {

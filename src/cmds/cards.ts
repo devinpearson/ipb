@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializeApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -45,31 +45,17 @@ export async function cardsCommand(options: CommonOptions) {
     cards = result.data.cards;
   });
 
-  if (!cards || cards.length === 0) {
-    if (!isPiped) {
-      console.log('No cards found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleCards = cards.map(({ CardKey, CardNumber, IsProgrammable }) => ({
-    CardKey,
-    CardNumber,
-    IsProgrammable,
-  }));
-
-  // Use full cards data when piped or structured output requested
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? cards : simpleCards;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} card(s) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: cards,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No cards found',
+    countMessage: (count) => `${count} card(s) found.`,
+    mapSimple: (rows) =>
+      rows.map(({ CardKey, CardNumber, IsProgrammable }) => ({
+        CardKey,
+        CardNumber,
+        IsProgrammable,
+      })),
+  });
 }

@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializePbApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -47,34 +47,18 @@ export async function accountsCommand(options: CommonOptions) {
     accounts = result.data.accounts;
   });
 
-  if (!accounts || accounts.length === 0) {
-    if (!isPiped) {
-      console.log('No accounts found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleAccounts = accounts.map(
-    ({ accountId, accountNumber, referenceName, productName }) => ({
-      accountId,
-      accountNumber,
-      referenceName,
-      productName,
-    })
-  );
-
-  // Use raw accounts for structured output, simplified for table
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? accounts : simpleAccounts;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} account(s) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: accounts,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No accounts found',
+    countMessage: (count) => `${count} account(s) found.`,
+    mapSimple: (rows) =>
+      rows.map(({ accountId, accountNumber, referenceName, productName }) => ({
+        accountId,
+        accountNumber,
+        referenceName,
+        productName,
+      })),
+  });
 }
