@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { writeFileAtomic } from '../utils.js';
+import { writeFileAtomic } from './credentials-store.js';
 
 /**
  * Command history entry structure.

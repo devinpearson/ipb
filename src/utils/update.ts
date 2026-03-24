@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
-import { writeFileAtomic } from '../utils.js';
+import { writeFileAtomic } from './credentials-store.js';
 import { getSafeText } from './terminal.js';
 
 function getUpdateCheckCachePath(): string {
