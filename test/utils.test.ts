@@ -14,14 +14,20 @@ vi.mock('../src/index.ts', () => ({
 let isDebugEnabled: typeof import('../src/utils.ts').isDebugEnabled;
 let normalizeInvestecError: typeof import('../src/utils.ts').normalizeInvestecError;
 let resolveSpinnerState: typeof import('../src/utils.ts').resolveSpinnerState;
+let runListCommand: typeof import('../src/utils.ts').runListCommand;
+let runReadUploadCommand: typeof import('../src/utils.ts').runReadUploadCommand;
 let stopSpinner: typeof import('../src/utils.ts').stopSpinner;
+let withSpinnerOutcome: typeof import('../src/utils.ts').withSpinnerOutcome;
 
 beforeAll(async () => {
   const utils = await import('../src/utils.ts');
   isDebugEnabled = utils.isDebugEnabled;
   normalizeInvestecError = utils.normalizeInvestecError;
   resolveSpinnerState = utils.resolveSpinnerState;
+  runListCommand = utils.runListCommand;
+  runReadUploadCommand = utils.runReadUploadCommand;
   stopSpinner = utils.stopSpinner;
+  withSpinnerOutcome = utils.withSpinnerOutcome;
 });
 
 afterAll(() => {
@@ -155,5 +161,88 @@ describe('normalizeInvestecError', () => {
       'Failed to authenticate with the Investec Programmable Banking API'
     );
     expect(normalized.message).toContain('status 503');
+  });
+});
+
+describe('runListCommand', () => {
+  it('writes empty array when piped and no data', async () => {
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runListCommand({
+      isPiped: true,
+      items: [],
+      outputOptions: {},
+      emptyMessage: 'No records',
+      countMessage: (count) => `${count} records`,
+    });
+
+    expect(stdoutWriteSpy).toHaveBeenCalledWith('[]\n');
+    expect(consoleSpy).not.toHaveBeenCalled();
+    stdoutWriteSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
+
+  it('prints empty message when not piped and no data', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runListCommand({
+      isPiped: false,
+      items: [],
+      outputOptions: {},
+      emptyMessage: 'No records',
+      countMessage: (count) => `${count} records`,
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith('No records');
+    consoleSpy.mockRestore();
+  });
+});
+
+describe('runReadUploadCommand', () => {
+  it('reads content and uploads with size-aware spinner text', async () => {
+    const spinner = {
+      start: vi.fn(() => spinner),
+      stop: vi.fn(() => spinner),
+      clear: vi.fn(() => spinner),
+      succeed: vi.fn(() => spinner),
+      fail: vi.fn(() => spinner),
+      text: '',
+    };
+    const uploadSpy = vi.fn(async (_content: string) => ({ ok: true }));
+
+    const result = await runReadUploadCommand({
+      spinner,
+      spinnerEnabled: true,
+      filename: '/Users/devinpearson/projects/js/ipb/package.json',
+      readMessage: (size) => `reading ${size}`,
+      uploadMessage: (size) => `uploading ${size}`,
+      readFileContent: async () => 'const x = 1;',
+      upload: uploadSpy,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(uploadSpy).toHaveBeenCalledWith('const x = 1;');
+    expect(spinner.start).toHaveBeenCalled();
+    expect(spinner.stop).toHaveBeenCalled();
+    expect(spinner.text).toContain('uploading');
+  });
+});
+
+describe('withSpinnerOutcome', () => {
+  it('marks succeed on successful operation', async () => {
+    const spinner = {
+      start: vi.fn(() => spinner),
+      stop: vi.fn(() => spinner),
+      clear: vi.fn(() => spinner),
+      succeed: vi.fn(() => spinner),
+      fail: vi.fn(() => spinner),
+      text: '',
+    };
+
+    const result = await withSpinnerOutcome(spinner, true, async () => 'ok');
+    expect(result).toBe('ok');
+    expect(spinner.succeed).toHaveBeenCalled();
+    expect(spinner.fail).not.toHaveBeenCalled();
   });
 });

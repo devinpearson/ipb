@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { printTitleBox } from '../index.js';
-import { formatOutput } from '../utils.js';
+import { runListCommand } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -20,6 +20,8 @@ interface EnvVarDefinition {
  * @param options - CLI options including output format
  */
 export async function envListCommand(options: CommonOptions) {
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
   printTitleBox();
 
   const envVars: EnvVarDefinition[] = [
@@ -110,8 +112,7 @@ export async function envListCommand(options: CommonOptions) {
     }
   });
 
-  if (options.json || options.yaml || options.output) {
-    // Structured output
+  if (options.json || options.yaml || options.output || isPiped) {
     const output = envVars.map((envVar) => ({
       name: envVar.name,
       description: envVar.description,
@@ -121,7 +122,13 @@ export async function envListCommand(options: CommonOptions) {
       category: envVar.category,
     }));
 
-    await formatOutput(output, { json: options.json, yaml: options.yaml, output: options.output });
+    await runListCommand({
+      isPiped,
+      items: output,
+      outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+      emptyMessage: 'No environment variables found',
+      countMessage: () => '',
+    });
     return;
   }
 
