@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializeApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -43,27 +43,12 @@ export async function countriesCommand(options: CommonOptions) {
     countries = result.data.result;
   });
 
-  if (!countries || countries.length === 0) {
-    if (!isPiped) {
-      console.log('No countries found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
-
-  // Use full countries data when piped or structured output requested
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? countries : simpleCountries;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} country(ies) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: countries,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No countries found',
+    countMessage: (count) => `${count} country(ies) found.`,
+    mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
+  });
 }

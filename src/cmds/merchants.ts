@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializeApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -43,27 +43,12 @@ export async function merchantsCommand(options: CommonOptions) {
     merchants = result.data.result;
   });
 
-  if (!merchants || merchants.length === 0) {
-    if (!isPiped) {
-      console.log('No merchants found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
-
-  // Use full merchants data when piped or structured output requested
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? merchants : simpleMerchants;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} merchant(s) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: merchants,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No merchants found',
+    countMessage: (count) => `${count} merchant(s) found.`,
+    mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
+  });
 }

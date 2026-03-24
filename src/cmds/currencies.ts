@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializeApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -43,30 +43,12 @@ export async function currenciesCommand(options: CommonOptions) {
     currencies = result.data.result;
   });
 
-  if (!currencies || currencies.length === 0) {
-    if (!isPiped) {
-      console.log('No currencies found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-
-  const simpleCurrencies = currencies.map(({ Code, Name }) => ({
-    Code,
-    Name,
-  }));
-
-  // Use full currencies data when piped or structured output requested
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? currencies : simpleCurrencies;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} currency(ies) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: currencies,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No currencies found',
+    countMessage: (count) => `${count} currency(ies) found.`,
+    mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
+  });
 }

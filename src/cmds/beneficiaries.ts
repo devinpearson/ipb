@@ -1,9 +1,9 @@
 import { credentials, printTitleBox } from '../index.js';
 import {
   createSpinner,
-  formatOutput,
   initializePbApi,
   resolveSpinnerState,
+  runListCommand,
   withSpinner,
   withRetry,
 } from '../utils.js';
@@ -47,42 +47,29 @@ export async function beneficiariesCommand(options: CommonOptions) {
     beneficiaries = result.data as BeneficiarySummary[];
   });
 
-  if (!beneficiaries || beneficiaries.length === 0) {
-    if (!isPiped) {
-      console.log('No beneficiaries found');
-    } else {
-      process.stdout.write('[]\n');
-    }
-    return;
-  }
-  const simpleBeneficiaries = beneficiaries.map(
-    ({
-      beneficiaryId,
-      accountNumber,
-      beneficiaryName,
-      lastPaymentDate,
-      lastPaymentAmount,
-      referenceName,
-    }) => ({
-      beneficiaryId,
-      accountNumber,
-      beneficiaryName,
-      lastPaymentDate,
-      lastPaymentAmount,
-      referenceName,
-    })
-  );
-
-  // Use full beneficiaries data when piped or structured output requested
-  const dataToOutput =
-    options.json || options.yaml || options.output || isPiped ? beneficiaries : simpleBeneficiaries;
-  await formatOutput(
-    dataToOutput,
-    { json: options.json, yaml: options.yaml, output: options.output },
-    (count) => {
-      if (!isPiped) {
-        console.log(`\n${count} beneficiary(ies) found.`);
-      }
-    }
-  );
+  await runListCommand({
+    isPiped,
+    items: beneficiaries,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No beneficiaries found',
+    countMessage: (count) => `${count} beneficiary(ies) found.`,
+    mapSimple: (rows) =>
+      rows.map(
+        ({
+          beneficiaryId,
+          accountNumber,
+          beneficiaryName,
+          lastPaymentDate,
+          lastPaymentAmount,
+          referenceName,
+        }) => ({
+          beneficiaryId,
+          accountNumber,
+          beneficiaryName,
+          lastPaymentDate,
+          lastPaymentAmount,
+          referenceName,
+        })
+      ),
+  });
 }
