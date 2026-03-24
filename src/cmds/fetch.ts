@@ -1,34 +1,88 @@
-import fs from "fs";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { CliError, ERROR_CODES } from '../errors.js';
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  runWriteCommand,
+  validateFilePathForWrite,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
-  cardKey: number;
+  cardKey?: string | number;
   filename: string;
 }
 
+/**
+ * Fetches saved code from a card and saves it to a file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When card key is missing, API doesn't support fetching, or file operations fail
+ */
 export async function fetchCommand(options: Options) {
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
-  }
-  try {
-    printTitleBox();
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching code...');
+  let code: string | undefined;
+  let normalizedFilename = '';
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
-    const spinner = ora("💳 fetching code...").start();
 
-    const result = await api.getCode(options.cardKey);
-    const code = result.data.result.code;
+    // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
+    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
+    if (typeof (api as any).getSavedCode !== 'function') {
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'API client does not support fetching saved code (getSavedCode missing)'
+      );
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
+    const result = await (api as any).getSavedCode(cardKey);
 
-    spinner.stop();
-    console.log(`💾 saving to file: ${options.filename}`);
-    await fs.writeFileSync(options.filename, code);
-    console.log("🎉 code saved to file");
-  } catch (error: any) {
-    handleCliError(error, options, "fetch saved code");
+    if (
+      !result ||
+      !result.data ||
+      !result.data.result ||
+      typeof result.data.result.code !== 'string'
+    ) {
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'Failed to fetch code: Unexpected API response'
+      );
+    }
+
+    const fetchedCode = result.data.result.code;
+    if (typeof fetchedCode !== 'string') {
+      throw new CliError(
+        ERROR_CODES.DEPLOY_FAILED,
+        'Failed to fetch code: Unexpected API response'
+      );
+    }
+
+    code = fetchedCode;
+    normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+  });
+
+  if (typeof code !== 'string' || normalizedFilename === '') {
+    return;
   }
+  const codeToWrite = code;
+  const targetFilename = normalizedFilename;
+
+  await runWriteCommand({
+    spinnerEnabled,
+    filename: targetFilename,
+    content: codeToWrite,
+    progressMessage: (size) => `💾 saving to file: ${targetFilename} (${size})...`,
+    successMessage: (size) => `🎉 code saved to file (${size})`,
+  });
 }

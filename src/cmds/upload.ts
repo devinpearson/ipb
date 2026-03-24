@@ -1,35 +1,47 @@
-import fs from "fs";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  runReadUploadCommand,
+  validateFilePath,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
-  cardKey: number;
+  cardKey?: string | number;
   filename: string;
 }
 
+/**
+ * Uploads code to a card without publishing it.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
+ */
 export async function uploadCommand(options: Options) {
-  try {
-    if (!fs.existsSync(options.filename)) {
-      throw new Error("File does not exist");
-    }
-    if (options.cardKey === undefined) {
-      if (credentials.cardKey === "") {
-        throw new Error("card-key is required");
-      }
-      options.cardKey = Number(credentials.cardKey);
-    }
-    printTitleBox();
-    const spinner = ora("🚀 uploading code...").start();
-    const api = await initializeApi(credentials, options);
-    const raw = { code: "" };
-    const code = fs.readFileSync(options.filename).toString();
-    raw.code = code;
-    const result = await api.uploadCode(options.cardKey, raw);
-    spinner.stop();
-    console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
-  } catch (error: any) {
-    handleCliError(error, options, "upload code");
-  }
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
+
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
+  const api = await initializeApi(credentials, options);
+  const result = await runReadUploadCommand({
+    spinner,
+    spinnerEnabled,
+    filename: normalizedFilename,
+    readMessage: (size) => `🚀 reading code from ${normalizedFilename} (${size})...`,
+    uploadMessage: (size) => `🚀 uploading code (${size})...`,
+    upload: async (content) => await api.uploadCode(cardKey, { code: content }),
+  });
+
+  console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
 }

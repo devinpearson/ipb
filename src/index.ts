@@ -4,47 +4,82 @@
 // Sets up all CLI commands and shared options using Commander.js
 // For more information, see README.md
 
-import "dotenv/config";
-import process from "process";
-import fs from "fs";
-import { homedir } from "os";
-import { Command, Option } from "commander";
-import chalk from "chalk";
+import 'dotenv/config';
+import { homedir } from 'node:os';
+import process from 'node:process';
+import chalk from 'chalk';
+import { Command, Option } from 'commander';
+import { accountsCommand } from './cmds/accounts.js';
+import { balancesCommand } from './cmds/balances.js';
+import { beneficiariesCommand } from './cmds/beneficiaries.js';
+import {
+  runConfigEdit,
+  runConfigProfileDelete,
+  runConfigProfileList,
+  runConfigProfileSet,
+  runConfigProfileShow,
+} from './cmds/config-subcommands.js';
 import {
   cardsCommand,
   configCommand,
-  logsCommand,
-  deployCommand,
-  fetchCommand,
-  uploadCommand,
-  envCommand,
-  uploadEnvCommand,
-  publishedCommand,
-  publishCommand,
-  enableCommand,
-  disableCommand,
-  runCommand,
-  currenciesCommand,
   countriesCommand,
+  currenciesCommand,
+  deployCommand,
+  disableCommand,
+  enableCommand,
+  envCommand,
+  envListCommand,
+  fetchCommand,
+  logsCommand,
   merchantsCommand,
   newCommand,
-  generateCommand,
-  bankCommand,
-} from "./cmds/index.js";
-import { simulateCommand } from "./cmds/simulate.js";
-import { registerCommand } from "./cmds/register.js";
-import { loginCommand } from "./cmds/login.js";
-import { accountsCommand } from "./cmds/accounts.js";
-import { balancesCommand } from "./cmds/balances.js";
-import { transactionsCommand } from "./cmds/transactions.js";
-import { transferCommand } from "./cmds/transfer.js";
-import { beneficiariesCommand } from "./cmds/beneficiaries.js";
-import { payCommand } from "./cmds/pay.js";
-import { handleCliError, loadCredentialsFile } from "./utils.js";
-import type { Credentials, BasicOptions } from "./cmds/types.js";
+  publishCommand,
+  publishedCommand,
+  runCommand,
+  uploadCommand,
+  uploadEnvCommand,
+} from './cmds/index.js';
+import { payCommand } from './cmds/pay.js';
+import { simulateCommand } from './cmds/simulate.js';
+import { transactionsCommand } from './cmds/transactions.js';
+import { transferCommand } from './cmds/transfer.js';
+import type { BasicOptions, Credentials } from './cmds/types.js';
+import { CliError, ERROR_CODES, ExitCode } from './errors.js';
+import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
+import {
+  checkForUpdates,
+  configureChalk,
+  getSafeText,
+  getVerboseMode,
+  handleCliError,
+  isUpdateCheckDisabled,
+  loadCredentialsFile,
+  logCommandHistory,
+  readCredentialsFileSync,
+  shouldDisplayUpdateNotification,
+  showUpdateNotification,
+  warnAboutSecretUsage,
+  withCommandContext,
+} from './utils.js';
 
-const version = "0.8.3";
+// Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
+configureChalk();
+
+const version = '0.8.3';
 const program = new Command();
+
+/**
+ * Commander action for commands that are registered but intentionally disabled.
+ */
+function disabledCommandAction(commandName: string) {
+  return withCommandContext(commandName, async () => {
+    throw new CliError(ERROR_CODES.COMMAND_DISABLED, `The ${commandName} command is disabled.`);
+  });
+}
+
+// Improve error output for missing arguments/options
+program.showHelpAfterError();
+program.showSuggestionAfterError();
 
 // Only export what is needed outside this file
 export const credentialLocation = {
@@ -52,356 +87,1322 @@ export const credentialLocation = {
   filename: `${homedir()}/.ipb/.credentials.json`,
 };
 
-// Print CLI title (used in some commands)
+/**
+ * Prints CLI title (currently unused, kept for potential future use).
+ */
 export async function printTitleBox() {
-  // console.log("");
-  // console.log("🦓 Investec Programmable Banking CLI");
-  // // console.log("🔮 " + chalk.blueBright(`v${version}`));
-  // console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  // console.log("");
+  // Function intentionally empty - can be implemented if needed
 }
 
-// Load credentials from file if present
-let cred = {
-  clientId: "",
-  clientSecret: "",
-  apiKey: "",
-  cardKey: "",
-  openaiKey: "",
-  sandboxKey: "",
-};
-if (fs.existsSync(credentialLocation.filename)) {
-  try {
-    const data = fs.readFileSync(credentialLocation.filename, "utf8");
-    cred = JSON.parse(data);
-  } catch (err) {
-    if (err instanceof Error) {
-      console.error(
-        chalk.red(`🙀 Invalid credentials file format: ${err.message}`),
-      );
-      console.log("");
-    } else {
-      console.error(chalk.red("🙀 Invalid credentials file format"));
-      console.log("");
-    }
-  }
-}
+// Load credentials from file if present (sync for module initialization)
+const cred = readCredentialsFileSync(credentialLocation, (err) => {
+  const errorText = getSafeText(`🙀 Invalid credentials file format: ${err.message}`);
+  console.error(chalk.red(errorText));
+  console.log('');
+});
 
 export const credentials: Credentials = {
-  host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
-  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
-  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey,
-  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey,
+  host: process.env.INVESTEC_HOST || 'https://openapi.investec.com',
+  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId || '',
+  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret || '',
+  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey || '',
+  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey || '',
+  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey || '',
+  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey || '',
 };
 
 // Helper for shared API credential options
 function addApiCredentialOptions(cmd: Command) {
   return cmd
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
+    .option('--api-key <apiKey>', 'api key for the Investec API')
+    .option('--client-id <clientId>', 'client Id for the Investec API')
+    .option('--client-secret <clientSecret>', 'client secret for the Investec API')
+    .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
+    .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
+    .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
     .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
+      '-s,--spinner',
+      'disable spinner during command execution (deprecated: use --no-spinner)'
     )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information");
+    .option('-v,--verbose', 'additional debugging information')
+    .option('--json', 'Output raw JSON instead of formatted table')
+    .option('--yaml', 'Output raw YAML instead of formatted table')
+    .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
 }
 
-// Show help if no arguments are provided
-if (process.argv.length <= 2) {
+/** Spinner + verbose only (for commands that do not use Investec API credential flags). */
+function addSpinnerVerboseOptions(cmd: Command) {
+  return cmd
+    .option(
+      '-s,--spinner',
+      'disable spinner during command execution (deprecated: use --no-spinner)'
+    )
+    .option('-v,--verbose', 'additional debugging information');
+}
+
+const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
+process.argv = spinnerFlagNormalization.argv;
+
+// Show help if no arguments are provided (unless --check-updates is specified)
+if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
   program.outputHelp();
   process.exit(0);
 }
 
+/**
+ * Generates shell completion script for bash or zsh.
+ * @param shell - Shell type ('bash' or 'zsh')
+ * @returns Completion script as a string
+ */
+function generateCompletionScript(shell: string): string {
+  if (shell !== 'bash' && shell !== 'zsh') {
+    throw new Error(`Unsupported shell: ${shell}. Supported shells: bash, zsh`);
+  }
+
+  const commands = [
+    'accounts',
+    'acc', // alias for accounts
+    'balances',
+    'bal', // alias for balances
+    'beneficiaries',
+    'cards',
+    'c', // alias for cards
+    'completion',
+    'config',
+    'cfg', // alias for config
+    'countries',
+    'currencies',
+    'deploy',
+    'd', // alias for deploy
+    'disable',
+    'docs',
+    'enable',
+    'env',
+    'env-list',
+    'fetch',
+    'f', // alias for fetch
+    'logs',
+    'log', // alias for logs
+    'merchants',
+    'new',
+    'pay',
+    'publish',
+    'pub', // alias for publish
+    'published',
+    'run',
+    'r', // alias for run
+    'simulate',
+    'transfer',
+    'transactions',
+    'tx', // alias for transactions
+    'upload',
+    'up', // alias for upload
+    'upload-env',
+  ];
+
+  const globalOptions = [
+    '--check-updates',
+    '--no-history',
+    '--api-key',
+    '--client-id',
+    '--client-secret',
+    '--host',
+    '--credentials-file',
+    '--profile',
+    '--no-spinner',
+    '--spinner',
+    '--verbose',
+    '--json',
+    '--yaml',
+    '--output',
+  ];
+
+  const commandOptions: Record<string, string[]> = {
+    accounts: ['--json', '--yaml', '--output'],
+    acc: ['--json', '--yaml', '--output'], // alias for accounts
+    balances: ['--json', '--yaml', '--output'],
+    bal: ['--json', '--yaml', '--output'], // alias for balances
+    beneficiaries: ['--json', '--yaml', '--output'],
+    cards: ['--json', '--yaml', '--output'],
+    c: ['--json', '--yaml', '--output'], // alias for cards
+    config: ['--card-key', '--openai-key', '--sandbox-key'],
+    cfg: ['--card-key', '--openai-key', '--sandbox-key'], // alias for config
+    countries: ['--json', '--yaml', '--output'],
+    currencies: ['--json', '--yaml', '--output'],
+    deploy: ['--filename', '--env', '--card-key', '--yes'],
+    d: ['--filename', '--env', '--card-key', '--yes'], // alias for deploy
+    disable: ['--card-key', '--yes'],
+    docs: ['--output'],
+    enable: ['--card-key'],
+    env: ['--filename', '--card-key'],
+    'env-list': ['--json', '--yaml', '--output'],
+    fetch: ['--filename', '--card-key'],
+    f: ['--filename', '--card-key'], // alias for fetch
+    logs: ['--filename', '--card-key'],
+    log: ['--filename', '--card-key'], // alias for logs
+    merchants: ['--json', '--yaml', '--output'],
+    new: ['--template', '--force', '--verbose', '--spinner'],
+    pay: ['--yes'],
+    publish: ['--filename', '--code-id', '--card-key', '--yes'],
+    pub: ['--filename', '--code-id', '--card-key', '--yes'], // alias for publish
+    published: ['--filename', '--card-key'],
+    run: [
+      '--filename',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+      '--spinner',
+    ],
+    r: [
+      '--filename',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+      '--spinner',
+    ], // alias for run
+    simulate: [
+      '--filename',
+      '--card-key',
+      '--env',
+      '--amount',
+      '--currency',
+      '--mcc',
+      '--merchant',
+      '--city',
+      '--country',
+      '--verbose',
+      '--spinner',
+      '--api-key',
+      '--client-id',
+      '--client-secret',
+      '--host',
+      '--credentials-file',
+      '--profile',
+      '--json',
+      '--yaml',
+      '--output',
+    ],
+    transfer: ['--yes'],
+    transactions: ['--json', '--yaml', '--output'],
+    tx: ['--json', '--yaml', '--output'], // alias for transactions
+    upload: ['--filename', '--card-key'],
+    up: ['--filename', '--card-key'], // alias for upload
+    'upload-env': ['--filename', '--card-key'],
+  };
+
+  if (shell === 'bash') {
+    return generateBashCompletion(commands, globalOptions, commandOptions);
+  } else {
+    return generateZshCompletion(commands, globalOptions, commandOptions);
+  }
+}
+
+/**
+ * Generates bash completion script.
+ */
+function generateBashCompletion(
+  commands: string[],
+  globalOptions: string[],
+  commandOptions: Record<string, string[]>
+): string {
+  const commandsList = commands.join(' ');
+  const globalOptionsList = globalOptions.join(' ');
+  const configCommandOpts = `${commandOptions.config?.join(' ') || ''} ${globalOptionsList}`.trim();
+
+  return `#!/usr/bin/env bash
+# Bash completion script for ipb CLI
+
+_ipb() {
+  local cur prev words cword
+  COMPREPLY=()
+  cur="\${COMP_WORDS[COMP_CWORD]}"
+  prev="\${COMP_WORDS[COMP_CWORD-1]}"
+  words=("\${COMP_WORDS[@]}")
+  cword=$COMP_CWORD
+
+  case "\${prev}" in
+    --output)
+      COMPREPLY=($(compgen -f -- "\${cur}"))
+      return 0
+      ;;
+    --filename|-f)
+      COMPREPLY=($(compgen -f -X '!*.js' -- "\${cur}"))
+      return 0
+      ;;
+    --template)
+      COMPREPLY=($(compgen -W "default petro" -- "\${cur}"))
+      return 0
+      ;;
+    --env|-e)
+      # Complete .env.* files
+      COMPREPLY=($(compgen -f -X '!*.env.*' -- "\${cur}"))
+      return 0
+      ;;
+    --email|-e)
+      # No completion for email
+      return 0
+      ;;
+    --password|-p)
+      # No completion for password
+      return 0
+      ;;
+  esac
+
+  # Check if we're completing a command
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=($(compgen -W "${commandsList}" -- "\${cur}"))
+    return 0
+  fi
+
+  # Get the command name
+  local cmd="\${words[1]}"
+
+  # Nested: ipb config|cfg [profile|edit|...options]
+  if [[ "\${cmd}" == "config" || "\${cmd}" == "cfg" ]]; then
+    if [[ \${cword} -eq 2 ]]; then
+      local cfg_subcmds="profile edit"
+      local cfg_opts="${configCommandOpts}"
+      COMPREPLY=($(compgen -W "\${cfg_subcmds} \${cfg_opts}" -- "\${cur}"))
+      return 0
+    fi
+    if [[ "\${words[2]}" == "profile" && \${cword} -eq 3 ]]; then
+      COMPREPLY=($(compgen -W "list ls set show delete rm" -- "\${cur}"))
+      return 0
+    fi
+  fi
+
+  # Complete options for specific commands
+  case "\${cmd}" in
+${commands
+  .map(
+    (cmd) => `    ${cmd})
+      local opts="${commandOptions[cmd]?.join(' ') || ''} ${globalOptionsList}"
+      COMPREPLY=($(compgen -W "\${opts}" -- "\${cur}"))
+      return 0
+      ;;`
+  )
+  .join('\n')}
+    *)
+      # Default: complete global options
+      COMPREPLY=($(compgen -W "${globalOptionsList}" -- "\${cur}"))
+      return 0
+      ;;
+  esac
+}
+
+complete -F _ipb ipb
+`;
+}
+
+/**
+ * Generates zsh completion script.
+ */
+function generateZshCompletion(
+  commands: string[],
+  globalOptions: string[],
+  commandOptions: Record<string, string[]>
+): string {
+  return `#compdef ipb
+# Zsh completion script for ipb CLI
+
+_ipb() {
+  local -a commands
+  commands=(
+${commands.map((cmd) => `    '${cmd}:${cmd} command'`).join('\n')}
+  )
+
+  local -a global_opts
+  global_opts=(
+${globalOptions.map((opt) => `    '${opt}'`).join('\n')}
+  )
+
+  local context state line
+  typeset -A opt_args
+
+  _arguments -C \\
+    "1: :->commands" \\
+    "*::arg:->args"
+
+  case $state in
+    commands)
+      _describe 'command' commands
+      ;;
+    args)
+      case $words[1] in
+${commands
+  .map((cmd) => {
+    const opts = commandOptions[cmd] || [];
+    const allOpts = [...opts, ...globalOptions];
+    return `        ${cmd})
+          _arguments \\
+${allOpts
+  .map((opt) => {
+    if (opt.includes('--filename') || opt.includes('-f')) {
+      return `            '${opt}[JavaScript file]:file:_files -g "*.js"'`;
+    }
+    if (opt.includes('--output')) {
+      return `            '${opt}[Output file]:file:_files'`;
+    }
+    if (opt.includes('--template')) {
+      return `            '${opt}[Template]:template:(default petro)'`;
+    }
+    if (opt.includes('--env') || opt.includes('-e')) {
+      return `            '${opt}[Environment file]:env:_files -g ".env.*"'`;
+    }
+    if (opt.includes('--email')) {
+      return `            '${opt}[Email address]:email:'`;
+    }
+    if (opt.includes('--password')) {
+      return `            '${opt}[Password]:password:'`;
+    }
+    if (opt.includes('<')) {
+      const match = opt.match(/--([^<]+)\s*<([^>]+)>/);
+      if (match?.[1] && match[2]) {
+        const optName = match[1].replace(/-/g, '_');
+        const argName = match[2];
+        return `            '${opt}[${argName}]:${optName}:'`;
+      }
+    }
+    return `            '${opt}'`;
+  })
+  .join(' \\\n')}
+          ;;
+`;
+  })
+  .join('')}        *)
+          _arguments $global_opts
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_ipb "$@"
+`;
+}
+
 async function main() {
-  program
-    .name("ipb")
-    .description("CLI to manage Investec Programmable Banking")
-    .version(version);
+  program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
+
+  if (spinnerFlagNormalization.usedDeprecatedSpinnerFlag) {
+    console.warn(
+      chalk.yellow('Warning: `--spinner` / `-s` is deprecated. Use `--no-spinner` instead.')
+    );
+  }
+
+  // Add global options
+  program.option('--check-updates', 'Check for available updates');
+  program.option('--no-history', 'Disable command history logging');
+
+  // Add help text with command categories
+  program.addHelpText(
+    'afterAll',
+    `
+Command Categories:
+  Card Management        cards, enable, disable
+  Code Management        deploy, fetch, upload, publish, published, logs, run, simulate
+  Environment Management env, env-list, upload-env
+  Account Management     accounts, balances, transactions, beneficiaries
+  Payments              transfer, pay
+  Configuration         config
+  AI & Code Generation  new
+  Reference Data        currencies, countries, merchants
+  Utilities             completion
+
+For more information about a specific command, use:
+  $ ipb <command> --help
+`
+  );
 
   // Use shared options for most commands
+
+  // Card Management
   addApiCredentialOptions(
-    program.command("cards").description("Gets a list of your cards"),
-  ).action(cardsCommand);
-  addApiCredentialOptions(
-    program.command("config").description("set auth credentials"),
-  )
-    .option("--card-key <cardKey>", "Sets your card key for the Investec API")
-    .option(
-      "--openai-key <openaiKey>",
-      "Sets your OpenAI key for the AI generation",
+    program
+      .command('cards')
+      .alias('c')
+      .description(
+        'List all programmable cards. Shows card keys, numbers, and activation status for each card.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb cards
+  $ ipb cards --json
+  $ ipb cards --yaml
+  $ ipb cards --output cards.json
+  $ ipb cards --yaml --output cards.yaml
+      `
+      )
+  ).action(withCommandContext('cards', cardsCommand));
+  // Configuration
+  const configCmd = program
+    .command('config')
+    .alias('cfg')
+    .description(
+      'Configure authentication credentials. Set API keys, client credentials, and card keys for CLI operations. Supports configuration profiles for managing multiple environments.'
     )
-    .option(
-      "--sandbox-key <sandboxKey>",
-      "Sets your sandbox key for the AI generation",
+    .addHelpText(
+      'after',
+      `
+Examples:
+  # Save to default credentials
+  $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
+  $ ipb config --card-key <card-key>
+  
+  # Save to a profile
+  $ ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
+  $ ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
+  
+  # List profiles
+  $ ipb config profile list
+  
+  # Set active profile
+  $ ipb config profile set production
+  
+  # Show active profile
+  $ ipb config profile show
+  
+  # Delete a profile
+  $ ipb config profile delete staging
+  
+  # Edit credentials in your editor
+  $ ipb config edit
+  $ ipb config edit --profile production
+      `
+    );
+
+  addApiCredentialOptions(configCmd)
+    .option('--card-key <cardKey>', 'Set your card key for the Investec API')
+    .option('--openai-key <openaiKey>', 'Set your OpenAI API key for AI code generation')
+    .option('--sandbox-key <sandboxKey>', 'Set your sandbox key for AI generation')
+    .action(withCommandContext('config', configCommand));
+
+  // Profile subcommands
+  const profileCmd = configCmd.command('profile').description('Manage configuration profiles');
+
+  profileCmd
+    .command('list')
+    .alias('ls')
+    .description('List all available configuration profiles')
+    .action(withCommandContext('config profile list', runConfigProfileList));
+
+  profileCmd
+    .command('set')
+    .description('Set the active profile (used when --profile is not specified)')
+    .argument('<profile>', 'Profile name to set as active')
+    .action(
+      withCommandContext('config profile set', (profileName: string) =>
+        runConfigProfileSet(profileName)
+      )
+    );
+
+  profileCmd
+    .command('show')
+    .description('Show the currently active profile')
+    .action(withCommandContext('config profile show', runConfigProfileShow));
+
+  profileCmd
+    .command('delete')
+    .alias('rm')
+    .description('Delete a configuration profile')
+    .argument('<profile>', 'Profile name to delete')
+    .action(
+      withCommandContext('config profile delete', (profileName: string) =>
+        runConfigProfileDelete(profileName)
+      )
+    );
+
+  // Edit command - opens credentials file in editor
+  configCmd
+    .command('edit')
+    .description(
+      'Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.'
     )
-    .action(configCommand);
-  addApiCredentialOptions(
-    program.command("deploy").description("deploy code to card"),
-  )
-    .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(deployCommand);
-  addApiCredentialOptions(
-    program.command("logs").description("fetches logs from the api"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(logsCommand);
-  program
-    .command("run")
-    .description("runs the code locally")
-    .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run")
-    .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-u,--currency <currency>", "currency code", "zar")
-    .option("-z,--mcc <mcc>", "merchant category code", "0000")
-    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
-    .option("-i,--city <city>", "city name", "Cape Town")
-    .option("-o,--country <country>", "country code", "ZA")
-    .option("-v,--verbose", "additional debugging information")
-    .action(runCommand);
-  addApiCredentialOptions(
-    program.command("fetch").description("fetches the saved code"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(fetchCommand);
-  addApiCredentialOptions(
-    program.command("upload").description("uploads to saved code"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(uploadCommand);
-  addApiCredentialOptions(
-    program.command("env").description("downloads to env to a local file"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(envCommand);
-  addApiCredentialOptions(
-    program.command("upload-env").description("uploads env to the card"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(uploadEnvCommand);
+    .option('--profile <profile>', 'Edit a specific profile instead of default credentials')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb config edit
+  $ ipb config edit --profile production
+  $ EDITOR=vim ipb config edit
+  $ EDITOR="code --wait" ipb config edit
+      `
+    )
+    .action(
+      withCommandContext('config edit', async (options: { profile?: string }) => {
+        await runConfigEdit({
+          profile: options.profile,
+          defaultCredentialsFile: credentialLocation.filename,
+        });
+      })
+    );
+
+  // Code Management
   addApiCredentialOptions(
     program
-      .command("published")
-      .description("downloads to published code to a local file"),
+      .command('deploy')
+      .alias('d')
+      .description(
+        'Deploy JavaScript code to a programmable card. Uploads code and optional environment variables, then publishes it to make it active.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb deploy -f main.js -e production -c card-123
+  $ ipb deploy -f app.js --env dev --card-key card-456
+  $ ipb deploy -f main.js -c card-789  # Deploy without environment variables
+  $ ipb deploy -f main.js -c card-123 --yes  # Skip confirmation prompt
+      `
+      )
   )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(publishedCommand);
-  addApiCredentialOptions(
-    program.command("publish").description("publishes code to the card"),
-  )
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("-i,--code-id <codeId>", "the code id of the save code")
-    .action(publishCommand);
-  program
-    .command("simulate")
-    .description("runs the code using the online simulator")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("-e,--env <env>", "env to run", "development")
-    .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-u,--currency <currency>", "currency code", "zar")
-    .option("-z,--mcc <mcc>", "merchant category code", "0000")
-    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
-    .option("-i,--city <city>", "city name", "Cape Town")
-    .option("-o,--country <country>", "country code", "ZA")
-    .option("-v,--verbose", "additional debugging information")
-    .action(simulateCommand);
-  addApiCredentialOptions(
-    program.command("enable").description("enables code to be used on card"),
-  )
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(enableCommand);
-  addApiCredentialOptions(
-    program.command("disable").description("disables code to be used on card"),
-  )
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .action(disableCommand);
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to deploy')
+    .option('-e,--env <env>', 'Environment name (loads variables from .env.<env> file)')
+    .option('-c,--card-key <cardKey>', 'Card identifier to deploy to')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .action(withCommandContext('deploy', deployCommand));
   addApiCredentialOptions(
     program
-      .command("currencies")
-      .description("Gets a list of supported currencies"),
-  ).action(currenciesCommand);
-  addApiCredentialOptions(
-    program.command("countries").description("Gets a list of countries"),
-  ).action(countriesCommand);
-  addApiCredentialOptions(
-    program.command("merchants").description("Gets a list of merchants"),
-  ).action(merchantsCommand);
-  addApiCredentialOptions(
-    program.command("accounts").description("Gets a list of your accounts"),
+      .command('logs')
+      .alias('log')
+      .description(
+        'Fetch execution logs from a card. Retrieves transaction execution logs and saves them to a JSON file.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb logs -f executions.json -c card-123
+  $ ipb logs -f logs.json --card-key card-456
+      `
+      )
   )
-    .option("--json", "output raw JSON")
-    .action(accountsCommand);
-  addApiCredentialOptions(
-    program.command("balances").description("Gets your account balances"),
+    .requiredOption('-f,--filename <filename>', 'Output filename for logs (JSON format)')
+    .option('-c,--card-key <cardKey>', 'Card identifier to fetch logs from')
+    .action(withCommandContext('logs', logsCommand));
+  addSpinnerVerboseOptions(
+    program
+      .command('run')
+      .alias('r')
+      .description(
+        'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb run -f main.js -e prod --amount 60000 --currency ZAR
+  $ ipb run -f app.js --amount 10000 --merchant "Test Store" --city "Cape Town"
+      `
+      )
   )
-    .argument("<string>", "accountId of the account to fetch balances for")
-    .action(balancesCommand);
-  addApiCredentialOptions(
-    program.command("transfer").description("Allows transfer between accounts"),
-  )
-    .argument("<string>", "accountId of the account to transfer from")
-    .argument("<string>", "beneficiaryAccountId of the account to transfer to")
-    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
-    .argument("<string>", "reference for the transfer")
-    .action(transferCommand);
-  addApiCredentialOptions(
-    program.command("pay").description("Pay a beneficiary from your account"),
-  )
-    .argument("<string>", "accountId of the account to transfer from")
-    .argument("<string>", "beneficiaryId of the beneficiary to pay")
-    .argument("<number>", "amount to transfer in rands (e.g. 100.00)")
-    .argument("<string>", "reference for the payment")
-    .action(payCommand);
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to execute')
+    .option('-e,--env <env>', 'Environment file to load (.env.<env>)')
+    .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
+    .option('-u,--currency <currency>', 'Currency code (ISO 4217)', 'zar')
+    .option('-z,--mcc <mcc>', 'Merchant category code', '0000')
+    .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
+    .option('-i,--city <city>', 'Merchant city', 'Cape Town')
+    .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
+    .action(withCommandContext('run', runCommand));
   addApiCredentialOptions(
     program
-      .command("transactions")
-      .description("Gets your account transactions"),
+      .command('fetch')
+      .alias('f')
+      .description(
+        'Fetch saved code from a card. Downloads the code currently saved on a card and saves it to a local file.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb fetch -f saved-code.js -c card-123
+  $ ipb fetch -f backup.js --card-key card-456
+      `
+      )
   )
-    .argument("<string>", "accountId of the account to fetch balances for")
-    .action(transactionsCommand);
+    .requiredOption('-f,--filename <filename>', 'Local filename to save the code to')
+    .option('-c,--card-key <cardKey>', 'Card identifier to fetch code from')
+    .action(withCommandContext('fetch', fetchCommand));
   addApiCredentialOptions(
-    program.command("beneficiaries").description("Gets your beneficiaries"),
-  ).action(beneficiariesCommand);
-  program
-    .command("new")
-    .description("Sets up scaffoldings for a new project")
-    .argument("<string>", "name of the new project")
-    .option("-v,--verbose", "additional debugging information")
-    .option("--force", "force overwrite existing files")
+    program
+      .command('upload')
+      .alias('up')
+      .description(
+        'Upload code to a card without publishing. Saves JavaScript code to a card but does not activate it. Use publish command to activate.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb upload -f main.js -c card-123
+  $ ipb upload -f app.js --card-key card-456
+      `
+      )
+  )
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to upload')
+    .option('-c,--card-key <cardKey>', 'Card identifier to upload code to')
+    .action(withCommandContext('upload', uploadCommand));
+  // Environment Management
+  addApiCredentialOptions(
+    program
+      .command('env')
+      .description(
+        'Download environment variables from a card. Retrieves all environment variables configured on a card and saves them to a JSON file.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb env -f env.json -c card-123
+  $ ipb env -f variables.json --card-key card-456
+      `
+      )
+  )
+    .requiredOption(
+      '-f,--filename <filename>',
+      'Output filename for environment variables (JSON format)'
+    )
+    .option('-c,--card-key <cardKey>', 'Card identifier to fetch environment from')
+    .action(withCommandContext('env', envCommand));
+  addApiCredentialOptions(
+    program
+      .command('env-list')
+      .description(
+        'List all supported environment variables. Shows available environment variables with descriptions, usage examples, and default values.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb env-list
+  $ ipb env-list --json
+  $ ipb env-list --yaml --output env-vars.yaml
+      `
+      )
+  ).action(withCommandContext('env-list', envListCommand));
+  addApiCredentialOptions(
+    program
+      .command('upload-env')
+      .description(
+        'Upload environment variables to a card. Reads environment variables from a JSON file and uploads them to a card.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb upload-env -f env.json -c card-123
+  $ ipb upload-env -f variables.json --card-key card-456
+      `
+      )
+  )
+    .requiredOption('-f,--filename <filename>', 'JSON file containing environment variables')
+    .option('-c,--card-key <cardKey>', 'Card identifier to upload environment to')
+    .action(withCommandContext('upload-env', uploadEnvCommand));
+  addApiCredentialOptions(
+    program
+      .command('published')
+      .description(
+        'Download the currently published code from a card. Retrieves the active code currently running on a card and saves it to a local file.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb published -f published-code.js -c card-123
+  $ ipb published -f active.js --card-key card-456
+      `
+      )
+  )
+    .requiredOption('-f,--filename <filename>', 'Local filename to save the published code to')
+    .option('-c,--card-key <cardKey>', 'Card identifier to fetch published code from')
+    .action(withCommandContext('published', publishedCommand));
+  addApiCredentialOptions(
+    program
+      .command('publish')
+      .alias('pub')
+      .description(
+        'Publish previously uploaded code to make it active. Activates code that was uploaded using the upload command. Requires code ID from upload.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb publish -f main.js --code-id code-123 -c card-456
+  $ ipb publish -f app.js -i code-789 --card-key card-123
+  $ ipb publish -f main.js --code-id code-123 -c card-456 --yes  # Skip confirmation
+      `
+      )
+  )
+    .requiredOption(
+      '-f,--filename <filename>',
+      'JavaScript file to publish (must match uploaded code)'
+    )
+    .requiredOption('-i,--code-id <codeId>', 'Code ID from previous upload command')
+    .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .action(withCommandContext('publish', publishCommand));
+  addApiCredentialOptions(
+    program
+      .command('simulate')
+      .description(
+        'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb simulate -f main.js -c card-123 --amount 60000 --currency ZAR
+  $ ipb simulate -f app.js --card-key card-456 --env production
+      `
+      )
+  )
+    .requiredOption('-f,--filename <filename>', 'JavaScript file to simulate (required)')
+    .option('-c,--card-key <cardKey>', 'Card identifier for simulation')
+    .option('-e,--env <env>', 'Environment name', 'development')
+    .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
+    .option('-u,--currency <currency>', 'Currency code (ISO 4217)', 'zar')
+    .option('-z,--mcc <mcc>', 'Merchant category code', '0000')
+    .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
+    .option('-i,--city <city>', 'Merchant city', 'Cape Town')
+    .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
+    .action(withCommandContext('simulate', simulateCommand));
+  addApiCredentialOptions(
+    program
+      .command('enable')
+      .description(
+        'Enable programmable code on a card. Activates programmable card functionality. Code must be deployed and published first.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb enable -c card-123
+  $ ipb enable --card-key card-456
+      `
+      )
+  )
+    .option('-c,--card-key <cardKey>', 'Card identifier to enable code on')
+    .action(withCommandContext('enable', enableCommand));
+  addApiCredentialOptions(
+    program
+      .command('disable')
+      .description(
+        'Disable programmable code on a card. Deactivates programmable card functionality. Code remains deployed but will not execute on transactions.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb disable -c card-123
+  $ ipb disable --card-key card-456
+  $ ipb disable -c card-123 --yes  # Skip confirmation
+      `
+      )
+  )
+    .option('-c,--card-key <cardKey>', 'Card identifier to disable code on')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .action(withCommandContext('disable', disableCommand));
+  // Reference Data
+  addApiCredentialOptions(
+    program
+      .command('currencies')
+      .description(
+        'List all supported currency codes. Shows ISO 4217 currency codes and names available for use in transaction simulations and operations.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb currencies
+  $ ipb currencies --json
+  $ ipb currencies --yaml
+  $ ipb currencies --output currencies.json
+      `
+      )
+  ).action(withCommandContext('currencies', currenciesCommand));
+  addApiCredentialOptions(
+    program
+      .command('countries')
+      .description(
+        'List all supported country codes. Shows ISO 3166-1 alpha-2 country codes and names available for use in transaction simulations.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb countries
+  $ ipb countries --json
+  $ ipb countries --yaml
+  $ ipb countries --output countries.json
+      `
+      )
+  ).action(withCommandContext('countries', countriesCommand));
+  addApiCredentialOptions(
+    program
+      .command('merchants')
+      .description(
+        'List merchant categories and codes. Shows merchant category codes (MCC) with descriptions for use in transaction simulations.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb merchants
+  $ ipb merchants --json
+  $ ipb merchants --yaml
+  $ ipb merchants --output merchants.json
+      `
+      )
+  ).action(withCommandContext('merchants', merchantsCommand));
+  // Account Management
+  addApiCredentialOptions(
+    program
+      .command('accounts')
+      .alias('acc')
+      .description(
+        'List all Investec accounts. Shows account IDs, account numbers, product names, and reference names for all linked accounts.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb accounts
+  $ ipb accounts --json
+  $ ipb accounts --yaml
+  $ ipb accounts --output accounts.json
+      `
+      )
+  ).action(withCommandContext('accounts', accountsCommand));
+  addApiCredentialOptions(
+    program
+      .command('balances')
+      .alias('bal')
+      .description(
+        'Get account balance information. Retrieves current balance, available balance, and budget balance for a specific account.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb balances <accountId>
+  $ ipb balances acc-123 --json
+  $ ipb balances acc-123 --yaml
+  $ ipb balances acc-123 --output balance.json
+      `
+      )
+  )
+    .argument('accountId', 'Account ID to fetch balances for')
+    .action(withCommandContext('balances', balancesCommand));
+  // Payments
+  addApiCredentialOptions(
+    program
+      .command('transfer')
+      .description(
+        'Transfer money between your own accounts. Moves funds from one account to another. Prompts interactively for missing information.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
+  $ ipb transfer acc-123 acc-456 100.50 "Payment for services"
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes  # Skip confirmation
+      `
+      )
+  )
+    .argument('accountId', 'Account ID to transfer from')
+    .argument('beneficiaryAccountId', 'Beneficiary account ID to transfer to')
+    .argument('amount', 'Amount to transfer in rands (e.g. 100.00)')
+    .argument('reference', 'Payment reference message')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .action(withCommandContext('transfer', transferCommand));
+  addApiCredentialOptions(
+    program
+      .command('pay')
+      .description(
+        'Pay a beneficiary from your account. Makes a payment to a registered beneficiary. Requires confirmation before executing.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb pay <accountId> <beneficiaryId> <amount> <reference>
+  $ ipb pay acc-123 ben-456 250.00 "Monthly subscription"
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --yes  # Skip confirmation
+      `
+      )
+  )
+    .argument('accountId', 'Account ID to pay from')
+    .argument('beneficiaryId', 'Beneficiary ID to pay to')
+    .argument('amount', 'Amount to pay in rands (e.g. 100.00)')
+    .argument('reference', 'Payment reference message')
+    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .action(withCommandContext('pay', payCommand));
+  addApiCredentialOptions(
+    program
+      .command('transactions')
+      .alias('tx')
+      .description(
+        'Get transaction history for an account. Retrieves and displays recent transactions with full details including amounts, dates, and merchants.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb transactions <accountId>
+  $ ipb transactions acc-123 --json
+  $ ipb transactions acc-123 --yaml
+  $ ipb transactions acc-123 --output transactions.json
+      `
+      )
+  )
+    .argument('accountId', 'Account ID to fetch transactions for')
+    .action(withCommandContext('transactions', transactionsCommand));
+  addApiCredentialOptions(
+    program
+      .command('beneficiaries')
+      .description(
+        'List all beneficiaries. Shows all registered beneficiaries linked to your Investec profile with their IDs and details.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb beneficiaries
+  $ ipb beneficiaries --json
+  $ ipb beneficiaries --yaml
+  $ ipb beneficiaries --output beneficiaries.json
+      `
+      )
+  ).action(withCommandContext('beneficiaries', beneficiariesCommand));
+  // AI & Code Generation
+  addSpinnerVerboseOptions(
+    program
+      .command('new')
+      .description(
+        'Create a new project with scaffolding. Generates a new project directory with template files and directory structure for card code development.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb new my-project
+  $ ipb new my-app --template petro
+  $ ipb new my-project --force
+      `
+      )
+  )
+    .argument('name', 'Project name (will create a directory with this name)')
+    .option('--force', 'Overwrite existing project directory if it exists')
     .addOption(
-      new Option("--template <template>", "name of the template to use")
-        .default("default")
-        .choices(["default", "petro"]),
+      new Option('--template <template>', 'Template to use for project structure')
+        .default('default')
+        .choices(['default', 'petro'])
     )
-    .action(newCommand);
+    .action(withCommandContext('new', newCommand));
+  addSpinnerVerboseOptions(
+    program
+      .command('ai', { hidden: true })
+      .description(
+        'Generate programmable card code using AI. Creates JavaScript code for programmable cards from natural language descriptions using OpenAI or sandbox service.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb ai "block transactions over R1000"
+  $ ipb ai "only allow transactions at Woolworths" -f rules.js
+  $ ipb ai "send SMS notification after payment" --force
+      `
+      )
+  )
+    .argument('prompt', 'Natural language description of the card code behavior')
+    .option('-f,--filename <filename>', 'Output filename for generated code', 'ai-generated.js')
+    .option('--force', 'Overwrite existing file if it exists')
+    .action(disabledCommandAction('ai'));
+  addSpinnerVerboseOptions(
+    program
+      .command('bank', { hidden: true })
+      .description(
+        'Use AI to interact with your bank account. Performs banking operations using natural language prompts. Uses AI to interpret requests and execute appropriate banking functions.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb bank "Show me my last 5 transactions"
+  $ ipb bank "What is my account balance?"
+  $ ipb bank "Transfer R100 to account acc-123"
+      `
+      )
+      .argument('prompt', 'Natural language description of the banking operation to perform')
+  ).action(disabledCommandAction('bank'));
+  // Authentication (disabled — hidden commands for backward compatibility with scripts)
+  addSpinnerVerboseOptions(
+    program
+      .command('register', { hidden: true })
+      .description(
+        'Register for the sandbox AI service. Creates an account for using AI code generation features without requiring your own OpenAI API key.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb register -e user@example.com -p securepassword
+  $ ipb register --email user@example.com --password securepassword
+      
+Note: After registration, message in #12_sandbox-playground with your email to activate your account.
+      `
+      )
+      .option('-e,--email <email>', 'Email address for registration')
+      .option('-p,--password <password>', 'Password for your account')
+  ).action(disabledCommandAction('register'));
+  addSpinnerVerboseOptions(
+    program
+      .command('login', { hidden: true })
+      .description(
+        'Login to the sandbox AI service. Authenticates with the sandbox service and saves access token for use with AI generation commands.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb login -e user@example.com -p securepassword
+  $ ipb login --email user@example.com --password securepassword
+      `
+      )
+      .option('-e,--email <email>', 'Your registered email address')
+      .option('-p,--password <password>', 'Your account password')
+  ).action(disabledCommandAction('login'));
+  // Utilities
   program
-    .command("ai")
-    .description("Generates card code using an LLM")
-    .argument("<string>", "prompt for the LLM")
-    .option("-f,--filename <filename>", "the filename", "ai-generated.js")
-    .option("-v,--verbose", "additional debugging information")
-    .option("--force", "force overwrite existing files")
-    .action(generateCommand);
-  program
-    .command("bank")
-    .description("Uses the LLM to call your bank")
-    .argument("<string>", "prompt for the LLM")
-    .option("-v,--verbose", "additional debugging information")
-    .action(bankCommand);
-  program
-    .command("register")
-    .description("registers with the server for LLM generation")
-    .option("-e,--email <email>", "your email")
-    .option("-p,--password <password>", "your password")
-    .action(registerCommand);
-  program
-    .command("login")
-    .description("login with the server for LLM generation")
-    .option("-e,--email <email>", "your email")
-    .option("-p,--password <password>", "your password")
-    .action(loginCommand);
+    .command('completion')
+    .description(
+      'Generate shell completion script. Creates autocomplete scripts for bash or zsh to enable tab completion for commands and options.'
+    )
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb completion bash > /etc/bash_completion.d/ipb
+  $ ipb completion zsh > ~/.zsh/completions/_ipb
+  $ source <(ipb completion bash)  # For current session only
+      `
+    )
+    .argument('<shell>', 'Shell type (bash or zsh)')
+    .action((shell) => {
+      try {
+        const completionScript = generateCompletionScript(shell);
+        console.log(completionScript);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(chalk.red(`Error generating completion script: ${errorMessage}`));
+        // Use validation error for unsupported shell, general error for other issues
+        const exitCode = errorMessage.includes('Unsupported shell')
+          ? ExitCode.VALIDATION_ERROR
+          : ExitCode.GENERAL_ERROR;
+        process.exit(exitCode);
+      }
+    });
+
+  // Documentation generation command
+  addSpinnerVerboseOptions(
+    program
+      .command('docs')
+      .description(
+        'Generate command documentation. Creates markdown documentation from CLI command definitions and writes it to GENERATED_README.md.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb docs
+  $ ipb docs --output COMMANDS.md
+      `
+      )
+  )
+    .option('--output <file>', 'Output file path (default: GENERATED_README.md)')
+    .action(async (options: { output?: string; verbose?: boolean; spinner?: boolean }) => {
+      const { docsCommand } = await import('./cmds/docs.js');
+      await docsCommand(options.output || 'GENERATED_README.md', program, {
+        verbose: options.verbose,
+        spinner: options.spinner,
+      });
+    });
+
+  // Check for --check-updates flag in raw arguments
+  const hasCheckUpdatesFlag = process.argv.includes('--check-updates');
+
+  // If --check-updates flag is present, handle it before parsing
+  if (hasCheckUpdatesFlag && process.argv.length === 3) {
+    // Only --check-updates flag, no command
+    if (!isUpdateCheckDisabled()) {
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion) {
+        showUpdateNotification(version, latestVersion);
+      } else {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
+    } else {
+      console.log(chalk.dim('Skipping version check (IPB_NO_UPDATE_CHECK is set).'));
+    }
+    process.exit(0);
+  }
+
+  // Check if stdout is piped before parsing
+  const { isStdoutPiped } = await import('./utils.js');
+  const isPiped = isStdoutPiped();
+
+  // Determine initial verbose mode from raw args (before parsing)
+  const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
+  let verboseMode = getVerboseMode(hasVerboseFlag);
+
+  // Track command execution for history logging
+  const startTime = Date.now();
+  let commandName = '';
+  let commandOptions: Record<string, unknown> = {};
+  let exitCode = 0;
+
+  // Hook into command execution to capture command details
+  program.hook('preAction', (thisCommand) => {
+    commandName = thisCommand.name() || thisCommand.parent?.name() || '';
+    // Merge global options and command-specific options
+    const globalOpts = program.opts();
+    const commandOpts = thisCommand.opts();
+    commandOptions = { ...globalOpts, ...commandOpts };
+    verboseMode = getVerboseMode(
+      typeof commandOptions.verbose === 'boolean' ? commandOptions.verbose : undefined
+    );
+  });
 
   try {
+    // Warn about secret usage (will only show if verbose or in non-interactive environment)
+    warnAboutSecretUsage({ verbose: verboseMode });
+
+    // Parse arguments to execute commands
     await program.parseAsync(process.argv);
-    console.log(""); // Add a newline after command execution
-  } catch (err) {
-    // Use handleCliError with fallback context and options
-    handleCliError(err, { verbose: true }, "run CLI");
-    process.exit(1);
+
+    // If we got here, command succeeded
+    exitCode = 0;
+  } catch (error) {
+    // Command failed - exit code will be set by handleCliError
+    exitCode = 1;
+    throw error;
+  } finally {
+    // Log command history unless --no-history is set (for both success and failure)
+    try {
+      const globalOpts = program.opts();
+      const noHistory = globalOpts.history === false;
+
+      if (!noHistory && commandName) {
+        const duration = Date.now() - startTime;
+        // Get the actual command name from program.args or the command that was executed
+        const actualCommandName = program.args[0] || commandName;
+        const actualArgs = program.args.slice(1);
+
+        // Merge all options (global + command-specific)
+        const allOptions = { ...globalOpts, ...commandOptions };
+
+        // Non-blocking: don't await to avoid slowing down command exit
+        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(
+          () => {
+            // Ignore errors
+          }
+        );
+      }
+    } catch {
+      // Ignore errors logging history
+    }
+  }
+
+  // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
+  const updateNotificationAllowed = shouldDisplayUpdateNotification({
+    isPiped,
+    json: typeof commandOptions.json === 'boolean' ? commandOptions.json : undefined,
+    yaml: typeof commandOptions.yaml === 'boolean' ? commandOptions.yaml : undefined,
+    output: typeof commandOptions.output === 'string' ? commandOptions.output : undefined,
+  });
+
+  if (!isUpdateCheckDisabled()) {
+    if (hasCheckUpdatesFlag && process.argv.length > 3) {
+      // --check-updates flag with a command - check after command execution
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      } else if (!latestVersion) {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
+    } else if (process.argv.length === 2) {
+      // No arguments provided (shouldn't happen due to early exit, but just in case)
+      const latestVersion = await checkForUpdates(version, false);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      }
+    } else if (!hasCheckUpdatesFlag) {
+      // Background check for regular commands (non-blocking, cached for 24 hours)
+      if (updateNotificationAllowed) {
+        checkForUpdates(version, false)
+          .then((latest) => {
+            if (latest) {
+              showUpdateNotification(version, latest);
+            }
+          })
+          .catch(() => {
+            // Silent failure for background checks
+          });
+      }
+    }
+  }
+
+  // Only add newline if not piped (to avoid corrupting JSON output)
+  if (!isPiped) {
+    console.log(''); // Add a newline after command execution
   }
 }
 
-export async function initializeApi(
-  credentials: Credentials,
-  options: BasicOptions,
-) {
-  //printTitleBox();
-  credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    // console.log(chalk.yellow('Using mock API for debugging'));
-    const { CardApi } = await import("./mock-card.js");
-    api = new CardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  } else {
-    const { InvestecCardApi } = await import("investec-card-api");
-    api = new InvestecCardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  }
-  const accessResult = await api.getAccessToken();
-  // if (accessResult.scope !== "cards") {
-  //   console.log(
-  //     chalk.redBright(
-  //       "Scope is not only cards, please consider reducing the scopes",
-  //     ),
-  //   );
-  //   console.log("");
-  // }
-  return api;
-}
-
-export async function initializePbApi(
-  credentials: Credentials,
-  options: BasicOptions,
-) {
-  credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    const { PbApi } = await import("./mock-pb.js");
-    api = new PbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  } else {
-    const { InvestecPbApi } = await import("investec-pb-api");
-    api = new InvestecPbApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  }
-  await api.getAccessToken();
-  return api;
-}
-
+/**
+ * Merges CLI options with credentials, applying option overrides.
+ * @param options - Basic options that may contain credential overrides
+ * @param credentials - Base credentials object
+ * @returns Updated credentials object with option overrides applied
+ */
 export async function optionCredentials(
-  options: BasicOptions,
-  credentials: any,
-) {
-  if (options.credentialsFile) {
-    credentials = await loadCredentialsFile(
-      credentials,
-      options.credentialsFile,
-    );
+  options: BasicOptions & { profile?: string },
+  credentials: Credentials
+): Promise<Credentials> {
+  // Load profile if specified (takes precedence over credentials file)
+  if (options.profile) {
+    const { loadProfile } = await import('./utils.js');
+    credentials = await loadProfile(credentials, options.profile);
+  } else {
+    // Check for active profile if no profile specified
+    const { getActiveProfile, loadProfile } = await import('./utils.js');
+    const activeProfile = await getActiveProfile();
+    if (activeProfile) {
+      credentials = await loadProfile(credentials, activeProfile);
+    }
+
+    // Fall back to credentials file if no profile is active
+    if (options.credentialsFile) {
+      credentials = await loadCredentialsFile(credentials, options.credentialsFile);
+    }
   }
+
+  // Command-line options always override profile/credentials file
   if (options.apiKey) {
     credentials.apiKey = options.apiKey;
   }
@@ -418,6 +1419,14 @@ export async function optionCredentials(
 }
 
 main().catch((err) => {
-  handleCliError(err, { verbose: true }, "run CLI");
-  process.exit(1);
+  const commandContext = (err as Error & { commandContext?: string })?.commandContext;
+  const context = commandContext ? `${commandContext} command` : 'run CLI';
+  // Determine verbose mode from CLI flags (default false if not available)
+  const globalOpts = program.opts();
+  const verboseOption =
+    typeof globalOpts.verbose === 'boolean'
+      ? globalOpts.verbose
+      : process.argv.includes('--verbose') || process.argv.includes('-v');
+  const verboseMode = getVerboseMode(verboseOption);
+  handleCliError(err, { verbose: verboseMode }, context);
 });

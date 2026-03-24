@@ -1,32 +1,53 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
-  cardKey: number;
+  cardKey?: string | number;
 }
 
+/**
+ * Enables code on a programmable card.
+ * @param options - CLI options including card key and API credentials
+ * @throws {CliError} When card key is missing or API call fails
+ */
 export async function enableCommand(options: Options) {
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
-  }
-  try {
-    printTitleBox();
-    const spinner = ora("🍄 enabling code on card...").start();
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🍄 enabling code on card...');
+  let result:
+    | {
+        data: {
+          result: {
+            Enabled: boolean;
+          };
+        };
+      }
+    | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
+    result = await api.toggleCode(cardKey, true);
+  });
 
-    const result = await api.toggleCode(options.cardKey, true);
-    spinner.stop();
-    if (result.data.result.Enabled) {
-      console.log("✅ code enabled");
-    } else {
-      console.log("❌ code enable failed");
-    }
-  } catch (error: any) {
-    handleCliError(error, options, "enable card code");
+  if (!result) {
+    return;
+  }
+  if (result.data.result.Enabled) {
+    console.log('✅ code enabled');
+  } else {
+    console.log('❌ code enable failed');
   }
 }

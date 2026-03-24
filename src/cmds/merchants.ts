@@ -1,27 +1,54 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  resolveSpinnerState,
+  runListCommand,
+  withRetry,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-interface Options extends CommonOptions {}
+/**
+ * Fetches and displays a list of merchants.
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
+export async function merchantsCommand(options: CommonOptions) {
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
 
-export async function merchantsCommand(options: Options) {
-  try {
+  if (!isPiped) {
     printTitleBox();
-    const spinner = ora("🏪 fetching merchants...").start();
+  }
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🏪 fetching merchants...');
+  let merchants:
+    | Array<{
+        Code: string;
+        Name: string;
+      }>
+    | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
-    const result = await api.getMerchants();
-    const merchants = result.data.result;
-    spinner.stop();
-    if (!merchants) {
-      console.log("No merchants found");
-      return;
-    }
+    const result = await withRetry(() => api.getMerchants(), {
+      maxRetries: 3,
+      verbose,
+    });
+    merchants = result.data.result;
+  });
 
-    const simpleMerchants = merchants.map(({ Code, Name }) => ({ Code, Name }));
-    printTable(simpleMerchants);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch merchants");
-  }
+  await runListCommand({
+    isPiped,
+    items: merchants,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No merchants found',
+    countMessage: (count) => `${count} merchant(s) found.`,
+    mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
+  });
 }

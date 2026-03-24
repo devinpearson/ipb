@@ -1,33 +1,61 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  resolveSpinnerState,
+  runListCommand,
+  withRetry,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-interface Options extends CommonOptions {}
+type CardSummary = {
+  CardKey: string | number;
+  CardNumber: string;
+  IsProgrammable: boolean;
+};
 
-export async function cardsCommand(options: Options) {
-  try {
+/**
+ * Fetches and displays a list of cards.
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
+export async function cardsCommand(options: CommonOptions) {
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+
+  if (!isPiped) {
     printTitleBox();
-    const spinner = ora("💳 fetching cards...").start();
+  }
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching cards...');
+  let cards: CardSummary[] | null | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
-    const result = await api.getCards();
-    const cards = result.data.cards;
-    spinner.stop();
-    if (!cards) {
-      console.log("No cards found");
-      return;
-    }
+    // Use retry logic with rate limit handling
+    const result = await withRetry(() => api.getCards(), {
+      maxRetries: 3,
+      verbose,
+    });
+    cards = result.data.cards;
+  });
 
-    const simpleCards = cards.map(
-      ({ CardKey, CardNumber, IsProgrammable }) => ({
+  await runListCommand({
+    isPiped,
+    items: cards,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No cards found',
+    countMessage: (count) => `${count} card(s) found.`,
+    mapSimple: (rows) =>
+      rows.map(({ CardKey, CardNumber, IsProgrammable }) => ({
         CardKey,
         CardNumber,
         IsProgrammable,
-      }),
-    );
-    printTable(simpleCards);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch cards");
-  }
+      })),
+  });
 }

@@ -1,58 +1,134 @@
-import fs from "fs";
-import dotenv from "dotenv";
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { promises as fsPromises } from 'node:fs';
+import dotenv from 'dotenv';
+import { CliError, ERROR_CODES } from '../errors.js';
+import { credentials, printTitleBox } from '../index.js';
+import {
+  confirmDestructiveOperation,
+  createSpinner,
+  formatFileSize,
+  getFileSize,
+  getSafeText,
+  initializeApi,
+  normalizeCardKey,
+  resolveSpinnerState,
+  validateFilePath,
+  withRetry,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 interface Options extends CommonOptions {
-  cardKey: number;
+  cardKey?: string | number;
   filename: string;
   env: string;
 }
 
+/**
+ * Deploys code to a programmable card.
+ * @param options - CLI options including card key, filename, optional env file, and API credentials
+ * @throws {CliError} When card key is missing, files don't exist, or deployment fails
+ */
 export async function deployCommand(options: Options) {
-  try {
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+
+  if (!isPiped) {
     printTitleBox();
-    const spinner = ora("💳 starting deployment...").start();
-    let envObject = {};
-    if (options.cardKey === undefined) {
-      if (credentials.cardKey === "") {
-        throw new Error("card-key is required");
-      }
-      options.cardKey = Number(credentials.cardKey);
-    }
-
-    const api = await initializeApi(credentials, options);
-
-    if (options.env) {
-      if (!fs.existsSync(`.env.${options.env}`)) {
-        throw new Error("Env does not exist");
-      }
-      spinner.text = `📦 uploading env from .env.${options.env}`;
-      envObject = dotenv.parse(fs.readFileSync(`.env.${options.env}`));
-
-      await api.uploadEnv(options.cardKey, { variables: envObject });
-      spinner.text = "📦 env uploaded";
-      //console.log("📦 env deployed");
-    }
-    spinner.text = "🚀 deploying code";
-    //console.log("🚀 deploying code");
-    const raw = { code: "" };
-    const code = fs.readFileSync(options.filename).toString();
-    raw.code = code;
-    const saveResult = await api.uploadCode(options.cardKey, raw);
-    // console.log(saveResult);
-    const result = await api.uploadPublishedCode(
-      options.cardKey,
-      saveResult.data.result.codeId,
-      code,
-    );
-    spinner.stop();
-    if (result.data.result.codeId) {
-      console.log("🎉 code deployed");
-    }
-  } catch (error: any) {
-    handleCliError(error, { verbose: (options as any).verbose }, "deploy code");
   }
+
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
+
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+
+  // Require confirmation before deploying (overwrites existing code)
+  const confirmed = await confirmDestructiveOperation(
+    `This will deploy code to card ${cardKey} and overwrite any existing code. Continue?`,
+    { yes: options.yes }
+  );
+
+  if (!confirmed) {
+    console.log('Deployment cancelled.');
+    return;
+  }
+
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 starting deployment...');
+  let envObject = {};
+  let saveResult:
+    | {
+        data: {
+          result: {
+            codeId: string;
+          };
+        };
+      }
+    | undefined;
+
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    const api = await initializeApi(credentials, options);
+    if (options.env) {
+      const envFilePath = `.env.${options.env}`;
+      try {
+        const normalizedEnvPath = await validateFilePath(envFilePath);
+        const envFileSize = await getFileSize(normalizedEnvPath);
+        spinner.text = getSafeText(
+          `📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
+        );
+        const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
+        envObject = dotenv.parse(envFileContent);
+        spinner.text = getSafeText(
+          `📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
+        );
+
+        // Use retry logic with rate limit handling
+        await withRetry(() => api.uploadEnv(cardKey, { variables: envObject }), {
+          maxRetries: 3,
+          verbose,
+        });
+        spinner.text = getSafeText('📦 env uploaded');
+      } catch (error) {
+        if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
+          throw new CliError(
+            ERROR_CODES.MISSING_ENV_FILE,
+            `Env file "${envFilePath}" does not exist. Check the file path and ensure the file exists.`
+          );
+        }
+        throw error;
+      }
+    }
+    const codeFileSize = await getFileSize(normalizedFilename);
+    spinner.text = getSafeText(
+      `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
+    );
+    const raw = { code: '' };
+
+    const code = await fsPromises.readFile(normalizedFilename, 'utf8');
+    raw.code = code;
+    const codeSize = Buffer.byteLength(code, 'utf8');
+    spinner.text = getSafeText(`🚀 deploying code (${formatFileSize(codeSize)})...`);
+
+    // Use retry logic with rate limit handling for API calls
+    const uploadResult = await withRetry(() => api.uploadCode(cardKey, raw), {
+      maxRetries: 3,
+      verbose,
+    });
+    const codeId = uploadResult.data.result.codeId;
+    saveResult = uploadResult;
+
+    await withRetry(() => api.uploadPublishedCode(cardKey, codeId, code), {
+      maxRetries: 3,
+      verbose,
+    });
+  });
+
+  if (!saveResult) {
+    return;
+  }
+
+  console.log(getSafeText(`🎉 code deployed with codeId: ${saveResult.data.result.codeId}`));
 }

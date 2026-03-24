@@ -5,7 +5,13 @@ export interface CommonOptions {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+  profile?: string; // configuration profile name
   verbose: boolean;
+  spinner?: boolean; // allow disabling spinner
+  json?: boolean; // output in JSON format
+  yaml?: boolean; // output in YAML format
+  output?: string; // output file path for JSON/YAML
+  yes?: boolean; // skip confirmation prompts for destructive operations
 }
 
 export interface Credentials {

@@ -1,0 +1,83 @@
+name: Build and Publish Snap
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snap-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle project
+        run: npm run bundle
+
+      - name: Build Linux binary for snap
+        run: npx pkg dist-bundle/index.cjs --targets node24-linux-x64 --out-path dist --no-bytecode --public
+
+      - name: Normalize binary name
+        run: |
+          if [ -f "dist/investec-ipb-linux-x64" ]; then
+            mv dist/investec-ipb-linux-x64 dist/ipb-linux-x64
+          elif [ -f "dist/index" ]; then
+            mv dist/index dist/ipb-linux-x64
+          fi
+          chmod +x dist/ipb-linux-x64
+
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Build snap
+        run: ./scripts/create-snap.sh "${GITHUB_REF#refs/tags/v}"
+
+      - name: Locate snap artifact
+        id: snap_file
+        run: |
+          SNAP_FILE=$(ls -1t ./*.snap | head -n 1)
+          if [ -z "$SNAP_FILE" ]; then
+            echo "No snap artifact found"
+            exit 1
+          fi
+          echo "file=$SNAP_FILE" >> "$GITHUB_OUTPUT"
+          echo "Snap file: $SNAP_FILE"
+
+      - name: Upload snap artifact to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.snap_file.outputs.file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish snap to Snap Store (optional)
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            echo "SNAPCRAFT_STORE_CREDENTIALS not configured, skipping Snap Store upload."
+            exit 0
+          fi
+          mkdir -p "$HOME/.snapcraft"
+          printf "%s" "$SNAPCRAFT_STORE_CREDENTIALS" | base64 -d > "$HOME/.snapcraft/snapcraft.cfg"
+          snapcraft upload --release=stable "${{ steps.snap_file.outputs.file }}"

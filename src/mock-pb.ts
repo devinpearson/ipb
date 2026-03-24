@@ -1,15 +1,23 @@
 import type {
-  AuthResponse,
+  AccountBalanceResponse,
   AccountResponse,
-  AccountTransactionResponse,
-  BeneficiaryResponse,
-  TransferResponse,
   AccountTransaction,
+  AccountTransactionResponse,
+  AuthResponse,
   Beneficiary,
-  Transfer,
-} from "investec-pb-api";
+  BeneficiaryResponse,
+  TransferMultiple,
+  TransferResponse,
+} from 'investec-pb-api';
 
 // Inline types copied from investec-pb-api (not exported)
+// PayMultiple is defined in investec-pb-api but not exported
+export interface PayMultiple {
+  beneficiaryId: string;
+  amount: string;
+  myReference: string;
+  theirReference: string;
+}
 
 export interface IPbApi {
   host: string;
@@ -21,17 +29,20 @@ export interface IPbApi {
 
   getToken(): Promise<string>;
   getAccessToken(): Promise<AuthResponse>;
-  getAccountBalances(accountId: string): Promise<AccountResponse>;
+  getAccounts(): Promise<AccountResponse>;
+  getAccountBalances(accountId: string): Promise<AccountBalanceResponse>;
   getAccountTransactions(
     accountId: string,
+    fromDate?: string | null,
+    toDate?: string | null,
+    transactionType?: string | null
   ): Promise<AccountTransactionResponse>;
   getBeneficiaries(): Promise<BeneficiaryResponse>;
-  transfer(
+  transferMultiple(
     accountId: string,
-    beneficiaryAccountId: string,
-    amount: number,
-    reference: string,
+    transfers: TransferMultiple[] | TransferMultiple
   ): Promise<TransferResponse>;
+  payMultiple(accountId: string, payments: PayMultiple[] | PayMultiple): Promise<TransferResponse>;
 }
 
 export class PbApi implements IPbApi {
@@ -41,31 +52,26 @@ export class PbApi implements IPbApi {
   apiKey: string;
   token: string;
   expiresIn: Date;
-  constructor(
-    clientId: string,
-    clientSecret: string,
-    apiKey: string,
-    host?: string,
-  ) {
+  constructor(clientId: string, clientSecret: string, apiKey: string, host?: string) {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.apiKey = apiKey;
-    this.host = host || "https://openapi.investec.com";
-    this.token = "";
+    this.host = host || 'https://openapi.investec.com';
+    this.token = '';
     this.expiresIn = new Date();
   }
   async getToken(): Promise<string> {
-    return Promise.resolve("MOCK_PB_TOKEN");
+    return Promise.resolve('MOCK_PB_TOKEN');
   }
   async getAccessToken(): Promise<AuthResponse> {
     return Promise.resolve({
-      access_token: "MOCK_PB_ACCESS_TOKEN_FOR_TESTING",
-      token_type: "Bearer",
+      access_token: 'MOCK_PB_ACCESS_TOKEN_FOR_TESTING',
+      token_type: 'Bearer',
       expires_in: 1799,
-      scope: "accounts balances transactions beneficiaries transfer pay",
+      scope: 'accounts balances transactions beneficiaries transfer pay',
     });
   }
-  async getAccountBalances(accountId: string): Promise<any> {
+  async getAccountBalances(accountId: string): Promise<AccountBalanceResponse> {
     // Return a single AccountBalance object as expected by the CLI
     return Promise.resolve({
       data: {
@@ -75,20 +81,20 @@ export class PbApi implements IPbApi {
         budgetBalance: 800.0,
         straightBalance: 700.0,
         cashBalance: 600.0,
-        currency: "ZAR",
+        currency: 'ZAR',
       },
-    }) as unknown as Promise<any>;
+    }) as unknown as Promise<AccountBalanceResponse>;
   }
   async getAccounts(): Promise<AccountResponse> {
     const account = {
-      accountId: "mock-account-id",
-      accountNumber: "123456",
-      accountName: "Mock Account",
-      referenceName: "Main",
-      productName: "Cheque",
+      accountId: 'mock-account-id',
+      accountNumber: '123456',
+      accountName: 'Mock Account',
+      referenceName: 'Main',
+      productName: 'Cheque',
       kycCompliant: true,
-      profileId: "profile1",
-      profileName: "Personal",
+      profileId: 'profile1',
+      profileName: 'Personal',
     };
     return Promise.resolve({
       data: {
@@ -98,13 +104,16 @@ export class PbApi implements IPbApi {
   }
   async getAccountTransactions(
     accountId: string,
+    _fromDate?: string | null,
+    _toDate?: string | null,
+    _transactionType?: string | null
   ): Promise<AccountTransactionResponse> {
     const transaction: AccountTransaction = {
       accountId,
-      type: "credit",
-      transactionType: "deposit",
-      status: "posted",
-      description: "Test Transaction",
+      type: 'credit',
+      transactionType: 'deposit',
+      status: 'posted',
+      description: 'Test Transaction',
       cardNumber: null,
       postedOrder: 1,
       postingDate: new Date().toISOString(),
@@ -113,7 +122,7 @@ export class PbApi implements IPbApi {
       transactionDate: new Date().toISOString(),
       amount: 100.0,
       runningBalance: 1000.0,
-      uuid: "t1",
+      uuid: 't1',
     };
     return Promise.resolve({
       data: {
@@ -123,60 +132,41 @@ export class PbApi implements IPbApi {
   }
   async getBeneficiaries(): Promise<BeneficiaryResponse> {
     const beneficiary: Beneficiary = {
-      beneficiaryId: "b1",
-      accountNumber: "111111",
-      code: "INV",
-      bank: "Investec",
-      beneficiaryName: "John Doe",
-      lastPaymentAmount: "100.00",
+      beneficiaryId: 'b1',
+      accountNumber: '111111',
+      code: 'INV',
+      bank: 'Investec',
+      beneficiaryName: 'John Doe',
+      lastPaymentAmount: '100.00',
       lastPaymentDate: new Date().toISOString(),
-      cellNo: "0820000000",
-      emailAddress: "john@example.com",
-      name: "John Doe",
-      referenceAccountNumber: "123456",
-      referenceName: "Main",
-      categoryId: "cat1",
-      profileId: "profile1",
+      cellNo: '0820000000',
+      emailAddress: 'john@example.com',
+      name: 'John Doe',
+      referenceAccountNumber: '123456',
+      referenceName: 'Main',
+      categoryId: 'cat1',
+      profileId: 'profile1',
       fasterPaymentAllowed: true,
     };
     return Promise.resolve({
       data: [beneficiary],
-      links: { self: "mock" },
+      links: { self: 'mock' },
       meta: { totalPages: 1 },
     });
   }
-  async transfer(
-    accountId: string,
-    beneficiaryAccountId: string,
-    amount: number,
-    reference: string,
-  ): Promise<TransferResponse> {
-    const transfer: Transfer = {
-      PaymentReferenceNumber: "PRN123",
-      PaymentDate: new Date().toISOString(),
-      Status: "success",
-      BeneficiaryName: "John Doe",
-      BeneficiaryAccountId: beneficiaryAccountId,
-      AuthorisationRequired: false,
-    };
-    return Promise.resolve({
-      data: {
-        TransferResponses: [transfer],
-      },
-    });
-  }
   async payMultiple(
-    accountId: string,
-    payments: any[] | any,
+    _accountId: string,
+    payments: PayMultiple[] | PayMultiple
   ): Promise<TransferResponse> {
     // Mock payMultiple for CLI compatibility
+    const paymentsArray = Array.isArray(payments) ? payments : [payments];
     return Promise.resolve({
       data: {
-        TransferResponses: payments.map((p: any, i: number) => ({
+        TransferResponses: paymentsArray.map((p: PayMultiple, i: number) => ({
           PaymentReferenceNumber: `PRN${i + 1}`,
           PaymentDate: new Date().toISOString(),
-          Status: "success",
-          BeneficiaryName: "John Doe",
+          Status: 'success',
+          BeneficiaryName: 'John Doe',
           BeneficiaryAccountId: p.beneficiaryId,
           AuthorisationRequired: false,
         })),
@@ -185,20 +175,18 @@ export class PbApi implements IPbApi {
   }
 
   async transferMultiple(
-    accountId: string,
-    transfers: any[] | any,
+    _accountId: string,
+    transfers: Array<{ beneficiaryAccountId: string }> | { beneficiaryAccountId: string }
   ): Promise<TransferResponse> {
     // Mock transferMultiple for CLI compatibility
+    const transfersArray = Array.isArray(transfers) ? transfers : [transfers];
     return Promise.resolve({
       data: {
-        TransferResponses: (Array.isArray(transfers)
-          ? transfers
-          : [transfers]
-        ).map((t: any, i: number) => ({
+        TransferResponses: transfersArray.map((t, i: number) => ({
           PaymentReferenceNumber: `PRN${i + 1}`,
           PaymentDate: new Date().toISOString(),
-          Status: "success",
-          BeneficiaryName: "John Doe",
+          Status: 'success',
+          BeneficiaryName: 'John Doe',
           BeneficiaryAccountId: t.beneficiaryAccountId,
           AuthorisationRequired: false,
         })),

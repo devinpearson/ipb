@@ -1,26 +1,54 @@
-import { credentials, initializeApi, printTitleBox } from "../index.js";
-import { handleCliError, printTable } from "../utils.js";
-import type { CommonOptions } from "./types.js";
-import ora from "ora";
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  initializeApi,
+  resolveSpinnerState,
+  runListCommand,
+  withRetry,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-interface Options extends CommonOptions {}
-export async function countriesCommand(options: Options) {
-  try {
+/**
+ * Fetches and displays a list of supported countries.
+ * @param options - CLI options including API credentials
+ * @throws {Error} When API credentials are invalid or API call fails
+ */
+export async function countriesCommand(options: CommonOptions) {
+  const { isStdoutPiped } = await import('../utils.js');
+  const isPiped = isStdoutPiped();
+
+  if (!isPiped) {
     printTitleBox();
-    const spinner = ora("💳 fetching countries...").start();
+  }
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '💳 fetching countries...');
+  let countries:
+    | Array<{
+        Code: string;
+        Name: string;
+      }>
+    | undefined;
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
-    const result = await api.getCountries();
-    spinner.stop();
-    const countries = result.data.result;
-    if (!countries) {
-      console.log("No countries found");
-      return;
-    }
+    const result = await withRetry(() => api.getCountries(), {
+      maxRetries: 3,
+      verbose,
+    });
+    countries = result.data.result;
+  });
 
-    const simpleCountries = countries.map(({ Code, Name }) => ({ Code, Name }));
-    printTable(simpleCountries);
-  } catch (error: any) {
-    handleCliError(error, options, "fetch countries");
-  }
+  await runListCommand({
+    isPiped,
+    items: countries,
+    outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
+    emptyMessage: 'No countries found',
+    countMessage: (count) => `${count} country(ies) found.`,
+    mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
+  });
 }

@@ -1,0 +1,12 @@
+{
+  "scripts": ["bin/index.js"],
+  "assets": ["bin/templates/**/*", "bin/assets/**/*", "bin/instructions.txt"],
+  "targets": [
+    "node24-macos-x64",
+    "node24-macos-arm64",
+    "node24-linux-x64",
+    "node24-linux-arm64",
+    "node24-win-x64"
+  ],
+  "outputPath": "dist"
+}

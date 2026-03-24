@@ -1,15 +1,25 @@
-import fs from "fs";
-import chalk from "chalk";
-import OpenAI from "openai";
-import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
-import { printTitleBox, credentials } from "../index.js";
-import https from "https";
-import { handleCliError } from "../utils.js";
-import { input } from "@inquirer/prompts";
+import { promises as fsPromises } from 'node:fs';
+import https from 'node:https';
+import { input } from '@inquirer/prompts';
+import chalk from 'chalk';
+import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
+import { z } from 'zod';
+import { CliError, ERROR_CODES } from '../errors.js';
+import { credentials, printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  formatFileSize,
+  getFileSize,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  validateFilePathForWrite,
+  withSpinner,
+} from '../utils.js';
 
 const agent = new https.Agent({
-  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
 });
 
 const instructions = `- You are a coding assistant that creates code snippets for users.
@@ -44,160 +54,171 @@ async function afterDecline(transaction) {
 - Output must be Javascript format only`;
 // Define the desired output schema using Zod
 const outputSchema = z.object({
-  code: z.string().describe("The code to be generated"),
-  env_variables: z
-    .array(z.string())
-    .nullable()
-    .describe("Environment variables"),
-  description: z.string().describe("Description of the code and how to use it"),
+  code: z.string().describe('The code to be generated'),
+  env_variables: z.array(z.string()).nullable().describe('Environment variables'),
+  description: z.string().describe('Description of the code and how to use it'),
   example_transaction: z
     .object({
-      accountNumber: z.string().describe("Account number"),
-      dateTime: z.string().describe("Date and time of the transaction"),
-      centsAmount: z.number().describe("Amount in cents"),
-      currencyCode: z.string().describe("Currency code"),
-      reference: z.string().describe("Reference string"),
+      accountNumber: z.string().describe('Account number'),
+      dateTime: z.string().describe('Date and time of the transaction'),
+      centsAmount: z.number().describe('Amount in cents'),
+      currencyCode: z.string().describe('Currency code'),
+      reference: z.string().describe('Reference string'),
       merchant: z
         .object({
-          name: z.string().describe("Merchant name"),
-          city: z.string().describe("Merchant city"),
-          country: z.string().describe("Merchant country"),
+          name: z.string().describe('Merchant name'),
+          city: z.string().describe('Merchant city'),
+          country: z.string().describe('Merchant country'),
           category: z
             .object({
-              key: z.string().describe("Category key"),
-              code: z.string().describe("Category code"),
-              name: z.string().describe("Category name"),
+              key: z.string().describe('Category key'),
+              code: z.string().describe('Category code'),
+              name: z.string().describe('Category name'),
             })
-            .describe("Category object"),
+            .describe('Category object'),
         })
-        .describe("Merchant object"),
+        .describe('Merchant object'),
     })
-    .describe("Example transaction"),
-  // instructions: z.array(z.string()).describe("Step-by-step instructions"),
-  // prepTime: z.string().optional().describe("Preparation time (optional)"),
+    .describe('Example transaction'),
 });
 
 type Output = z.infer<typeof outputSchema>;
 
 interface Options {
-  //   host: string; // will change this to openai compatible host
-  credentialsFile: string; // will allow the openai api key to be set in the file as well as its host
+  credentialsFile: string;
   filename: string;
   verbose: boolean;
+  spinner?: boolean;
 }
-// node . 'send a notification after transaction via twilio sms'
-// node . 'limit transactions to only Woolworths, Checkers and Spar'
-// node . 'allow transactions that USD or ZAR'
+/**
+ * Generates card code using an LLM based on a prompt.
+ * @param prompt - The prompt describing what the code should do
+ * @param options - CLI options including filename and verbose flag
+ * @throws {Error} When code generation fails or file operations fail
+ */
 export async function aiCommand(prompt: string, options: Options) {
-  try {
-    const envFilename = ".env.ai";
+  const envFilename = '.env.ai';
+  const isPiped = isStdoutPiped();
+  if (!isPiped) {
     printTitleBox();
-    // Prompt for prompt if not provided
-    if (!prompt) {
-      prompt = await input({ message: "Enter your AI code prompt:" });
-    }
-    // if (!credentials.openaiKey) {
-    //   throw new Error("OPENAI_API_KEY is not set");
-    // }
-    // if (!fs.existsSync("./instructions.txt")) {
-    //   throw new Error("instructions.txt does not exist");
-    // }
+  }
 
-    // tell the user we are loading the instructions
-    console.log(chalk.blueBright("Loading instructions from instructions.txt"));
-    // read the instructions from the file
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
 
-    //const instructions = fs.readFileSync("./instructions.txt").toString();
-    console.log(
-      chalk.blueBright("Calling OpenAI with the prompt and instructions"),
+  // Prompt for prompt if not provided
+  if (!prompt) {
+    prompt = await input({ message: 'Enter your AI code prompt:' });
+  }
+
+  console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
+  console.log(chalk.blueBright('Prompt:'));
+  console.log(prompt);
+
+  const genSpinner = createSpinner(
+    spinnerEnabled,
+    getSafeText('🤖 generating code with OpenAI...')
+  );
+  const response = await withSpinner(genSpinner, spinnerEnabled, async () =>
+    generateCode(prompt, instructions)
+  );
+  if (options.verbose) {
+    console.log('');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(response);
+  } else {
+    console.log('');
+    console.log(chalk.blueBright('Response from OpenAI:'));
+    console.log(chalk.blueBright('Description:'));
+    console.log(response?.description);
+  }
+  console.log('');
+
+  // Validate OpenAI response before using it
+  if (!response || typeof response.code !== 'string' || response.code.trim() === '') {
+    console.error(chalk.red('Error: Invalid or missing code in OpenAI response'));
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      'OpenAI response is missing or invalid. The response must contain a non-empty code string.'
     );
-    console.log(chalk.blueBright("Prompt:"));
-    console.log(prompt);
+  }
 
-    const response = await generateCode(prompt, instructions);
-    // mention calling open ai with the prompt and instructions
-    if (options.verbose) {
-      console.log("");
-      console.log(chalk.blueBright("Response from OpenAI:"));
-      console.log(response);
-    } else {
-      console.log("");
-      console.log(chalk.blueBright("Response from OpenAI:"));
-      console.log(chalk.blueBright("Description:"));
-      console.log(response?.description);
-    }
-    console.log("");
-    var output = response?.code as string;
-    // remove ```javascript // seems to only be needed if its not structured output
-    // output = output.replace(/```javascript/g, "");
-    // remove ```
-    // output = output.replace(/```/g, "");
-    console.log(`💾 saving to file: ${chalk.greenBright(options.filename)}`);
-    await fs.writeFileSync(options.filename, output);
-    console.log("🎉 generated code saved to file");
-    // write the env variables to a file
-    if (response?.env_variables) {
-      console.log("");
-      console.log(
-        `💾 saving env variables to file: ${chalk.greenBright(envFilename)}`,
-      );
-      const envFile = fs.createWriteStream(envFilename);
-      response.env_variables.forEach((envVar) => {
-        envFile.write(`${envVar}=${process.env[envVar]}\n`);
-      });
-      envFile.end();
-      console.log("🎉 env variables saved to file");
-    }
-    // show example call to ipb rub with example transaction
-    if (response?.example_transaction) {
-      console.log("");
-      console.log(chalk.blueBright("To test locally run:"));
-      console.log(
-        `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`,
-      );
-    }
-  } catch (error: any) {
-    handleCliError(error, options, "AI generation");
+  const output = response.code;
+  const normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
+
+  const outputSize = Buffer.byteLength(output, 'utf8');
+  const spinner = createSpinner(
+    spinnerEnabled,
+    getSafeText(`💾 saving to file: ${normalizedFilename} (${formatFileSize(outputSize)})...`)
+  );
+  await withSpinner(spinner, spinnerEnabled, async () => {
+    await fsPromises.writeFile(normalizedFilename, output, 'utf8');
+  });
+
+  const finalSize = await getFileSize(normalizedFilename);
+  console.log(getSafeText(`🎉 generated code saved to file (${formatFileSize(finalSize)})`));
+
+  if (response?.env_variables) {
+    console.log('');
+    const normalizedEnvFilename = await validateFilePathForWrite(envFilename);
+    const envContent = response.env_variables
+      .map((envVar) => `${envVar}=${process.env[envVar] ?? ''}\n`)
+      .join('');
+    const envSize = Buffer.byteLength(envContent, 'utf8');
+    const envSpinner = createSpinner(
+      spinnerEnabled,
+      getSafeText(
+        `💾 saving env variables to file: ${normalizedEnvFilename} (${formatFileSize(envSize)})...`
+      )
+    );
+    await withSpinner(envSpinner, spinnerEnabled, async () => {
+      await fsPromises.writeFile(normalizedEnvFilename, envContent, 'utf8');
+    });
+
+    const finalEnvSize = await getFileSize(normalizedEnvFilename);
+    console.log(getSafeText(`🎉 env variables saved to file (${formatFileSize(finalEnvSize)})`));
+  }
+  if (response?.example_transaction) {
+    console.log('');
+    console.log(chalk.blueBright('To test locally run:'));
+    console.log(
+      `ipb run -f ai-generated.js --env ai --currency ${response.example_transaction.currencyCode} --amount ${response.example_transaction.centsAmount} --mcc ${response.example_transaction.merchant.category.code} --merchant '${response.example_transaction.merchant.name}' --city '${response.example_transaction.merchant.city}' --country '${response.example_transaction.merchant.country}'`
+    );
   }
 }
 
-async function generateCode(
-  prompt: string,
-  instructions: string,
-): Promise<Output | null> {
+async function generateCode(prompt: string, instructions: string): Promise<Output | null> {
   try {
     let openai = new OpenAI({
       apiKey: credentials.openaiKey,
     });
-    if (credentials.openaiKey === "" || credentials.openaiKey === undefined) {
+    if (credentials.openaiKey === '' || credentials.openaiKey === undefined) {
       openai = new OpenAI({
         httpAgent: agent,
         apiKey: credentials.sandboxKey,
-        baseURL: "https://ipb.sandboxpay.co.za/proxy/v1",
+        baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
       });
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: 'gpt-4.1',
       temperature: 0.2,
       messages: [
-        { role: "system", content: instructions },
-        { role: "user", content: prompt },
+        { role: 'system', content: instructions },
+        { role: 'user', content: prompt },
       ],
-      response_format: zodResponseFormat(outputSchema, "output_schema"),
+      response_format: zodResponseFormat(outputSchema, 'output_schema'),
     });
-    if (
-      response.choices &&
-      response.choices[0] &&
-      response.choices[0].message &&
-      response.choices[0].message.content
-    ) {
+    if (response.choices?.[0]?.message?.content) {
       const content = response.choices[0].message.content;
       return outputSchema.parse(JSON.parse(content));
     }
-    throw new Error("Invalid response format from OpenAI");
+    throw new Error('Invalid response format from OpenAI');
   } catch (error) {
-    console.error("Error generating code:", error);
+    console.error('Error generating code:', error);
     return null;
   }
 }

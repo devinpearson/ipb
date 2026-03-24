@@ -1,59 +1,79 @@
-import { printTitleBox } from "../index.js";
-import fetch from "node-fetch";
-import https from "https";
-import { handleCliError } from "../utils.js";
-import { input, password } from "@inquirer/prompts";
-import type { CommonOptions } from "./types.js";
+import https from 'node:https';
+import { input, password } from '@inquirer/prompts';
+import fetch from 'node-fetch';
+import { CliError, ERROR_CODES } from '../errors.js';
+import { printTitleBox } from '../index.js';
+import {
+  createSpinner,
+  getSafeText,
+  isStdoutPiped,
+  resolveSpinnerState,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
 const agent = new https.Agent({
-  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== "false",
+  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
 });
 interface Options extends CommonOptions {
   email: string;
   password: string;
 }
 
+/**
+ * Registers a new account with the server for LLM generation.
+ * @param options - CLI options including email and password
+ * @throws {CliError} When email/password are missing or registration fails
+ */
 export async function registerCommand(options: Options) {
-  try {
-    printTitleBox();
-    // Prompt for email and password if not provided
-    if (!options.email) {
-      options.email = await input({
-        message: "Enter your email:",
-        validate: (input: string) =>
-          input.includes("@") || "Please enter a valid email.",
-      });
-    }
-    if (!options.password) {
-      options.password = await password({
-        message: "Enter your password:",
-        mask: "*",
-        validate: (input: string) =>
-          input.length >= 6 || "Password must be at least 6 characters.",
-      });
-    }
-    if (!options.email || !options.password) {
-      throw new Error("Email and password are required");
-    }
-    console.log("💳 registering account");
-    const result = await fetch("https://ipb.sandboxpay.co.za/auth/register", {
+  printTitleBox();
+  // Prompt for email and password if not provided
+  if (!options.email) {
+    options.email = await input({
+      message: 'Enter your email:',
+      validate: (input: string) => input.includes('@') || 'Please enter a valid email.',
+    });
+  }
+  if (!options.password) {
+    options.password = await password({
+      message: 'Enter your password:',
+      mask: '*',
+      validate: (input: string) => input.length >= 6 || 'Password must be at least 6 characters.',
+    });
+  }
+  if (!options.email || !options.password) {
+    throw new CliError(ERROR_CODES.MISSING_EMAIL_OR_PASSWORD, 'Email and password are required');
+  }
+
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, getSafeText('💳 registering account...'));
+
+  const result = await withSpinner(spinner, spinnerEnabled, async () =>
+    fetch('https://ipb.sandboxpay.co.za/auth/register', {
       agent,
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         email: options.email,
         password: options.password,
       }),
-    });
-    if (!result.ok) {
-      const body = await result.text();
-      throw new Error(`Error: ${result.status} ${body}`);
-    }
+    })
+  );
 
-    console.log("Account registered successfully");
-  } catch (error: any) {
-    handleCliError(error, { verbose: options.verbose }, "register");
+  if (!result.ok) {
+    const body = await result.text();
+    throw new CliError(
+      ERROR_CODES.INVALID_CREDENTIALS,
+      `Registration failed: ${result.status} ${body}`
+    );
   }
+
+  console.log('Account registered successfully');
 }

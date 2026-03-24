@@ -3,9 +3,9 @@
 //5541 : "Service Stations"
 //5172 : "Petroleum and Petroleum Products"
 //5542 : "Automated Fuel Dispensers"
-const fuelCodes = ["5499", "5541", "5172", "5542"];
+const fuelCodes = ['5499', '5541', '5172', '5542'];
 
-const beforeTransaction = async (authorization) => {
+const _beforeTransaction = async (authorization) => {
   console.log(authorization);
   if (fuelCodes.includes(authorization.merchant.category.code)) {
     return true;
@@ -14,11 +14,11 @@ const beforeTransaction = async (authorization) => {
 };
 
 // This function runs after a transaction.
-const afterTransaction = async (transaction) => {
+const _afterTransaction = async (transaction) => {
   console.log(transaction);
 };
 
 // This function runs after a transaction is declined.
-const afterDecline = async (transaction) => {
+const _afterDecline = async (transaction) => {
   console.log(transaction);
 };
