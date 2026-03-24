@@ -4,7 +4,7 @@ import {
   formatOutput,
   initializeApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -27,16 +27,13 @@ export async function countriesCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching countries...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let countries:
     | Array<{
         Code: string;
         Name: string;
       }>
     | undefined;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const result = await withRetry(() => api.getCountries(), {
@@ -44,9 +41,7 @@ export async function countriesCommand(options: CommonOptions) {
       verbose,
     });
     countries = result.data.result;
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!countries || countries.length === 0) {
     if (!isPiped) {

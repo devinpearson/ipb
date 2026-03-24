@@ -4,7 +4,7 @@ import {
   formatOutput,
   initializeApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -27,16 +27,13 @@ export async function merchantsCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '🏪 fetching merchants...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let merchants:
     | Array<{
         Code: string;
         Name: string;
       }>
     | undefined;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const result = await withRetry(() => api.getMerchants(), {
@@ -44,9 +41,7 @@ export async function merchantsCommand(options: CommonOptions) {
       verbose,
     });
     merchants = result.data.result;
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!merchants || merchants.length === 0) {
     if (!isPiped) {

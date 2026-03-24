@@ -4,7 +4,7 @@ import {
   formatOutput,
   initializePbApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -36,11 +36,8 @@ export async function beneficiariesCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching beneficiaries...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let beneficiaries: BeneficiarySummary[] | undefined;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializePbApi(credentials, options);
 
     const result = await withRetry(() => api.getBeneficiaries(), {
@@ -48,9 +45,7 @@ export async function beneficiariesCommand(options: CommonOptions) {
       verbose,
     });
     beneficiaries = result.data as BeneficiarySummary[];
-  } finally {
-    stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!beneficiaries || beneficiaries.length === 0) {
     if (!isPiped) {

@@ -4,7 +4,7 @@ import {
   formatOutput,
   initializeApi,
   resolveSpinnerState,
-  stopSpinner,
+  withSpinner,
   withRetry,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
@@ -27,16 +27,13 @@ export async function currenciesCommand(options: CommonOptions) {
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 fetching currencies...');
-  if (spinnerEnabled) {
-    spinner.start();
-  }
   let currencies:
     | Array<{
         Code: string;
         Name: string;
       }>
     | undefined;
-  try {
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
     const result = await withRetry(() => api.getCurrencies(), {
@@ -44,9 +41,7 @@ export async function currenciesCommand(options: CommonOptions) {
       verbose,
     });
     currencies = result.data.result;
-  } finally {
-  stopSpinner(spinner, spinnerEnabled);
-  }
+  });
 
   if (!currencies || currencies.length === 0) {
     if (!isPiped) {
