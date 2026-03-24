@@ -48,6 +48,7 @@ import {
   readCommandHistory,
   type CommandHistoryEntry,
 } from './utils/history.js';
+import { checkForUpdates, checkLatestVersion, showUpdateNotification } from './utils/update.js';
 
 /**
  * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
@@ -657,125 +658,7 @@ export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
   }) as T;
 }
 
-/**
- * Gets the path to the cache directory for storing update check timestamps.
- * @returns Path to the cache file
- */
-function getUpdateCheckCachePath(): string {
-  return path.join(homedir(), '.ipb', 'update-check.json');
-}
-
-/**
- * Gets the timestamp of the last update check.
- * @returns Timestamp in milliseconds, or null if never checked
- */
-function getLastUpdateCheck(): number | null {
-  try {
-    const cachePath = getUpdateCheckCachePath();
-    if (fs.existsSync(cachePath)) {
-      const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-      return data.lastCheck || null;
-    }
-  } catch {
-    // Ignore errors reading cache
-  }
-  return null;
-}
-
-/**
- * Updates the timestamp of the last update check.
- * Uses atomic writes to prevent corruption.
- */
-async function setLastUpdateCheck(): Promise<void> {
-  try {
-    const cachePath = getUpdateCheckCachePath();
-    const dir = path.dirname(cachePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    // Use atomic write for cache file
-    const jsonData = JSON.stringify({ lastCheck: Date.now() }, null, 2);
-    await writeFileAtomic(cachePath, jsonData);
-  } catch {
-    // Ignore errors writing cache
-  }
-}
-
-/**
- * Checks the latest version of the package from npm registry.
- * @returns The latest version string, or null if the check fails
- */
-export async function checkLatestVersion() {
-  try {
-    const response = await fetch('https://registry.npmjs.org/investec-ipb', {
-      method: 'GET',
-      headers: {
-        Accept: 'application/vnd.npm.install-v1+json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch version: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as { 'dist-tags': { latest: string } };
-    const latestVersion = data['dist-tags'].latest;
-
-    return latestVersion;
-  } catch {
-    // Silent failure - don't warn users about version check failures
-    return null;
-  }
-}
-
-/**
- * Checks for updates with rate limiting (caches for 24 hours).
- * @param currentVersion - Current version of the CLI
- * @param force - Force check even if checked recently
- * @returns Promise that resolves to the latest version if available, or null
- */
-export async function checkForUpdates(
-  currentVersion: string,
-  force = false
-): Promise<string | null> {
-  const lastCheck = getLastUpdateCheck();
-  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-  // Skip if checked recently (unless forced)
-  if (!force && lastCheck && Date.now() - lastCheck < CACHE_DURATION) {
-    return null;
-  }
-
-  try {
-    const latest = await checkLatestVersion();
-
-    // Update cache timestamp (even if check failed) - non-blocking
-    setLastUpdateCheck().catch(() => {
-      // Ignore errors
-    });
-
-    if (latest && latest !== currentVersion) {
-      return latest;
-    }
-  } catch {
-    // Silent failure
-  }
-
-  return null;
-}
-
-/**
- * Displays an update notification if a newer version is available.
- * @param currentVersion - Current version of the CLI
- * @param latestVersion - Latest available version
- */
-export function showUpdateNotification(currentVersion: string, latestVersion: string): void {
-  const warningText = getSafeText(
-    `⚠️  New version available: ${latestVersion} (current: ${currentVersion})`
-  );
-  console.log(chalk.yellow(`\n${warningText}`));
-  console.log(chalk.yellow(`   Run: npm install -g investec-ipb@latest\n`));
-}
+export { checkForUpdates, checkLatestVersion, showUpdateNotification };
 
 export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
 export type { OutputOptions, TableData, TableRow };
