@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import {
   access,
   chmod,
@@ -14,6 +13,7 @@ import {
 } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Credentials } from '../cmds/types.js';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { normalizeFilePath } from './file-validation.js';

@@ -1,9 +1,9 @@
 /// <reference types="vitest" />
 
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { promises as fsPromises } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES } from '../src/errors.ts';
 
 vi.mock('../src/index.ts', () => ({

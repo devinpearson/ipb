@@ -1,10 +1,7 @@
 /// <reference types="vitest" />
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-  shouldDisplayUpdateNotification,
-  showUpdateNotification,
-} from '../../src/utils/update.js';
+import { shouldDisplayUpdateNotification, showUpdateNotification } from '../../src/utils/update.js';
 
 describe('showUpdateNotification', () => {
   it('writes update notice to stderr instead of stdout', () => {

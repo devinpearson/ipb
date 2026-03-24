@@ -10,7 +10,10 @@ import { loadCredentialsFile } from '../../src/utils/credentials-store.js';
 const tempDirs: string[] = [];
 
 async function createTempDir(prefix: string): Promise<string> {
-  const dir = path.join(os.tmpdir(), `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  const dir = path.join(
+    os.tmpdir(),
+    `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  );
   await mkdir(dir, { recursive: true });
   tempDirs.push(dir);
   return dir;

@@ -79,9 +79,7 @@ describe('payCommand', () => {
         theirReference: 'Utilities',
       },
     ]);
-    expect(logSpy).toHaveBeenCalledWith(
-      'Transfer to benef-001, reference prn-001 was successful.'
-    );
+    expect(logSpy).toHaveBeenCalledWith('Transfer to benef-001, reference prn-001 was successful.');
     logSpy.mockRestore();
   });
 

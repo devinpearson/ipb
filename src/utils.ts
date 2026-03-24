@@ -277,7 +277,12 @@ function _determineExitCode(
 
 export { handleCliError, withCommandContext };
 
-export { checkForUpdates, checkLatestVersion, shouldDisplayUpdateNotification, showUpdateNotification };
+export {
+  checkForUpdates,
+  checkLatestVersion,
+  shouldDisplayUpdateNotification,
+  showUpdateNotification,
+};
 
 export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
 export type { OutputOptions, TableData, TableRow };
