@@ -2,6 +2,8 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializePbApi,
+  isStdoutPiped,
+  readStdin,
   resolveSpinnerState,
   runListCommand,
   validateAccountId,
@@ -27,7 +29,6 @@ type Transaction = {
  * @param options - CLI options.
  */
 export async function transactionsCommand(accountId: string, options: CommonOptions) {
-  const { isStdoutPiped, readStdin } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   // If accountId is not provided and stdin has data, try to read from stdin

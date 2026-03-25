@@ -42,6 +42,8 @@ export const ERROR_CODES = {
   PERMISSION_DENIED: 'E4017',
   /** Command exists but is intentionally disabled in this build. */
   COMMAND_DISABLED: 'E4018',
+  /** Client or environment does not support the requested operation (e.g. missing API method). */
+  UNSUPPORTED_OPERATION: 'E4019',
   // Add more as needed
 };
 

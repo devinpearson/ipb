@@ -3,6 +3,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   validateFilePath,
@@ -26,7 +27,6 @@ export async function uploadEnvCommand(options: Options) {
 
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,

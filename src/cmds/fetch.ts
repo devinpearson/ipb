@@ -3,6 +3,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   runWriteCommand,
@@ -24,7 +25,6 @@ interface Options extends CommonOptions {
 export async function fetchCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,
@@ -41,7 +41,7 @@ export async function fetchCommand(options: Options) {
     // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
     if (typeof (api as any).getSavedCode !== 'function') {
       throw new CliError(
-        ERROR_CODES.DEPLOY_FAILED,
+        ERROR_CODES.UNSUPPORTED_OPERATION,
         'API client does not support fetching saved code (getSavedCode missing)'
       );
     }
@@ -55,7 +55,7 @@ export async function fetchCommand(options: Options) {
       typeof result.data.result.code !== 'string'
     ) {
       throw new CliError(
-        ERROR_CODES.DEPLOY_FAILED,
+        ERROR_CODES.INVESTEC_API_ERROR,
         'Failed to fetch code: Unexpected API response'
       );
     }
@@ -63,7 +63,7 @@ export async function fetchCommand(options: Options) {
     const fetchedCode = result.data.result.code;
     if (typeof fetchedCode !== 'string') {
       throw new CliError(
-        ERROR_CODES.DEPLOY_FAILED,
+        ERROR_CODES.INVESTEC_API_ERROR,
         'Failed to fetch code: Unexpected API response'
       );
     }

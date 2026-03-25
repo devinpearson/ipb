@@ -53,6 +53,7 @@ import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 import {
   checkForUpdates,
   configureChalk,
+  determineExitCode,
   getVerboseMode,
   handleCliError,
   isUpdateCheckDisabled,
@@ -129,7 +130,10 @@ if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
  */
 function generateCompletionScript(shell: string): string {
   if (shell !== 'bash' && shell !== 'zsh') {
-    throw new Error(`Unsupported shell: ${shell}. Supported shells: bash, zsh`);
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      `Unsupported shell: ${shell}. Supported shells: bash, zsh`
+    );
   }
 
   const commands = [
@@ -1184,10 +1188,10 @@ Examples:
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(chalk.red(`Error generating completion script: ${errorMessage}`));
-        // Use validation error for unsupported shell, general error for other issues
-        const exitCode = errorMessage.includes('Unsupported shell')
-          ? ExitCode.VALIDATION_ERROR
-          : ExitCode.GENERAL_ERROR;
+        const exitCode =
+          error instanceof CliError
+            ? determineExitCode(error, error.code, errorMessage)
+            : ExitCode.GENERAL_ERROR;
         process.exit(exitCode);
       }
     });

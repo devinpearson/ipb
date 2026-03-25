@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Credentials } from '../../src/cmds/types.js';
+import { CliError, ERROR_CODES } from '../../src/errors.js';
 import { loadCredentialsFile } from '../../src/utils/credentials-store.js';
 
 const tempDirs: string[] = [];
@@ -98,5 +99,24 @@ describe('loadCredentialsFile', () => {
     expect(loaded.clientId).toBe('nested-client-id');
     expect(loaded.clientSecret).toBe('nested-secret');
     expect(loaded.apiKey).toBe('nested-api-key');
+  });
+
+  it('throws CliError when credentials file has invalid JSON', async () => {
+    const tempDir = await createTempDir('ipb-creds-bad-json');
+    const credentialsPath = path.join(tempDir, 'bad.json');
+    await writeFile(credentialsPath, '{ not valid json');
+
+    await expect(loadCredentialsFile(getBaseCredentials(), credentialsPath)).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.INVALID_CREDENTIALS
+    );
+  });
+
+  it('throws CliError when credentials file path does not exist', async () => {
+    const tempDir = await createTempDir('ipb-creds-missing');
+    const missingPath = path.join(tempDir, 'nope.json');
+
+    await expect(loadCredentialsFile(getBaseCredentials(), missingPath)).rejects.toMatchObject({
+      code: ERROR_CODES.FILE_NOT_FOUND,
+    });
   });
 });

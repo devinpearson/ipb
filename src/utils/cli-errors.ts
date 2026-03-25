@@ -3,31 +3,44 @@ import { CliError, ERROR_CODES, ExitCode } from '../errors.js';
 import { detectRateLimit, formatRateLimitInfo } from './retry.js';
 import { isDebugEnabled } from './runtime-flags.js';
 
-function determineExitCode(
+/** Stable exit mapping for {@link CliError} codes (avoids matching `E4016` as HTTP 401 in heuristics). */
+const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
+  [ERROR_CODES.MISSING_API_TOKEN]: ExitCode.AUTH_ERROR,
+  [ERROR_CODES.MISSING_CARD_KEY]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.MISSING_ENV_FILE]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.INVALID_CREDENTIALS]: ExitCode.AUTH_ERROR,
+  [ERROR_CODES.DEPLOY_FAILED]: ExitCode.API_ERROR,
+  [ERROR_CODES.TEMPLATE_NOT_FOUND]: ExitCode.FILE_ERROR,
+  [ERROR_CODES.INVALID_PROJECT_NAME]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.PROJECT_EXISTS]: ExitCode.FILE_ERROR,
+  [ERROR_CODES.FILE_NOT_FOUND]: ExitCode.FILE_ERROR,
+  [ERROR_CODES.MISSING_EMAIL_OR_PASSWORD]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.MISSING_ACCOUNT_ID]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.INVALID_INPUT]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.RATE_LIMIT_EXCEEDED]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.MISSING_CODE_ID]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.INVESTEC_API_ERROR]: ExitCode.API_ERROR,
+  [ERROR_CODES.PERMISSION_DENIED]: ExitCode.PERMISSION_ERROR,
+  [ERROR_CODES.COMMAND_DISABLED]: ExitCode.GENERAL_ERROR,
+  [ERROR_CODES.UNSUPPORTED_OPERATION]: ExitCode.GENERAL_ERROR,
+};
+
+export function determineExitCode(
   _error: unknown,
   errorCode: string | undefined,
   _errorMessage: string
 ): ExitCode {
+  if (errorCode && EXIT_CODE_BY_CLI_CODE[errorCode] !== undefined) {
+    return EXIT_CODE_BY_CLI_CODE[errorCode];
+  }
+
   const lowerMessage = _errorMessage.toLowerCase();
 
-  if (
-    errorCode === ERROR_CODES.MISSING_CARD_KEY ||
-    errorCode === ERROR_CODES.MISSING_ENV_FILE ||
-    errorCode === ERROR_CODES.MISSING_ACCOUNT_ID ||
-    errorCode === ERROR_CODES.MISSING_EMAIL_OR_PASSWORD ||
-    errorCode === ERROR_CODES.INVALID_PROJECT_NAME ||
-    errorCode === ERROR_CODES.INVALID_INPUT ||
-    errorCode === ERROR_CODES.RATE_LIMIT_EXCEEDED ||
-    lowerMessage.includes('received undefined') ||
-    lowerMessage.includes('required') ||
-    lowerMessage.includes('invalid')
-  ) {
+  if (lowerMessage.includes('received undefined')) {
     return ExitCode.VALIDATION_ERROR;
   }
 
   if (
-    errorCode === ERROR_CODES.INVALID_CREDENTIALS ||
-    errorCode === ERROR_CODES.MISSING_API_TOKEN ||
     lowerMessage.includes('credentials') ||
     lowerMessage.includes('authentication') ||
     lowerMessage.includes('unauthorized') ||
@@ -38,14 +51,7 @@ function determineExitCode(
     return ExitCode.AUTH_ERROR;
   }
 
-  if (errorCode === ERROR_CODES.PERMISSION_DENIED) {
-    return ExitCode.PERMISSION_ERROR;
-  }
-
   if (
-    errorCode === ERROR_CODES.FILE_NOT_FOUND ||
-    errorCode === ERROR_CODES.TEMPLATE_NOT_FOUND ||
-    errorCode === ERROR_CODES.PROJECT_EXISTS ||
     lowerMessage.includes('file does not exist') ||
     lowerMessage.includes('enoent') ||
     lowerMessage.includes('no such file or directory')
@@ -73,8 +79,6 @@ function determineExitCode(
   }
 
   if (
-    errorCode === ERROR_CODES.DEPLOY_FAILED ||
-    lowerMessage.includes('api') ||
     lowerMessage.includes('500') ||
     lowerMessage.includes('502') ||
     lowerMessage.includes('503') ||

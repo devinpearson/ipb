@@ -3,6 +3,7 @@ import {
   confirmDestructiveOperation,
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   withSpinner,
@@ -33,7 +34,6 @@ export async function disableCommand(options: Options) {
     return;
   }
 
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,

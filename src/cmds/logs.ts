@@ -3,6 +3,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   runWriteCommand,
@@ -27,7 +28,6 @@ export async function logsCommand(options: Options) {
     throw new CliError(ERROR_CODES.FILE_NOT_FOUND, 'filename is required');
   }
   printTitleBox();
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,

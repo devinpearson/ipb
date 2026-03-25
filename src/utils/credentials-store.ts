@@ -26,6 +26,30 @@ const defaultCreds = {
   sandboxKey: '',
 };
 
+/**
+ * Maps credential file read/parse failures to {@link CliError} with stable codes.
+ */
+function throwCredentialPathError(operation: string, displayPath: string, error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  const errno =
+    error && typeof error === 'object' && 'code' in error
+      ? (error as NodeJS.ErrnoException).code
+      : undefined;
+  if (errno === 'ENOENT') {
+    throw new CliError(ERROR_CODES.FILE_NOT_FOUND, `${operation}: file not found (${displayPath})`);
+  }
+  if (errno === 'EACCES' || errno === 'EPERM') {
+    throw new CliError(ERROR_CODES.PERMISSION_DENIED, `${operation}: ${message}`);
+  }
+  if (error instanceof SyntaxError) {
+    throw new CliError(
+      ERROR_CODES.INVALID_CREDENTIALS,
+      `${operation}: invalid JSON (${displayPath})`
+    );
+  }
+  throw new CliError(ERROR_CODES.INVALID_CREDENTIALS, `${operation}: ${message}`);
+}
+
 export function readCredentialsFileSync(
   credentialLocation: { filename: string; folder: string },
   onError?: (error: Error) => void
@@ -55,8 +79,7 @@ export async function readCredentialsFile(credentialLocation: {
     }
     return defaultCreds;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to read credentials file: ${message}`);
+    throwCredentialPathError('Failed to read credentials file', credentialLocation.filename, error);
   }
 }
 
@@ -70,8 +93,9 @@ export async function ensureCredentialsDirectory(credentialLocation: {
 
 export async function loadCredentialsFile(credentials: Credentials, credentialsFile: string) {
   if (credentialsFile) {
+    let normalizedPath = '';
     try {
-      const normalizedPath = normalizeFilePath(credentialsFile);
+      normalizedPath = normalizeFilePath(credentialsFile);
       const text = await readFile(normalizedPath, 'utf8');
       const parsed = JSON.parse(text) as unknown;
       const credentialKeys: (keyof Credentials)[] = [
@@ -108,8 +132,11 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
         }
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to load credentials file: ${message}`);
+      throwCredentialPathError(
+        'Failed to load credentials file',
+        normalizedPath || credentialsFile,
+        error
+      );
     }
   }
   return credentials;

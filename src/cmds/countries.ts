@@ -2,6 +2,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   resolveSpinnerState,
   runListCommand,
   withRetry,
@@ -15,7 +16,6 @@ import type { CommonOptions } from './types.js';
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function countriesCommand(options: CommonOptions) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {

@@ -81,9 +81,9 @@ Phased plan from the architecture / error-handling review. **Status** is updated
 
 | Phase | Theme | Status |
 |-------|--------|--------|
-| **1** | Break `index` ↔ `cmds` / `utils/api` cycle; single-source exit codes | **In progress** — `src/runtime-credentials.ts` added; cmds + `api.ts` + `function-calls.ts` import it; dead `_determineExitCode` removed from `src/utils.ts`; Vitest mocks target `runtime-credentials.ts`; `index.ts` re-exports for compatibility |
-| **2** | Error model: `fetch.ts` codes, `credentials-store` `CliError`, `determineExitCode` heuristics, `generateCompletionScript` | Pending |
-| **3** | Static `utils` imports in commands; single `configureChalk` call site | Pending (`configureChalk` still only in `index.ts` + exported no-op from `utils.ts`) |
+| **1** | Break `index` ↔ `cmds` / `utils/api` cycle; single-source exit codes | **Done** — `src/runtime-credentials.ts`; mocks + re-exports; dead `_determineExitCode` removed from `src/utils.ts` |
+| **2** | Error model: `fetch.ts` codes, `credentials-store` `CliError`, `determineExitCode` heuristics, `generateCompletionScript` | **Done** — `ERROR_CODES.UNSUPPORTED_OPERATION`; fetch uses `UNSUPPORTED_OPERATION` / `INVESTEC_API_ERROR`; `readCredentialsFile` / `loadCredentialsFile` throw `CliError`; `determineExitCode` uses code map then narrower heuristics (exported); completion uses `CliError` + `determineExitCode` |
+| **3** | Static `utils` imports in commands; single `configureChalk` call site | **Done** — all commands use static `isStdoutPiped` / `readStdin` from `utils.js` (no dynamic `import('../utils.js')`); `configureChalk()` only invoked from `index.ts` at startup |
 | **4** | Tests: `bank`, `register`, `login`, `ai`; optional shared mock harness | Pending |
 | **5** | Polish: `withCommandContext` generics, `docs.ts` typing, `INVESTEC_CLIENT_ID` policy, split `index.ts` | Pending |
 
@@ -95,17 +95,18 @@ Phased plan from the architecture / error-handling review. **Status** is updated
 - **`src/utils.ts`** — Removed unused `_determineExitCode` duplicate of `cli-errors.ts` logic.
 - **Tests** — `vi.mock('.../runtime-credentials.ts', …)` instead of `index.ts` where credentials were stubbed.
 
-### Phase 2 (next)
+### Phase 2 (done)
 
-1. Replace incorrect `ERROR_CODES.DEPLOY_FAILED` usage in `src/cmds/fetch.ts`.
-2. Throw `CliError` + codes from `src/utils/credentials-store.ts` on user-facing read/load failures.
-3. Prefer `CliError.code` in `src/utils/cli-errors.ts` `determineExitCode`; narrow message heuristics; extend tests.
-4. `generateCompletionScript` unsupported shell: use `CliError` instead of `Error`.
+1. `fetch.ts` — unsupported client → `UNSUPPORTED_OPERATION`; bad response → `INVESTEC_API_ERROR`.
+2. `credentials-store.ts` — `throwCredentialPathError` for async read/load paths (`FILE_NOT_FOUND`, `PERMISSION_DENIED`, `INVALID_CREDENTIALS`).
+3. `cli-errors.ts` — `EXIT_CODE_BY_CLI_CODE` for all `ERROR_CODES`, then message heuristics (avoids treating `E4016` as HTTP 401); export `determineExitCode` via `utils.ts`.
+4. `index.ts` completion — `CliError` + `INVALID_INPUT`; exit code from `determineExitCode`.
+5. Tests — `test/utils/cli-errors.test.ts`, extended `credentials-store` + `fetch` tests.
 
-### Phase 3
+### Phase 3 (done)
 
-- Replace dynamic `import('../utils.js')` in commands once stable.
-- Call `configureChalk()` only once (document or remove redundant export-side call).
+- Replaced dynamic `import('../utils.js')` for `isStdoutPiped` / `readStdin` with static imports across list/read/write commands.
+- `configureChalk()` is not invoked at `utils.ts` load; entrypoint calls it once.
 
 ### Phase 4
 

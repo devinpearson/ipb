@@ -2,7 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchCommand } from '../../src/cmds/fetch';
-import { CliError } from '../../src/errors';
+import { CliError, ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
@@ -121,9 +121,11 @@ describe('fetchCommand', () => {
     const apiWithoutMethod = {};
     (initializeApi as vi.Mock).mockResolvedValue(apiWithoutMethod);
 
-    await expect(fetchCommand(options)).rejects.toThrow(CliError);
-    await expect(fetchCommand(options)).rejects.toThrow(
-      'API client does not support fetching saved code'
+    await expect(fetchCommand(options)).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof CliError &&
+        err.code === ERROR_CODES.UNSUPPORTED_OPERATION &&
+        err.message.includes('API client does not support fetching saved code')
     );
   });
 
@@ -142,8 +144,12 @@ describe('fetchCommand', () => {
     (initializeApi as vi.Mock).mockResolvedValue(mockApi);
     mockApi.getSavedCode.mockResolvedValue({ data: {} });
 
-    await expect(fetchCommand(options)).rejects.toThrow(CliError);
-    await expect(fetchCommand(options)).rejects.toThrow('Unexpected API response');
+    await expect(fetchCommand(options)).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof CliError &&
+        err.code === ERROR_CODES.INVESTEC_API_ERROR &&
+        err.message.includes('Unexpected API response')
+    );
   });
 
   it('should use default card key when not provided', async () => {

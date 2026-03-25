@@ -9,6 +9,7 @@ import {
   getFileSize,
   getSafeText,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   validateFilePath,
@@ -29,7 +30,6 @@ interface Options extends CommonOptions {
  * @throws {CliError} When card key is missing, files don't exist, or deployment fails
  */
 export async function deployCommand(options: Options) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {

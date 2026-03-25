@@ -4,6 +4,7 @@ import {
   confirmDestructiveOperation,
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   runReadUploadCommand,
@@ -48,7 +49,6 @@ export async function publishCommand(options: Options) {
     return;
   }
 
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,

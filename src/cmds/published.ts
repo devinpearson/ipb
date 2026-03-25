@@ -2,6 +2,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   normalizeCardKey,
   resolveSpinnerState,
   runWriteCommand,
@@ -23,7 +24,6 @@ interface Options extends CommonOptions {
 export async function publishedCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled } = resolveSpinnerState({
     spinnerFlag: options.spinner,

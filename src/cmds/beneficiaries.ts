@@ -2,6 +2,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializePbApi,
+  isStdoutPiped,
   resolveSpinnerState,
   runListCommand,
   withRetry,
@@ -24,7 +25,6 @@ type BeneficiarySummary = {
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function beneficiariesCommand(options: CommonOptions) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {

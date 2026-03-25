@@ -1,5 +1,5 @@
 import { initializeApi, initializePbApi, normalizeCardKey } from './utils/api.js';
-import { handleCliError, withCommandContext } from './utils/cli-errors.js';
+import { determineExitCode, handleCliError, withCommandContext } from './utils/cli-errors.js';
 import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
 import {
   cleanupTempFiles,
@@ -190,7 +190,7 @@ export {
  */
 export { detectSecretUsageFromEnv, isNonInteractiveEnvironment, warnAboutSecretUsage };
 
-export { handleCliError, withCommandContext };
+export { determineExitCode, handleCliError, withCommandContext };
 
 export {
   checkForUpdates,

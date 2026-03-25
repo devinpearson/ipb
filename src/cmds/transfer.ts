@@ -4,6 +4,7 @@ import {
   confirmDestructiveOperation,
   createSpinner,
   initializePbApi,
+  isStdoutPiped,
   resolveSpinnerState,
   validateAccountId,
   validateAmount,
@@ -70,7 +71,6 @@ export async function transferCommand(
     return;
   }
 
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   const { spinnerEnabled, verbose } = resolveSpinnerState({
     spinnerFlag: options.spinner,

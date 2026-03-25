@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { printTitleBox } from '../runtime-credentials.js';
-import { runListCommand } from '../utils.js';
+import { isStdoutPiped, runListCommand } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -20,7 +20,6 @@ interface EnvVarDefinition {
  * @param options - CLI options including output format
  */
 export async function envListCommand(options: CommonOptions) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
   printTitleBox();
 

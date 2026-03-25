@@ -2,6 +2,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializeApi,
+  isStdoutPiped,
   resolveSpinnerState,
   runListCommand,
   withRetry,
@@ -21,7 +22,6 @@ type CardSummary = {
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function cardsCommand(options: CommonOptions) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {

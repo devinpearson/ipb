@@ -3,6 +3,8 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializePbApi,
+  isStdoutPiped,
+  readStdin,
   resolveSpinnerState,
   runListCommand,
   validateAccountId,
@@ -18,7 +20,6 @@ import type { CommonOptions } from './types.js';
  * @throws {Error} When API credentials are invalid or API call fails
  */
 export async function balancesCommand(accountId: string, options: CommonOptions) {
-  const { isStdoutPiped, readStdin } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   // If accountId is not provided and stdin has data, try to read from stdin

@@ -2,6 +2,7 @@ import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializePbApi,
+  isStdoutPiped,
   resolveSpinnerState,
   runListCommand,
   withRetry,
@@ -14,7 +15,6 @@ import type { CommonOptions } from './types.js';
  * @param options CLI options
  */
 export async function accountsCommand(options: CommonOptions) {
-  const { isStdoutPiped } = await import('../utils.js');
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {
