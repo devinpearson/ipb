@@ -93,6 +93,7 @@ brew install devinpearson/ipb/ipb
 Download pre-built binaries from [GitHub Releases](https://github.com/devinpearson/ipb/releases).
 
 **macOS:**
+
 ```sh
 # Apple Silicon (M1/M2/M3)
 curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-macos-arm64 -o ipb
@@ -108,6 +109,7 @@ sudo mv ipb /usr/local/bin/
 **Linux:**
 
 **Ubuntu/Debian (.deb package):**
+
 ```sh
 # Download .deb package
 wget https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb_0.8.3_amd64.deb
@@ -118,6 +120,7 @@ sudo apt-get install -f  # Install dependencies if needed
 ```
 
 **Direct Binary:**
+
 ```sh
 # x64
 curl -L https://github.com/devinpearson/ipb/releases/download/v0.8.3/ipb-linux-x64 -o ipb
@@ -131,6 +134,7 @@ sudo mv ipb /usr/local/bin/
 ```
 
 **Ubuntu PPA (if available):**
+
 ```sh
 sudo add-apt-repository ppa:your-launchpad-id/ipb
 sudo apt update
@@ -209,6 +213,7 @@ ipb env-list
 ```
 
 This command displays:
+
 - **API Credentials**: `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
 - **Development**: `DEBUG`
 - **Security**: `REJECT_UNAUTHORIZED`
@@ -218,16 +223,19 @@ This command displays:
 The CLI follows standard CLI conventions and respects these environment variables:
 
 - **`NO_COLOR`**: Disable colored output. Set to any value to disable colors.
+
   ```sh
   NO_COLOR=1 ipb accounts
   ```
 
 - **`FORCE_COLOR`**: Force colored output even when piping. Set to any value to enable colors.
+
   ```sh
   FORCE_COLOR=1 ipb accounts | cat
   ```
 
 - **`DEBUG`**: Enable verbose/debug output. Set to any value to enable verbose mode (equivalent to `--verbose` flag).
+
   ```sh
   DEBUG=1 ipb accounts
   # Or
@@ -235,6 +243,7 @@ The CLI follows standard CLI conventions and respects these environment variable
   ```
 
 - **`PAGER`**: Specify pager for long output. Defaults to `less` if not set.
+
   ```sh
   PAGER=more ipb transactions <accountId>
   ```
@@ -242,26 +251,33 @@ The CLI follows standard CLI conventions and respects these environment variable
 - **`LINES`** and **`COLUMNS`**: Terminal dimensions for table formatting (automatically detected if not set).
 
 - **`TMPDIR`**: Temporary directory for temporary files. Defaults to system temp directory (`/tmp` on Unix, `%TEMP%` on Windows) if not set.
+
   ```sh
   TMPDIR=/custom/tmp ipb <command>
   ```
+
   Note: The CLI uses Node.js `os.tmpdir()` which automatically respects `TMPDIR`. Atomic file operations (like credential writes) use the same directory as the target file to ensure atomicity.
 
 - **`EDITOR`**: Editor to use for editing configuration files. Defaults to `nano` on Unix, `notepad.exe` on Windows.
+
   ```sh
   EDITOR=vim ipb config edit
   EDITOR="code --wait" ipb config edit  # VS Code
   ```
+
   Used by `ipb config edit` command to open credentials files in your preferred editor.
 
 - **`TERM`**: Terminal type for capability detection. The CLI automatically detects terminal capabilities and falls back to ASCII alternatives when Unicode/emoji are not supported.
+
   ```sh
   TERM=dumb ipb accounts  # Uses ASCII fallbacks
   TERM=xterm-256color ipb accounts  # Uses emojis if supported
   ```
+
   The CLI checks `TERM`, `TERMINFO`, and `TERMCAP` environment variables to determine if the terminal supports Unicode and emoji characters. Emojis are automatically replaced with ASCII equivalents (e.g., `💳` → `[CARD]`) when the terminal doesn't support them.
 
 You can also get structured output:
+
 ```sh
 ipb env-list --json
 ipb env-list --yaml --output env-vars.yaml
@@ -274,6 +290,7 @@ ipb env-list --yaml --output env-vars.yaml
 For security reasons, the CLI **recommends storing secrets in credential files rather than environment variables**. While the CLI supports environment variables for convenience, they pose security risks:
 
 **Why credential files are more secure:**
+
 - Environment variables can be leaked in:
   - Process lists (`ps`, `top`, `htop`)
   - System logs
@@ -283,11 +300,13 @@ For security reasons, the CLI **recommends storing secrets in credential files r
 - Credential files are stored with restricted permissions (`600`) and in a secure location (`~/.ipb/.credentials.json`)
 
 **The CLI will automatically warn you if:**
+
 - Secrets are detected in environment variables AND
 - You're running in verbose mode (`--verbose` or `DEBUG=1`) OR
 - You're in a non-interactive environment (CI/CD, scripts, etc.)
 
 **Recommended approach:**
+
 ```sh
 # Store secrets in credential files (recommended)
 ipb config --client-id <id> --client-secret <secret> --api-key <key>
@@ -299,6 +318,7 @@ ipb config profile set production  # Set active profile
 ```
 
 **When environment variables are acceptable:**
+
 - Development/testing environments (with awareness of risks)
 - Temporary use cases where credential files are not practical
 - When you understand the security implications
@@ -306,6 +326,7 @@ ipb config profile set production  # Set active profile
 **Note:** The CLI still supports environment variables for backward compatibility, but you should be aware of the security implications. The CLI follows [clig.dev](https://clig.dev/) guidelines which recommend against reading secrets from environment variables.
 
 **Priority Order** (highest to lowest):
+
 1. Command line options (e.g., `--client-id`, `--api-key`)
 2. Configuration profile (if `--profile` is specified or active profile is set)
 3. Environment variables
@@ -450,6 +471,7 @@ ipb deploy --profile production --card-key different-card -f main.js
 Several commands that perform destructive operations (deploy, publish, disable, transfer, pay) require interactive confirmation before execution. This helps prevent accidental operations that could affect your code or financial transactions.
 
 **Commands requiring confirmation:**
+
 - `deploy` - Overwrites existing code on a card
 - `publish` - Activates code on a card
 - `disable` - Deactivates code on a card

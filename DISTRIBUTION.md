@@ -56,6 +56,7 @@ npm run pkg:clean
 ### Output
 
 Binaries are generated in the `dist/` directory with the following naming convention:
+
 - `ipb-macos-x64` (macOS Intel)
 - `ipb-macos-arm64` (macOS Apple Silicon)
 - `ipb-linux-x64` (Linux x64)
@@ -166,6 +167,7 @@ brew install devinpearson/ipb/ipb
 ### Option 2: Homebrew Core (Advanced)
 
 For broader distribution, you can submit to Homebrew core. This requires:
+
 - Minimum 30 stars on GitHub
 - Active maintenance
 - Passing audit tests
@@ -182,11 +184,13 @@ See `.github/workflows/release.yml` for the automated release workflow.
 ### Manual Release Process
 
 1. **Build binaries for all platforms:**
+
    ```bash
    npm run pkg:all
    ```
 
 2. **Calculate SHA256 checksums:**
+
    ```bash
    shasum -a 256 dist/ipb-*
    ```
@@ -226,6 +230,7 @@ Create a Scoop manifest in a separate repository or in the main repo under `scoo
 ```
 
 Install via:
+
 ```powershell
 scoop bucket add ipb https://github.com/devinpearson/ipb-scoop
 scoop install ipb
@@ -288,6 +293,7 @@ For easy distribution and automatic updates, set up a PPA on Launchpad:
 3. **Upload packages** using `dput` (see `UBUNTU_DISTRIBUTION.md` for details)
 
 Users can then install via:
+
 ```bash
 sudo add-apt-repository ppa:your-launchpad-id/ipb
 sudo apt update
@@ -342,12 +348,14 @@ For detailed Ubuntu distribution instructions, see [UBUNTU_DISTRIBUTION.md](./UB
 Before releasing:
 
 1. **Test binaries locally:**
+
    ```bash
    ./dist/ipb-macos-arm64 --version
    ./dist/ipb-macos-arm64 --help
    ```
 
 2. **Test Homebrew formula:**
+
    ```bash
    brew install --build-from-source Formula/ipb.rb
    brew test ipb
@@ -363,6 +371,7 @@ Before releasing:
 ### Binary Not Found Error
 
 If templates/assets are not found at runtime:
+
 - Ensure `pkg.assets` in package.json includes all necessary files
 - Check that paths are relative to the binary location
 - Verify assets are included in the snapshot
@@ -379,6 +388,7 @@ The project uses esbuild to bundle ESM code into CommonJS before packaging, whic
 ### File Size
 
 Binaries are large (~65-80MB) because they include Node.js runtime:
+
 - This is expected and normal
 - Users don't need Node.js installed separately
 - Consider compression for downloads
@@ -386,6 +396,7 @@ Binaries are large (~65-80MB) because they include Node.js runtime:
 ## CI/CD Integration
 
 See `.github/workflows/release.yml` for automated release workflow that:
+
 - Builds binaries on push of version tags
 - Creates GitHub releases
 - Uploads binaries as release assets

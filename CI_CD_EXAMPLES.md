@@ -176,6 +176,7 @@ ipb deploy \
 ```
 
 This will:
+
 1. Read variables from `.env.production`
 2. Upload them to the card
 3. Upload and publish the code
@@ -247,9 +248,11 @@ jobs:
 ## Troubleshooting
 
 ### Deployment fails with "Deployment cancelled"
+
 - **Solution**: Add the `--yes` flag to skip confirmation prompts in non-interactive environments
 
 ### Missing credentials error
+
 - **Solution**: Ensure all required environment variables are set:
   - `INVESTEC_CLIENT_ID`
   - `INVESTEC_CLIENT_SECRET`
@@ -257,9 +260,11 @@ jobs:
   - `INVESTEC_CARD_KEY` (or pass via `--card-key`)
 
 ### Verbose output for debugging
+
 - **Solution**: Add `--verbose` flag or set `DEBUG=1` environment variable
 
 ### Rate limiting
+
 - **Solution**: The CLI automatically retries on rate limit errors with exponential backoff. Use `--verbose` to see retry attempts.
 
 ## Example: Deploy Script
@@ -287,8 +292,8 @@ echo "Deployment successful!"
 ```
 
 Make it executable and run:
+
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
-
