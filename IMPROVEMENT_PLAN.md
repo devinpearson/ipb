@@ -84,7 +84,7 @@ Phased plan from the architecture / error-handling review. **Status** is updated
 | **1** | Break `index` ↔ `cmds` / `utils/api` cycle; single-source exit codes | **Done** — `src/runtime-credentials.ts`; mocks + re-exports; dead `_determineExitCode` removed from `src/utils.ts` |
 | **2** | Error model: `fetch.ts` codes, `credentials-store` `CliError`, `determineExitCode` heuristics, `generateCompletionScript` | **Done** — `ERROR_CODES.UNSUPPORTED_OPERATION`; fetch uses `UNSUPPORTED_OPERATION` / `INVESTEC_API_ERROR`; `readCredentialsFile` / `loadCredentialsFile` throw `CliError`; `determineExitCode` uses code map then narrower heuristics (exported); completion uses `CliError` + `determineExitCode` |
 | **3** | Static `utils` imports in commands; single `configureChalk` call site | **Done** — all commands use static `isStdoutPiped` / `readStdin` from `utils.js` (no dynamic `import('../utils.js')`); `configureChalk()` only invoked from `index.ts` at startup |
-| **4** | Tests: `bank`, `register`, `login`, `ai`; optional shared mock harness | Pending |
+| **4** | Tests: `bank`, `register`, `login`, `ai`; optional shared mock harness | **Done** (tests added; shared mock harness still optional) |
 | **5** | Polish: `withCommandContext` generics, `docs.ts` typing, `INVESTEC_CLIENT_ID` policy, split `index.ts` | Pending |
 
 ### Phase 1 details (done in tree)
@@ -108,10 +108,13 @@ Phased plan from the architecture / error-handling review. **Status** is updated
 - Replaced dynamic `import('../utils.js')` for `isStdoutPiped` / `readStdin` with static imports across list/read/write commands.
 - `configureChalk()` is not invoked at `utils.ts` load; entrypoint calls it once.
 
-### Phase 4
+### Phase 4 (done)
 
-- Add `test/cmds/` coverage for `bank`, `register`, `login`, `ai`.
-- Optional `test/helpers/cli-mocks.ts` for repeated mocks.
+- `test/cmds/register.test.ts` — success path + failed HTTP → `INVALID_CREDENTIALS`.
+- `test/cmds/login.test.ts` — token merge into credentials file, failed login, preserves existing cred keys.
+- `test/cmds/bank.test.ts` — mocked OpenAI text reply; API error → `INVALID_INPUT`.
+- `test/cmds/ai.test.ts` — valid structured JSON → `writeFile`; missing/invalid response → `INVALID_INPUT`.
+- Optional: `test/helpers/cli-mocks.ts` for shared `runtime-credentials` / spinner mocks (not added).
 
 ### Phase 5
 
