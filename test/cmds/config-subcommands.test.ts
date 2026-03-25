@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentialLocation: {
     folder: '/tmp/.ipb',
     filename: '/tmp/.ipb/.credentials.json',

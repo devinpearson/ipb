@@ -2,7 +2,7 @@ import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction, run } from 'programmable-card-code-emulator';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { printTitleBox } from '../index.js';
+import { printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   formatFileSize,

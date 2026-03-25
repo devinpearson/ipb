@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import type { Command } from 'commander';
-import { printTitleBox } from '../index.js';
+import { printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   getSafeText,

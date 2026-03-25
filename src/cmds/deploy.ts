@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'node:fs';
 import dotenv from 'dotenv';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   confirmDestructiveOperation,
   createSpinner,

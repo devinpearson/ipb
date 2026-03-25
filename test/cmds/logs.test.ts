@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { logsCommand } from '../../src/cmds/logs';
 import { CliError } from '../../src/errors';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {
     host: 'https://openapi.investec.com',
     apiKey: 'k',

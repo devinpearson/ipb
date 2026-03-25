@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { printTitleBox } from '../index.js';
+import { printTitleBox } from '../runtime-credentials.js';
 import { runListCommand } from '../utils.js';
 import type { CommonOptions } from './types.js';
 

@@ -8,7 +8,7 @@ import type {
 } from 'investec-pb-api';
 import type OpenAI from 'openai';
 import type { BasicOptions } from './cmds/types.js';
-import { credentials } from './index.js';
+import { credentials } from './runtime-credentials.js';
 import { initializePbApi } from './utils.js';
 
 export const getWeatherFunctionCall: OpenAI.ChatCompletionTool = {

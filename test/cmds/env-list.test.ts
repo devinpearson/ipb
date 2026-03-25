@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { envListCommand } from '../../src/cmds/env-list';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   printTitleBox: vi.fn(),
 }));
 

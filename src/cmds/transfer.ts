@@ -1,5 +1,5 @@
 import { input } from '@inquirer/prompts';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   confirmDestructiveOperation,
   createSpinner,

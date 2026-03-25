@@ -6,7 +6,7 @@ import { countriesCommand } from '../../src/cmds/countries';
 import { currenciesCommand } from '../../src/cmds/currencies';
 import { merchantsCommand } from '../../src/cmds/merchants';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {
     host: 'https://openapi.investec.com',
     clientId: 'cid',

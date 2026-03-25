@@ -10,7 +10,7 @@ vi.mock('programmable-card-code-emulator', () => ({
   createTransaction: mockCreateTransaction,
 }));
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
   optionCredentials: vi.fn(async (_options, credentials) => credentials),

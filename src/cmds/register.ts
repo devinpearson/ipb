@@ -2,7 +2,7 @@ import https from 'node:https';
 import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { printTitleBox } from '../index.js';
+import { printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   getSafeText,

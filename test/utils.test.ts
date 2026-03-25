@@ -6,7 +6,7 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES } from '../src/errors.ts';
 
-vi.mock('../src/index.ts', () => ({
+vi.mock('../src/runtime-credentials.ts', () => ({
   credentialLocation: {
     folder: '/tmp/.ipb',
     filename: '/tmp/.ipb/.credentials.json',

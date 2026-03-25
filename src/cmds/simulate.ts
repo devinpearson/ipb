@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'node:fs';
 import chalk from 'chalk';
 import { createTransaction } from 'programmable-card-code-emulator';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   getSafeText,

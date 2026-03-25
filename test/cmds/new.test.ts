@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { newCommand } from '../../src/cmds/new';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   printTitleBox: vi.fn(),
   optionCredentials: vi.fn(async (_options, credentials) => credentials),
 }));

@@ -5,7 +5,6 @@
 // For more information, see README.md
 
 import 'dotenv/config';
-import { homedir } from 'node:os';
 import process from 'node:process';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
@@ -43,24 +42,28 @@ import { payCommand } from './cmds/pay.js';
 import { simulateCommand } from './cmds/simulate.js';
 import { transactionsCommand } from './cmds/transactions.js';
 import { transferCommand } from './cmds/transfer.js';
-import type { BasicOptions, Credentials } from './cmds/types.js';
 import { CliError, ERROR_CODES, ExitCode } from './errors.js';
+import {
+  credentialLocation,
+  credentials,
+  optionCredentials,
+  printTitleBox,
+} from './runtime-credentials.js';
 import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 import {
   checkForUpdates,
   configureChalk,
-  getSafeText,
   getVerboseMode,
   handleCliError,
   isUpdateCheckDisabled,
-  loadCredentialsFile,
   logCommandHistory,
-  readCredentialsFileSync,
   shouldDisplayUpdateNotification,
   showUpdateNotification,
   warnAboutSecretUsage,
   withCommandContext,
 } from './utils.js';
+
+export { credentialLocation, credentials, optionCredentials, printTitleBox };
 
 // Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
 configureChalk();
@@ -80,36 +83,6 @@ function disabledCommandAction(commandName: string) {
 // Improve error output for missing arguments/options
 program.showHelpAfterError();
 program.showSuggestionAfterError();
-
-// Only export what is needed outside this file
-export const credentialLocation = {
-  folder: `${homedir()}/.ipb`,
-  filename: `${homedir()}/.ipb/.credentials.json`,
-};
-
-/**
- * Prints CLI title (currently unused, kept for potential future use).
- */
-export async function printTitleBox() {
-  // Function intentionally empty - can be implemented if needed
-}
-
-// Load credentials from file if present (sync for module initialization)
-const cred = readCredentialsFileSync(credentialLocation, (err) => {
-  const errorText = getSafeText(`🙀 Invalid credentials file format: ${err.message}`);
-  console.error(chalk.red(errorText));
-  console.log('');
-});
-
-export const credentials: Credentials = {
-  host: process.env.INVESTEC_HOST || 'https://openapi.investec.com',
-  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId || '',
-  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret || '',
-  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey || '',
-  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey || '',
-  openaiKey: process.env.OPENAI_API_KEY || cred.openaiKey || '',
-  sandboxKey: process.env.SANDBOX_KEY || cred.sandboxKey || '',
-};
 
 // Helper for shared API credential options
 function addApiCredentialOptions(cmd: Command) {
@@ -1372,50 +1345,6 @@ Examples:
   if (!isPiped) {
     console.log(''); // Add a newline after command execution
   }
-}
-
-/**
- * Merges CLI options with credentials, applying option overrides.
- * @param options - Basic options that may contain credential overrides
- * @param credentials - Base credentials object
- * @returns Updated credentials object with option overrides applied
- */
-export async function optionCredentials(
-  options: BasicOptions & { profile?: string },
-  credentials: Credentials
-): Promise<Credentials> {
-  // Load profile if specified (takes precedence over credentials file)
-  if (options.profile) {
-    const { loadProfile } = await import('./utils.js');
-    credentials = await loadProfile(credentials, options.profile);
-  } else {
-    // Check for active profile if no profile specified
-    const { getActiveProfile, loadProfile } = await import('./utils.js');
-    const activeProfile = await getActiveProfile();
-    if (activeProfile) {
-      credentials = await loadProfile(credentials, activeProfile);
-    }
-
-    // Fall back to credentials file if no profile is active
-    if (options.credentialsFile) {
-      credentials = await loadCredentialsFile(credentials, options.credentialsFile);
-    }
-  }
-
-  // Command-line options always override profile/credentials file
-  if (options.apiKey) {
-    credentials.apiKey = options.apiKey;
-  }
-  if (options.clientId) {
-    credentials.clientId = options.clientId;
-  }
-  if (options.clientSecret) {
-    credentials.clientSecret = options.clientSecret;
-  }
-  if (options.host) {
-    credentials.host = options.host;
-  }
-  return credentials;
 }
 
 main().catch((err) => {

@@ -72,3 +72,46 @@ This file tracks the original multi-phase refactor and **what is already done** 
 ## Working rule for future PRs
 
 One logical change per PR, tests included, no unrelated refactors—same as before.
+
+---
+
+## Code review follow-ups (Mar 2025)
+
+Phased plan from the architecture / error-handling review. **Status** is updated as work lands.
+
+| Phase | Theme | Status |
+|-------|--------|--------|
+| **1** | Break `index` ↔ `cmds` / `utils/api` cycle; single-source exit codes | **In progress** — `src/runtime-credentials.ts` added; cmds + `api.ts` + `function-calls.ts` import it; dead `_determineExitCode` removed from `src/utils.ts`; Vitest mocks target `runtime-credentials.ts`; `index.ts` re-exports for compatibility |
+| **2** | Error model: `fetch.ts` codes, `credentials-store` `CliError`, `determineExitCode` heuristics, `generateCompletionScript` | Pending |
+| **3** | Static `utils` imports in commands; single `configureChalk` call site | Pending (`configureChalk` still only in `index.ts` + exported no-op from `utils.ts`) |
+| **4** | Tests: `bank`, `register`, `login`, `ai`; optional shared mock harness | Pending |
+| **5** | Polish: `withCommandContext` generics, `docs.ts` typing, `INVESTEC_CLIENT_ID` policy, split `index.ts` | Pending |
+
+### Phase 1 details (done in tree)
+
+- **`src/runtime-credentials.ts`** — `credentialLocation`, `credentials`, `printTitleBox`, `optionCredentials` (same behavior as before; no import of `index.js`).
+- **`src/index.ts`** — Imports and re-exports the above; config still uses `credentialLocation`.
+- **`src/utils/api.ts`** — `optionCredentials` from `runtime-credentials.js`.
+- **`src/utils.ts`** — Removed unused `_determineExitCode` duplicate of `cli-errors.ts` logic.
+- **Tests** — `vi.mock('.../runtime-credentials.ts', …)` instead of `index.ts` where credentials were stubbed.
+
+### Phase 2 (next)
+
+1. Replace incorrect `ERROR_CODES.DEPLOY_FAILED` usage in `src/cmds/fetch.ts`.
+2. Throw `CliError` + codes from `src/utils/credentials-store.ts` on user-facing read/load failures.
+3. Prefer `CliError.code` in `src/utils/cli-errors.ts` `determineExitCode`; narrow message heuristics; extend tests.
+4. `generateCompletionScript` unsupported shell: use `CliError` instead of `Error`.
+
+### Phase 3
+
+- Replace dynamic `import('../utils.js')` in commands once stable.
+- Call `configureChalk()` only once (document or remove redundant export-side call).
+
+### Phase 4
+
+- Add `test/cmds/` coverage for `bank`, `register`, `login`, `ai`.
+- Optional `test/helpers/cli-mocks.ts` for repeated mocks.
+
+### Phase 5
+
+- Tighten types in `withCommandContext`, `docs.ts`; document or adjust `SECRET_ENV_VARS` for client id; extract completion / registration from `index.ts`.

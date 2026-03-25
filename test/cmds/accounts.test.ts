@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accountsCommand } from '../../src/cmds/accounts';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {},
   printTitleBox: vi.fn(),
   optionCredentials: vi.fn(async (_options, credentials) => credentials),

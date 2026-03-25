@@ -1,4 +1,4 @@
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   initializePbApi,

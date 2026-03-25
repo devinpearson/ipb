@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   formatFileSize,

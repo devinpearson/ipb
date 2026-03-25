@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { balancesCommand } from '../../src/cmds/balances';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {},
   printTitleBox: vi.fn(),
   optionCredentials: vi.fn(async (_options, credentials) => credentials),

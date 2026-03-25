@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import OpenAI from 'openai';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { availableFunctions, tools } from '../function-calls.js';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import { createSpinner, isStdoutPiped, resolveSpinnerState, withSpinner } from '../utils.js';
 
 const agent = new https.Agent({

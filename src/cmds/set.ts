@@ -1,4 +1,4 @@
-import { credentialLocation } from '../index.js';
+import { credentialLocation } from '../runtime-credentials.js';
 import {
   createSpinner,
   deleteProfile,

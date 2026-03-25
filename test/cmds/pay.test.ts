@@ -10,7 +10,7 @@ vi.mock('@inquirer/prompts', () => ({
   input: mockInput,
 }));
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {
     host: 'https://openapi.investec.com',
     clientId: 'cid',

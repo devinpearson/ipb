@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { printTitleBox } from '../index.js';
+import { printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   getSafeText,

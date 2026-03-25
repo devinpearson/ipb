@@ -1,8 +1,8 @@
 import type { BasicOptions, Credentials } from '../cmds/types.js';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { optionCredentials } from '../index.js';
 import type { ICardApi } from '../mock-card.js';
 import type { IPbApi } from '../mock-pb.js';
+import { optionCredentials } from '../runtime-credentials.js';
 import { validateCredentialsFile } from './credentials-validation.js';
 import { normalizeInvestecError } from './investec-errors.js';
 import { isMockApisEnabled } from './runtime-flags.js';

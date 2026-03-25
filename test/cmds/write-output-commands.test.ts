@@ -6,7 +6,7 @@ import { logsCommand } from '../../src/cmds/logs';
 import { publishedCommand } from '../../src/cmds/published';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
   optionCredentials: vi.fn(async (_options, credentials) => credentials),

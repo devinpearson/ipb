@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { credentials, printTitleBox } from '../index.js';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
   confirmDestructiveOperation,
   createSpinner,

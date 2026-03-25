@@ -45,7 +45,7 @@ const indexMocks = vi.hoisted(() => ({
   printTitleBox: vi.fn(),
 }));
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {
     host: 'https://openapi.investec.com',
     clientId: 'cid',

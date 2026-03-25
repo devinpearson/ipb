@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { publishedCommand } from '../../src/cmds/published';
 
-vi.mock('../../src/index.ts', () => ({
+vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: {
     host: 'https://openapi.investec.com',
     apiKey: 'k',

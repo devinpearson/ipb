@@ -3,7 +3,7 @@ import path from 'node:path';
 import { input, password } from '@inquirer/prompts';
 import fetch from 'node-fetch';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { credentialLocation, printTitleBox } from '../index.js';
+import { credentialLocation, printTitleBox } from '../runtime-credentials.js';
 import {
   createSpinner,
   ensureCredentialsDirectory,
