@@ -2,6 +2,12 @@ import chalk from 'chalk';
 import { isDebugEnabled } from './runtime-flags.js';
 import { getSafeText } from './terminal.js';
 
+/**
+ * Environment variables treated as secrets for CLI warnings.
+ * `INVESTEC_CLIENT_ID` is intentionally omitted: OAuth client identifiers are commonly
+ * public (mobile apps, SPAs) and are not equivalent to client secrets or API keys.
+ * Add it here only if your deployment policy treats the client id as sensitive.
+ */
 const SECRET_ENV_VARS = [
   'INVESTEC_CLIENT_SECRET',
   'INVESTEC_API_KEY',

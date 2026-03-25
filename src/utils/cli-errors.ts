@@ -207,12 +207,14 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   process.exit(exitCode);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Generic function wrapper needs flexible typing for command handlers
-export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
+/**
+ * Wraps an async command handler to attach `commandContext` on errors for `handleCliError`.
+ */
+export function withCommandContext<A extends readonly unknown[], R>(
   commandName: string,
-  handler: T
-): T {
-  return (async (...args: Parameters<T>) => {
+  handler: (...args: A) => Promise<R>
+): (...args: A) => Promise<R> {
+  return async (...args: A) => {
     try {
       return await handler(...args);
     } catch (error) {
@@ -226,5 +228,5 @@ export function withCommandContext<T extends (...args: any[]) => Promise<any>>(
       }
       throw error;
     }
-  }) as T;
+  };
 }

@@ -10,19 +10,10 @@ vi.mock('@inquirer/prompts', () => ({
   input: mockInput,
 }));
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  credentials: {
-    host: 'https://openapi.investec.com',
-    clientId: 'cid',
-    clientSecret: 'secret',
-    apiKey: 'key',
-    cardKey: '123',
-    openaiKey: '',
-    sandboxKey: '',
-  },
-  printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock();
+});
 
 const mockUtilsState = vi.hoisted(() => ({
   confirmed: true,

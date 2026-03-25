@@ -3,11 +3,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accountsCommand } from '../../src/cmds/accounts';
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  credentials: {},
-  printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock({ emptyCredentials: true });
+});
 
 vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');

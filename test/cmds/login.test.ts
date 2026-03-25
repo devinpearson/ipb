@@ -10,14 +10,15 @@ vi.mock('node-fetch', () => ({
   default: mockFetch,
 }));
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  credentialLocation: {
-    folder: '/tmp/ipb-login-test',
-    filename: '/tmp/ipb-login-test/.credentials.json',
-  },
-  printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock({
+    credentialLocation: {
+      folder: '/tmp/ipb-login-test',
+      filename: '/tmp/ipb-login-test/.credentials.json',
+    },
+  });
+});
 
 const credState = vi.hoisted(() => ({
   file: {} as Record<string, string>,

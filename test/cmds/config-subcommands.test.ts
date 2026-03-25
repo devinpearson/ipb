@@ -2,13 +2,15 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  credentialLocation: {
-    folder: '/tmp/.ipb',
-    filename: '/tmp/.ipb/.credentials.json',
-  },
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock({
+    credentialLocation: {
+      folder: '/tmp/.ipb',
+      filename: '/tmp/.ipb/.credentials.json',
+    },
+  });
+});
 
 import {
   finalizeProfileDeletion,

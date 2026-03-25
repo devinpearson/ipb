@@ -6,13 +6,15 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES } from '../src/errors.ts';
 
-vi.mock('../src/runtime-credentials.ts', () => ({
-  credentialLocation: {
-    folder: '/tmp/.ipb',
-    filename: '/tmp/.ipb/.credentials.json',
-  },
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('./helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock({
+    credentialLocation: {
+      folder: '/tmp/.ipb',
+      filename: '/tmp/.ipb/.credentials.json',
+    },
+  });
+});
 
 let isDebugEnabled: typeof import('../src/utils.ts').isDebugEnabled;
 let isMockApisEnabled: typeof import('../src/utils.ts').isMockApisEnabled;

@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { newCommand } from '../../src/cmds/new';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock();
+});
 
 vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');

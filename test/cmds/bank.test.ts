@@ -18,19 +18,10 @@ vi.mock('openai', () => ({
   },
 }));
 
-vi.mock('../../src/runtime-credentials.ts', () => ({
-  credentials: {
-    host: 'https://openapi.investec.com',
-    clientId: 'c',
-    clientSecret: 's',
-    apiKey: 'k',
-    cardKey: '1',
-    openaiKey: 'sk-test-key',
-    sandboxKey: '',
-  },
-  printTitleBox: vi.fn(),
-  optionCredentials: vi.fn(async (_options, credentials) => credentials),
-}));
+vi.mock('../../src/runtime-credentials.ts', async () => {
+  const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
+  return getRuntimeCredentialsMock({ credentials: { openaiKey: 'sk-test-key', cardKey: '1' } });
+});
 
 vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');

@@ -10,6 +10,7 @@ import {
 describe('security utilities', () => {
   afterEach(() => {
     delete process.env.INVESTEC_CLIENT_SECRET;
+    delete process.env.INVESTEC_CLIENT_ID;
     delete process.env.INVESTEC_API_KEY;
     delete process.env.INVESTEC_CARD_KEY;
     delete process.env.OPENAI_API_KEY;
@@ -33,6 +34,17 @@ describe('security utilities', () => {
     const result = detectSecretUsageFromEnv();
     expect(result.hasSecretsFromEnv).toBe(false);
     expect(result.secretsFromEnv).toEqual([]);
+  });
+
+  it('does not treat INVESTEC_CLIENT_ID as a secret env var', () => {
+    process.env.INVESTEC_CLIENT_ID = 'public-client-id';
+
+    const result = detectSecretUsageFromEnv();
+
+    expect(result.secretsFromEnv).not.toContain('INVESTEC_CLIENT_ID');
+    expect(result.hasSecretsFromEnv).toBe(false);
+
+    delete process.env.INVESTEC_CLIENT_ID;
   });
 
   it('identifies CI as non-interactive', () => {

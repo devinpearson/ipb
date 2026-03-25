@@ -37,11 +37,27 @@ interface CommandInfo {
  * @returns GitHub-compatible slug
  */
 /**
+ * Commander internals not declared on the public `Command` type.
+ * @see https://github.com/tj/commander.js/blob/master/lib/command.js
+ */
+interface CommanderCommandInternals {
+  _hidden?: boolean;
+  _args?: Array<{
+    name?: string | (() => string);
+    description?: string;
+    required?: boolean;
+  }>;
+}
+
+function asCommanderInternals(command: Command): CommanderCommandInternals {
+  return command as unknown as CommanderCommandInternals;
+}
+
+/**
  * Commander marks hidden commands with `_hidden` (set via `.command(name, { hidden: true })`).
  */
 function isCommandHidden(command: Command): boolean {
-  // biome-ignore lint/suspicious/noExplicitAny: Commander does not expose this on the public Command type
-  return Boolean((command as any)._hidden);
+  return Boolean(asCommanderInternals(command)._hidden);
 }
 
 function githubSlug(text: string): string {
@@ -68,9 +84,7 @@ function extractCommandInfo(
   const args: Array<{ name: string; description: string; required: boolean }> = [];
   const options: Array<{ flags: string; description: string; required: boolean }> = [];
 
-  // Extract arguments using Commander.js internal API
-  // biome-ignore lint/suspicious/noExplicitAny: Commander.js internal API is not fully typed
-  const registeredArgs = (command as any)._args || [];
+  const registeredArgs = asCommanderInternals(command)._args || [];
   for (const arg of registeredArgs) {
     const argName = typeof arg.name === 'function' ? arg.name() : arg.name || '';
     const argDesc = arg.description || '';
