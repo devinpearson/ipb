@@ -118,6 +118,7 @@ Phased plan from the architecture / error-handling review. **Status** is updated
 
 ### Phase 5 (done)
 
+- **`src/register-cli-commands.ts`** — All Commander subcommand registration, shared option helpers (`addApiCredentialOptions`, `addSpinnerVerboseOptions`), and `disabledCommandAction`; `main()` calls `registerCliCommands(program, { credentialLocation })`.
 - **`src/completion.ts`** — `generateCompletionScript` + bash/zsh generators moved out of `index.ts`.
 - **`withCommandContext`** — generic `A extends readonly unknown[], R` (no `any`); same runtime behavior.
 - **`docs.ts`** — `CommanderCommandInternals` + `asCommanderInternals()` instead of `(command as any)`.
