@@ -78,6 +78,17 @@ jobs:
             echo "SNAPCRAFT_STORE_CREDENTIALS not configured, skipping Snap Store upload."
             exit 0
           fi
-          mkdir -p "$HOME/.snapcraft"
-          printf "%s" "$SNAPCRAFT_STORE_CREDENTIALS" | base64 -d > "$HOME/.snapcraft/snapcraft.cfg"
+
+          # Snapcraft 7+ reads Ubuntu One credentials from SNAPCRAFT_STORE_CREDENTIALS
+          # (output of `snapcraft export-login`). Do not write ~/.snapcraft/snapcraft.cfg.
+          #
+          # Support secrets stored either as raw export-login text or base64 of that text.
+          CREDS="$SNAPCRAFT_STORE_CREDENTIALS"
+          if [[ "$CREDS" != \{* ]]; then
+            if DECODED=$(printf '%s' "$CREDS" | base64 -d 2>/dev/null) && [[ "$DECODED" == \{* ]]; then
+              CREDS="$DECODED"
+            fi
+          fi
+          export SNAPCRAFT_STORE_CREDENTIALS="$CREDS"
+
           snapcraft upload --release=stable "${{ steps.snap_file.outputs.file }}"

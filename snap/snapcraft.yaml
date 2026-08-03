@@ -1,4 +1,4 @@
-name: ipb
+name: investec-ipb
 version: '0.9.3'
 summary: CLI application to manage Investec Programmable Banking cards
 description: |
@@ -7,18 +7,18 @@ description: |
   transaction management, and account operations.
   
   Features:
-  - Deploy JavaScript code to programmable cards
-  - Local code emulation and testing
-  - Transaction log retrieval
-  - Account and balance management
-  - Environment variable management
+    - Deploy JavaScript code to programmable cards
+    - Local code emulation and testing
+    - Transaction log retrieval
+    - Account and balance management
+    - Environment variable management
 
 grade: stable
 confinement: strict
 base: core24
 
 apps:
-  ipb:
+  investec-ipb:
     command: usr/bin/ipb
     plugs:
       - network
