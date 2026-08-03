@@ -160,20 +160,21 @@ npm run pkg:linux
 # Build snap
 snapcraft
 
-# Result: ipb_0.8.3_amd64.snap
+# Result: investec-ipb_0.9.3_amd64.snap
 ```
 
 ### Installing Snap
 
 ```bash
-sudo snap install ipb_0.8.3_amd64.snap --dangerous
+sudo snap install investec-ipb_0.9.3_amd64.snap --dangerous
 ```
 
 ### Publishing to Snap Store
 
 1. Register at [Snap Store](https://snapcraft.io)
-2. Upload snap: `snapcraft upload --release=stable ipb_0.8.3_amd64.snap`
-3. Users install: `sudo snap install ipb`
+2. Register the snap name (once): `snapcraft register investec-ipb`
+3. Upload snap: `snapcraft upload --release=stable investec-ipb_0.9.3_amd64.snap`
+4. Users install: `sudo snap install investec-ipb`
 
 ### GitHub Actions: Automatic Snap Store Publish
 
@@ -190,7 +191,7 @@ when `SNAPCRAFT_STORE_CREDENTIALS` is configured.
 
    ```bash
    snapcraft export-login \
-     --snaps ipb \
+     --snaps investec-ipb \
      --acls package_access,package_push,package_update,package_release \
      --channels stable \
      snapcraft-login.txt

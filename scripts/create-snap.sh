@@ -52,4 +52,5 @@ snapcraft pack --destructive-mode
 echo ""
 echo "Snap build complete."
 echo "Install locally with:"
-echo "  sudo snap install ipb_${VERSION}_amd64.snap --dangerous"
+echo "  sudo snap install investec-ipb_${VERSION}_amd64.snap --dangerous"
+echo "Then run: investec-ipb --version"

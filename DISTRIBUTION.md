@@ -312,7 +312,7 @@ sudo snap install snapcraft --classic
 snapcraft
 
 # Install
-sudo snap install ipb_0.8.3_amd64.snap --dangerous
+sudo snap install investec-ipb_0.8.3_amd64.snap --dangerous
 ```
 
 See `snap/snapcraft.yaml` for configuration.
