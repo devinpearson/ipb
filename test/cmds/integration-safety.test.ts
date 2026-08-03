@@ -30,7 +30,7 @@ const mockState = vi.hoisted(() => ({
     text: '',
   },
   cardApi: {
-    getSavedCode: vi.fn(),
+    getCode: vi.fn(),
     getCards: vi.fn(),
     uploadEnv: vi.fn(),
     uploadCode: vi.fn(),
@@ -90,7 +90,7 @@ describe('integration safety net', () => {
     mockState.spinner.clear.mockClear();
     mockState.spinner.succeed.mockClear();
     mockState.spinner.fail.mockClear();
-    mockState.cardApi.getSavedCode.mockReset();
+    mockState.cardApi.getCode.mockReset();
     mockState.cardApi.getCards.mockReset();
     mockState.cardApi.uploadEnv.mockReset();
     mockState.cardApi.uploadCode.mockReset();
@@ -274,7 +274,7 @@ describe('integration safety net', () => {
   });
 
   it('fetch always cleans spinner on error', async () => {
-    mockState.cardApi.getSavedCode.mockRejectedValue(new Error('fetch failed'));
+    mockState.cardApi.getCode.mockRejectedValue(new Error('fetch failed'));
 
     await expect(
       fetchCommand({
@@ -296,7 +296,7 @@ describe('integration safety net', () => {
 
   it('fetch does not start spinner when stdout is piped', async () => {
     mockState.isPiped = true;
-    mockState.cardApi.getSavedCode.mockRejectedValue(new Error('fetch failed'));
+    mockState.cardApi.getCode.mockRejectedValue(new Error('fetch failed'));
 
     await expect(
       fetchCommand({

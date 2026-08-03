@@ -27,7 +27,7 @@ import type { CommonOptions } from './types.js';
 export async function payCommand(
   accountId: string,
   beneficiaryId: string,
-  amount: number,
+  amount: number | string,
   reference: string,
   options: CommonOptions
 ) {
@@ -45,11 +45,11 @@ export async function payCommand(
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Beneficiary ID is required');
   }
 
+  // Commander passes args as strings; coerce before validation/formatting.
   if (!amount) {
-    const amt = await input({ message: 'Enter amount (in rands):' });
-    amount = parseFloat(amt);
+    amount = await input({ message: 'Enter amount (in rands):' });
   }
-  validateAmount(amount);
+  amount = validateAmount(amount);
 
   if (!reference) {
     reference = await input({ message: 'Enter reference for the payment:' });
