@@ -19,4 +19,9 @@ describe('determineExitCode', () => {
     const err = new CliError(ERROR_CODES.INVALID_INPUT, 'bad shell');
     expect(determineExitCode(err, err.code, err.message)).toBe(ExitCode.VALIDATION_ERROR);
   });
+
+  it('maps RATE_LIMIT_EXCEEDED to API error', () => {
+    const err = new CliError(ERROR_CODES.RATE_LIMIT_EXCEEDED, 'too many requests');
+    expect(determineExitCode(err, err.code, err.message)).toBe(ExitCode.API_ERROR);
+  });
 });
