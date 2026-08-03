@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { promises as fs } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // esbuild configuration for bundling the CLI application
@@ -7,6 +8,8 @@ import { build } from 'esbuild';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
+const packageVersion = require('./package.json').version;
 
 /**
  * Copies templates and assets to the bundle directory
@@ -75,6 +78,10 @@ async function buildApp(options = {}) {
       sourcemap: false,
       minify,
       treeShaking: true,
+      // Embed package.json version so standalone binaries do not need package.json on disk
+      define: {
+        __IPB_PACKAGE_VERSION__: JSON.stringify(packageVersion),
+      },
       // Bundle all npm packages, but keep node: built-ins external (pkg will include Node.js)
       // Don't use packages: 'external' - we want to bundle everything
       logLevel: 'info',

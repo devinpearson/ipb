@@ -5,6 +5,7 @@
 // For more information, see README.md
 
 import 'dotenv/config';
+import { createRequire } from 'node:module';
 import process from 'node:process';
 import chalk from 'chalk';
 import { Command } from 'commander';
@@ -30,10 +31,24 @@ import {
 
 export { credentialLocation, credentials, optionCredentials, printTitleBox };
 
+// Injected by esbuild for standalone binaries; absent under tsc/npm installs.
+declare const __IPB_PACKAGE_VERSION__: string | undefined;
+
+/**
+ * Resolves the CLI version from package.json (or the esbuild-injected value).
+ */
+function getCliVersion(): string {
+  if (typeof __IPB_PACKAGE_VERSION__ !== 'undefined') {
+    return __IPB_PACKAGE_VERSION__;
+  }
+  const require = createRequire(import.meta.url);
+  return (require('../package.json') as { version: string }).version;
+}
+
 // Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
 configureChalk();
 
-const version = '0.8.3';
+const version = getCliVersion();
 const program = new Command();
 
 // Improve error output for missing arguments/options
