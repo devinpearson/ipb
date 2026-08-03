@@ -93,6 +93,7 @@ jobs:
 
       - name: Rename binary (Windows)
         if: matrix.platform == 'win'
+        shell: bash
         run: |
           cd dist
           # pkg creates binaries with package name
@@ -100,6 +101,10 @@ jobs:
             mv investec-ipb-win-x64.exe ${{ matrix.binary-name }}
           elif [ -f "index.exe" ]; then
             mv index.exe ${{ matrix.binary-name }}
+          else
+            echo "Expected Windows binary not found in dist/"
+            ls -la
+            exit 1
           fi
 
       - name: Calculate SHA256 checksum (macOS/Linux)
