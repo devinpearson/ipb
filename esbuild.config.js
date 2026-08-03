@@ -2,7 +2,7 @@
 import { promises as fs } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 // esbuild configuration for bundling the CLI application
 import { build } from 'esbuild';
 
@@ -103,8 +103,9 @@ async function buildApp(options = {}) {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run if called directly (pathToFileURL is required for Windows path matching)
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === entryHref) {
   const args = process.argv.slice(2);
   const minify = args.includes('--minify');
 

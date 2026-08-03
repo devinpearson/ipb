@@ -66,6 +66,15 @@ jobs:
       - name: Bundle with esbuild
         run: npm run bundle
 
+      - name: Verify bundle output
+        shell: bash
+        run: |
+          test -f dist-bundle/index.cjs || {
+            echo "dist-bundle/index.cjs was not produced by npm run bundle"
+            ls -la dist-bundle || true
+            exit 1
+          }
+
       - name: Package binary
         run: npx pkg dist-bundle/index.cjs --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
 
