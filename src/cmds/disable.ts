@@ -1,38 +1,54 @@
-import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
-  cardKey: number;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
+import { credentials, printTitleBox } from '../runtime-credentials.js';
+import {
+  confirmDestructiveOperation,
+  createSpinner,
+  initializeApi,
+  isStdoutPiped,
+  normalizeCardKey,
+  resolveSpinnerState,
+  withSpinner,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
+
+interface Options extends CommonOptions {
+  cardKey?: string | number;
 }
 
+/**
+ * Disables code on a programmable card.
+ * @param options - CLI options including card key and API credentials
+ * @throws {CliError} When card key is missing or API call fails
+ */
 export async function disableCommand(options: Options) {
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("cardkey is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+
+  // Require confirmation before disabling (deactivates code)
+  const confirmed = await confirmDestructiveOperation(
+    `This will disable programmable code on card ${cardKey}. Code will remain deployed but inactive. Continue?`,
+    { yes: options.yes }
+  );
+
+  if (!confirmed) {
+    console.log('Disable cancelled.');
+    return;
   }
-  try {
+
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🍄 disabling code on card...');
+  await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
 
-    console.log("🍄 disabling code on card...");
-    const result = await api.toggleCode(options.cardKey, false);
+    const result = await api.toggleCode(cardKey, false);
     if (!result.data.result.Enabled) {
-      console.log("✅ code disabled successfully");
+      console.log('✅ code disabled successfully');
     } else {
-      console.log("❌ code disable failed");
+      console.log('❌ code disable failed');
     }
-    console.log("");
-  } catch (error: any) {
-    console.error(chalk.redBright("Failed to disable:"), error.message);
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
-  }
+  });
 }

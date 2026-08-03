@@ -1,0 +1,283 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            target: node24-macos-x64
+            binary-name: ipb-macos-x64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            target: node24-macos-arm64
+            binary-name: ipb-macos-arm64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            target: node24-linux-x64
+            binary-name: ipb-linux-x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+            target: node24-linux-arm64
+            binary-name: ipb-linux-arm64
+          - os: windows-latest
+            platform: win
+            arch: x64
+            target: node24-win-x64
+            binary-name: ipb-win-x64.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Bundle with esbuild
+        run: npm run bundle
+
+      - name: Package binary
+        run: npx pkg dist-bundle/index.cjs --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
+
+      - name: Rename binary (macOS/Linux)
+        if: matrix.platform != 'win'
+        run: |
+          cd dist
+          # pkg creates binaries with package name (investec-ipb-{platform}-{arch})
+          # Rename to our desired format
+          if [ -f "investec-ipb-${{ matrix.platform }}-${{ matrix.arch }}" ]; then
+            mv investec-ipb-${{ matrix.platform }}-${{ matrix.arch }} ${{ matrix.binary-name }}
+          elif [ -f "index" ]; then
+            mv index ${{ matrix.binary-name }}
+          fi
+          chmod +x ${{ matrix.binary-name }}
+
+      - name: Rename binary (Windows)
+        if: matrix.platform == 'win'
+        run: |
+          cd dist
+          # pkg creates binaries with package name
+          if [ -f "investec-ipb-win-x64.exe" ]; then
+            mv investec-ipb-win-x64.exe ${{ matrix.binary-name }}
+          elif [ -f "index.exe" ]; then
+            mv index.exe ${{ matrix.binary-name }}
+          fi
+
+      - name: Calculate SHA256 checksum (macOS/Linux)
+        if: matrix.platform != 'win'
+        shell: bash
+        run: |
+          cd dist
+          shasum -a 256 ${{ matrix.binary-name }} > ${{ matrix.binary-name }}.sha256
+
+      - name: Calculate SHA256 checksum (Windows)
+        if: matrix.platform == 'win'
+        shell: bash
+        run: |
+          cd dist
+          sha256sum ${{ matrix.binary-name }} > ${{ matrix.binary-name }}.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary-name }}
+          path: |
+            dist/${{ matrix.binary-name }}
+            dist/${{ matrix.binary-name }}.sha256
+          retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version from tag
+        id: tag_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f -name "ipb-*" ! -name "*.sha256" -exec cp {} release-assets/ \;
+          find artifacts -type f -name "*.sha256" -exec cp {} release-assets/ \;
+
+      - name: Create checksums file
+        run: |
+          cd release-assets
+          echo "# SHA256 Checksums" > checksums.txt
+          echo "" >> checksums.txt
+          for file in *.sha256; do
+            if [ -f "$file" ]; then
+              echo "## ${file%.sha256}" >> checksums.txt
+              cat "$file" >> checksums.txt
+              echo "" >> checksums.txt
+            fi
+          done
+
+      - name: Generate Homebrew formula with release checksums
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const version = process.env.VERSION;
+          const checksums = new Map();
+          const releaseAssetsDir = path.join(process.cwd(), 'release-assets');
+          for (const file of fs.readdirSync(releaseAssetsDir)) {
+            if (!file.endsWith('.sha256')) continue;
+            const full = path.join(releaseAssetsDir, file);
+            const content = fs.readFileSync(full, 'utf8').trim();
+            const [sha, name] = content.split(/\s+/);
+            if (sha && name) checksums.set(name, sha);
+          }
+
+          const required = [
+            'ipb-macos-arm64',
+            'ipb-macos-x64',
+            'ipb-linux-arm64',
+            'ipb-linux-x64',
+          ];
+          for (const artifact of required) {
+            if (!checksums.has(artifact)) {
+              throw new Error(`Missing checksum for ${artifact}`);
+            }
+          }
+
+          const formula = [
+            '# typed: false',
+            '# frozen_string_literal: true',
+            '',
+            'class Ipb < Formula',
+            '  desc "CLI application to manage programmable banking cards"',
+            '  homepage "https://github.com/devinpearson/ipb"',
+            `  version "${version}"`,
+            '  license "MIT"',
+            '',
+            '  on_macos do',
+            '    if Hardware::CPU.arm?',
+            '      url "https://github.com/devinpearson/ipb/releases/download/v#{version}/ipb-macos-arm64"',
+            `      sha256 "${checksums.get('ipb-macos-arm64')}"`,
+            '',
+            '      def install',
+            '        bin.install "ipb-macos-arm64" => "ipb"',
+            '      end',
+            '    end',
+            '    if Hardware::CPU.intel?',
+            '      url "https://github.com/devinpearson/ipb/releases/download/v#{version}/ipb-macos-x64"',
+            `      sha256 "${checksums.get('ipb-macos-x64')}"`,
+            '',
+            '      def install',
+            '        bin.install "ipb-macos-x64" => "ipb"',
+            '      end',
+            '    end',
+            '  end',
+            '',
+            '  on_linux do',
+            '    if Hardware::CPU.arm?',
+            '      url "https://github.com/devinpearson/ipb/releases/download/v#{version}/ipb-linux-arm64"',
+            `      sha256 "${checksums.get('ipb-linux-arm64')}"`,
+            '',
+            '      def install',
+            '        bin.install "ipb-linux-arm64" => "ipb"',
+            '      end',
+            '    end',
+            '    if Hardware::CPU.intel?',
+            '      url "https://github.com/devinpearson/ipb/releases/download/v#{version}/ipb-linux-x64"',
+            `      sha256 "${checksums.get('ipb-linux-x64')}"`,
+            '',
+            '      def install',
+            '        bin.install "ipb-linux-x64" => "ipb"',
+            '      end',
+            '    end',
+            '  end',
+            '',
+            '  test do',
+            '    system "#{bin}/ipb", "--version"',
+            '  end',
+            'end',
+            '',
+          ].join('\n');
+          fs.writeFileSync(path.join(releaseAssetsDir, 'ipb.rb'), formula);
+          EOF
+        env:
+          VERSION: ${{ steps.tag_version.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/*
+          name: Release v${{ steps.tag_version.outputs.version }}
+          body: |
+            ## Release v${{ steps.tag_version.outputs.version }}
+
+            ### Installation
+
+            **Homebrew (macOS/Linux):**
+            ```bash
+            brew tap devinpearson/ipb
+            brew install ipb
+            ```
+
+            **Direct Download:**
+            - Download the appropriate binary for your platform
+            - Make it executable: `chmod +x ipb-*`
+            - Move to your PATH: `sudo mv ipb-* /usr/local/bin/ipb`
+
+            **npm (requires Node.js):**
+            ```bash
+            npm install -g investec-ipb
+            ```
+
+            ### Checksums
+            See checksums.txt for SHA256 checksums of all binaries.
+
+            ### Changes
+            See [CHANGELOG.md](https://github.com/devinpearson/ipb/blob/main/CHANGELOG.md) for full changelog.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

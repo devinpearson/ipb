@@ -1,12 +1,12 @@
 // This function runs before a transaction.
-const beforeTransaction = async (authorization) => {
+const _beforeTransaction = async (authorization) => {
   console.log(authorization);
 };
 // This function runs after a transaction was successful.
-const afterTransaction = async (transaction) => {
+const _afterTransaction = async (transaction) => {
   console.log(transaction);
 };
 // This function runs after a transaction was declined.
-const afterDecline = async (transaction) => {
+const _afterDecline = async (transaction) => {
   console.log(transaction);
 };

@@ -1,19 +1,14 @@
 Output assets/new.gif
+Source tapes/config.tape
 
-Set Shell "bash"
-Set FontSize 24
-Set Width 1400
-Set Height 600
-Set TypingSpeed 500ms
-
-Type "ipb new myproject" Sleep 500ms  Enter
+Type "ipb new myproject" Sleep 1000ms  Enter
 
 Sleep 2s
 
-Type "cd myproject" Sleep 500ms  Enter
+Type "cd myproject" Sleep 1000ms  Enter
 Sleep 2s
 
-Type "ls -a" Sleep 500ms  Enter
+Type "ls -a" Sleep 1000ms  Enter
 
 Sleep 5s
 

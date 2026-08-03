@@ -1,44 +1,47 @@
-import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
-  cardKey: number;
-  filename: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
-export async function uploadCommand(options: Options) {
-  if (!fs.existsSync(options.filename)) {
-    throw new Error("File does not exist");
-  }
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
-  }
-  try {
-    const api = await initializeApi(credentials, options);
+import { credentials, printTitleBox } from '../runtime-credentials.js';
+import {
+  createSpinner,
+  initializeApi,
+  isStdoutPiped,
+  normalizeCardKey,
+  resolveSpinnerState,
+  runReadUploadCommand,
+  validateFilePath,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-    console.log("🚀 uploading code");
-    const raw = { code: "" };
-    const code = fs.readFileSync(options.filename).toString();
-    raw.code = code;
-    const result = await api.uploadCode(options.cardKey, raw);
-    console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
-    console.log("");
-  } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to upload to saved code:"),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
-  }
+interface Options extends CommonOptions {
+  cardKey?: string | number;
+  filename: string;
+}
+
+/**
+ * Uploads code to a card without publishing it.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
+ */
+export async function uploadCommand(options: Options) {
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.js']);
+
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 reading code...');
+  const api = await initializeApi(credentials, options);
+  const result = await runReadUploadCommand({
+    spinner,
+    spinnerEnabled,
+    filename: normalizedFilename,
+    readMessage: (size) => `🚀 reading code from ${normalizedFilename} (${size})...`,
+    uploadMessage: (size) => `🚀 uploading code (${size})...`,
+    upload: async (content) => await api.uploadCode(cardKey, { code: content }),
+  });
+
+  console.log(`🎉 code uploaded with codeId: ${result.data.result.codeId}`);
 }

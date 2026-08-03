@@ -1,524 +1,243 @@
 #!/usr/bin/env node
-import "dotenv/config";
-import process from "process";
-import fs from "fs";
+// File: src/index.ts
+// Main entry point for the Investec Programmable Banking CLI
+// Sets up all CLI commands and shared options using Commander.js
+// For more information, see README.md
+
+import 'dotenv/config';
+import { createRequire } from 'node:module';
+import process from 'node:process';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import { registerCliCommands } from './register-cli-commands.js';
 import {
-  cardsCommand,
-  configCommand,
-  logsCommand,
-  deployCommand,
-  fetchCommand,
-  uploadCommand,
-  envCommand,
-  uploadEnvCommand,
-  publishedCommand,
-  publishCommand,
-  enableCommand,
-  disableCommand,
-  runCommand,
-  currenciesCommand,
-  countriesCommand,
-  merchantsCommand,
-  newCommand,
-} from "./cmds/index.js";
-import { homedir } from "os";
-import { Command, Option } from "commander";
-import chalk from "chalk";
-import { simulateCommand } from "./cmds/simulate.js";
-import { InvestecCardApi } from "investec-card-api";
-import { CardApi } from "./mock-card.js";
+  credentialLocation,
+  credentials,
+  optionCredentials,
+  printTitleBox,
+} from './runtime-credentials.js';
+import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
+import {
+  checkForUpdates,
+  configureChalk,
+  getVerboseMode,
+  handleCliError,
+  isUpdateCheckDisabled,
+  logCommandHistory,
+  shouldDisplayUpdateNotification,
+  showUpdateNotification,
+  warnAboutSecretUsage,
+} from './utils.js';
 
-const version = "0.7.8";
+export { credentialLocation, credentials, optionCredentials, printTitleBox };
+
+// Injected by esbuild for standalone binaries; absent under tsc/npm installs.
+declare const __IPB_PACKAGE_VERSION__: string | undefined;
+
+/**
+ * Resolves the CLI version from package.json (or the esbuild-injected value).
+ */
+function getCliVersion(): string {
+  if (typeof __IPB_PACKAGE_VERSION__ !== 'undefined') {
+    return __IPB_PACKAGE_VERSION__;
+  }
+  const require = createRequire(import.meta.url);
+  return (require('../package.json') as { version: string }).version;
+}
+
+// Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
+configureChalk();
+
+const version = getCliVersion();
 const program = new Command();
-export const credentialLocation = {
-  folder: `${homedir()}/.ipb`,
-  filename: `${homedir()}/.ipb/.credentials.json`,
-};
-export async function printTitleBox() {
-  //   const v = await checkLatestVersion()
-  console.log("");
-  console.log("🦓 Investec Programmable Banking CLI");
-  console.log("🔮 " + chalk.blueBright(`v${version}`));
-  //   if (v !== version) {
-  // console.log("🔥 " + chalk.redBright(`v${v} is available`))
-  //   };
-  console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  console.log("");
+
+// Improve error output for missing arguments/options
+program.showHelpAfterError();
+program.showSuggestionAfterError();
+
+const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
+process.argv = spinnerFlagNormalization.argv;
+
+// Show help if no arguments are provided (unless --check-updates is specified)
+if (process.argv.length <= 2 && !process.argv.includes('--check-updates')) {
+  program.outputHelp();
+  process.exit(0);
 }
 
-let cred = {
-  clientId: "",
-  clientSecret: "",
-  apiKey: "",
-  cardKey: "",
-};
-if (fs.existsSync(credentialLocation.filename)) {
-  try {
-    const data = fs.readFileSync(credentialLocation.filename, "utf8");
-    cred = JSON.parse(data);
-  } catch (err) {
-    if (err instanceof Error) {
-      console.error(
-        chalk.red(`🙀 Invalid credentials file format: ${err.message}`),
-        console.log(""),
-      );
-    } else {
-      console.error(chalk.red("🙀 Invalid credentials file format"));
-      console.log("");
-    }
-  }
-}
-export interface Credentials {
-  host: string;
-  clientId: string;
-  clientSecret: string;
-  apiKey: string;
-  cardKey: string;
-}
-
-export interface BasicOptions {
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-}
-
-export async function initializeApi(
-  credentials: Credentials,
-  options: BasicOptions,
-) {
-  printTitleBox();
-  credentials = await optionCredentials(options, credentials);
-  let api;
-  if (process.env.DEBUG == "true") {
-    // console.log(chalk.yellow('Using mock API for debugging'));
-    api = new CardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  } else {
-    api = new InvestecCardApi(
-      credentials.clientId,
-      credentials.clientSecret,
-      credentials.apiKey,
-      credentials.host,
-    );
-  }
-  const accessResult = await api.getAccessToken();
-  if (accessResult.scope !== "cards") {
-    console.log(
-      chalk.redBright(
-        "Scope is not only cards, please consider reducing the scopes",
-      ),
-    );
-    console.log("");
-  }
-  return api;
-}
-export async function optionCredentials(
-  options: BasicOptions,
-  credentials: any,
-) {
-  if (options.credentialsFile) {
-    credentials = await loadcredentialsFile(
-      credentials,
-      options.credentialsFile,
-    );
-  }
-  if (options.apiKey) {
-    credentials.apiKey = options.apiKey;
-  }
-  if (options.clientId) {
-    credentials.clientId = options.clientId;
-  }
-  if (options.clientSecret) {
-    credentials.clientSecret = options.clientSecret;
-  }
-  if (options.host) {
-    credentials.host = options.host;
-  }
-  return credentials;
-}
-export async function loadcredentialsFile(
-  credentials: Credentials,
-  credentialsFile: string,
-) {
-  if (credentialsFile) {
-    const file = await import("file://" + credentialsFile, {
-      with: { type: "json" },
-    });
-    if (file.host) {
-      credentials.host = file.host;
-    }
-    if (file.apiKey) {
-      credentials.apiKey = file.apiKey;
-    }
-    if (file.clientId) {
-      credentials.clientId = file.clientId;
-    }
-    if (file.clientSecret) {
-      credentials.clientSecret = file.clientSecret;
-    }
-  }
-  return credentials;
-}
-export const credentials: Credentials = {
-  host: process.env.INVESTEC_HOST || "https://openapi.investec.com",
-  clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId,
-  clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret,
-  apiKey: process.env.INVESTEC_API_KEY || cred.apiKey,
-  cardKey: process.env.INVESTEC_CARD_KEY || cred.cardKey,
-};
 async function main() {
-  program
-    .name("ipb")
-    .description("CLI to manage Investec Programmable Banking")
-    .version(version);
+  program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
 
-  program
-    .command("cards")
-    .description("Gets a list of your cards")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(cardsCommand);
-
-  program
-    .command("config")
-    .description("set auth credentials")
-    .option("--api-key <apiKey>", "Sets your api key for the Investec API")
-    .option(
-      "--client-id <clientId>",
-      "Sets your client Id for the Investec API",
-    )
-    .option(
-      "--client-secret <clientSecret>",
-      "Sets your client secret for the Investec API",
-    )
-    .option("--card-key <cardKey>", "Sets your card key for the Investec API")
-    .option("-v,--verbose", "additional debugging information")
-    .action(configCommand);
-
-  program
-    .command("deploy")
-    .description("deploy code to card")
-    .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(deployCommand);
-
-  program
-    .command("logs")
-    .description("fetches logs from the api")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(logsCommand);
-
-  program
-    .command("run")
-    .description("runs the code locally")
-    .option("-f,--filename <filename>", "the filename")
-    .option("-e,--env <env>", "env to run", "development")
-    .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-u,--currency <currency>", "currency code", "zar")
-    .option("-z,--mcc <mcc>", "merchant category code", "0000")
-    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
-    .option("-i,--city <city>", "city name", "Cape Town")
-    .option("-o,--country <country>", "country code", "ZA")
-    .option("-v,--verbose", "additional debugging information")
-    .action(runCommand);
-
-  program
-    .command("fetch")
-    .description("fetches the saved code")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(fetchCommand);
-
-  program
-    .command("upload")
-    .description("uploads to saved code")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(uploadCommand);
-
-  program
-    .command("env")
-    .description("downloads to env to a local file")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(envCommand);
-
-  program
-    .command("upload-env")
-    .description("uploads env to the card")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(uploadEnvCommand);
-
-  program
-    .command("published")
-    .description("downloads to published code to a local file")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(publishedCommand);
-
-  program
-    .command("publish")
-    .description("publishes code to the card")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("-i,--code-id <codeId>", "the code id of the save code")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(publishCommand);
-  program
-    .command("simulate")
-    .description("runs the code using the online simulator")
-    .requiredOption("-f,--filename <filename>", "the filename")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("-e,--env <env>", "env to run", "development")
-    .option("-a,--amount <amount>", "amount in cents", "10000")
-    .option("-u,--currency <currency>", "currency code", "zar")
-    .option("-z,--mcc <mcc>", "merchant category code", "0000")
-    .option("-m,--merchant <merchant>", "merchant name", "The Coders Bakery")
-    .option("-i,--city <city>", "city name", "Cape Town")
-    .option("-o,--country <country>", "country code", "ZA")
-    .option("-v,--verbose", "additional debugging information")
-    .action(simulateCommand);
-  program
-    .command("enable")
-    .description("enables code to be used on card")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(enableCommand);
-
-  program
-    .command("disable")
-    .description("disables code to be used on card")
-    .option("-c,--card-key <cardKey>", "the cardkey")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(disableCommand);
-
-  program
-    .command("currencies")
-    .description("Gets a list of supported currencies")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(currenciesCommand);
-
-  program
-    .command("countries")
-    .description("Gets a list of countries")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(countriesCommand);
-
-  program
-    .command("merchants")
-    .description("Gets a list of merchants")
-    .option("--api-key <apiKey>", "api key for the Investec API")
-    .option("--client-id <clientId>", "client Id for the Investec API")
-    .option(
-      "--client-secret <clientSecret>",
-      "client secret for the Investec API",
-    )
-    .option("--host <host>", "Set a custom host for the Investec Sandbox API")
-    .option(
-      "--credentials-file <credentialsFile>",
-      "Set a custom credentials file",
-    )
-    .option("-v,--verbose", "additional debugging information")
-    .action(merchantsCommand);
-
-  program
-    .command("new")
-    .description("Sets up scaffoldings for a new project")
-    .argument("<string>", "name of the new project")
-    .option("-v,--verbose", "additional debugging information")
-    .option("--force", "force overwrite existing files")
-    .addOption(
-      new Option("--template <template>", "name of the template to use")
-        .default("default")
-        .choices(["default", "petro"]),
-    )
-    .action(newCommand);
-
-  try {
-    await program.parseAsync(process.argv);
-  } catch (err) {
-    if (err instanceof Error) {
-      console.log("🙀 Error encountered: " + chalk.red(err.message));
-      console.log("");
-    } else {
-      console.log(
-        "🙀 Error encountered: " + chalk.red("An unknown error occurred"),
-      );
-      console.log("");
-    }
+  if (spinnerFlagNormalization.usedDeprecatedSpinnerFlag) {
+    console.warn(
+      chalk.yellow('Warning: `--spinner` / `-s` is deprecated. Use `--no-spinner` instead.')
+    );
   }
-}
 
-export async function checkLatestVersion() {
-  const response = await fetch("https://registry.npmjs.org/investec-ipb", {
-    method: "GET",
-    headers: {
-      Accept: "application/vnd.npm.install-v1+json",
-    },
+  // Add global options
+  program.option('--check-updates', 'Check for available updates');
+  program.option('--no-history', 'Disable command history logging');
+
+  // Add help text with command categories
+  program.addHelpText(
+    'afterAll',
+    `
+Command Categories:
+  Card Management        cards, enable, disable
+  Code Management        deploy, fetch, upload, publish, published, logs, run, simulate
+  Environment Management env, env-list, upload-env
+  Account Management     accounts, balances, transactions, beneficiaries
+  Payments              transfer, pay
+  Configuration         config
+  AI & Code Generation  new
+  Reference Data        currencies, countries, merchants
+  Utilities             completion
+
+For more information about a specific command, use:
+  $ ipb <command> --help
+`
+  );
+
+  registerCliCommands(program, { credentialLocation });
+
+  // Check for --check-updates flag in raw arguments
+  const hasCheckUpdatesFlag = process.argv.includes('--check-updates');
+
+  // If --check-updates flag is present, handle it before parsing
+  if (hasCheckUpdatesFlag && process.argv.length === 3) {
+    // Only --check-updates flag, no command
+    if (!isUpdateCheckDisabled()) {
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion) {
+        showUpdateNotification(version, latestVersion);
+      } else {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
+    } else {
+      console.log(chalk.dim('Skipping version check (IPB_NO_UPDATE_CHECK is set).'));
+    }
+    process.exit(0);
+  }
+
+  // Check if stdout is piped before parsing
+  const { isStdoutPiped } = await import('./utils.js');
+  const isPiped = isStdoutPiped();
+
+  // Determine initial verbose mode from raw args (before parsing)
+  const hasVerboseFlag = process.argv.includes('--verbose') || process.argv.includes('-v');
+  let verboseMode = getVerboseMode(hasVerboseFlag);
+
+  // Track command execution for history logging
+  const startTime = Date.now();
+  let commandName = '';
+  let commandOptions: Record<string, unknown> = {};
+  let exitCode = 0;
+
+  // Hook into command execution to capture command details
+  program.hook('preAction', (thisCommand) => {
+    commandName = thisCommand.name() || thisCommand.parent?.name() || '';
+    // Merge global options and command-specific options
+    const globalOpts = program.opts();
+    const commandOpts = thisCommand.opts();
+    commandOptions = { ...globalOpts, ...commandOpts };
+    verboseMode = getVerboseMode(
+      typeof commandOptions.verbose === 'boolean' ? commandOptions.verbose : undefined
+    );
   });
 
-  const data = (await response.json()) as { "dist-tags": { latest: string } };
-  const latestVersion = data["dist-tags"].latest;
+  try {
+    // Warn about secret usage (will only show if verbose or in non-interactive environment)
+    warnAboutSecretUsage({ verbose: verboseMode });
 
-  return latestVersion;
+    // Parse arguments to execute commands
+    await program.parseAsync(process.argv);
+
+    // If we got here, command succeeded
+    exitCode = 0;
+  } catch (error) {
+    // Command failed - exit code will be set by handleCliError
+    exitCode = 1;
+    throw error;
+  } finally {
+    // Log command history unless --no-history is set (for both success and failure)
+    try {
+      const globalOpts = program.opts();
+      const noHistory = globalOpts.history === false;
+
+      if (!noHistory && commandName) {
+        const duration = Date.now() - startTime;
+        // Get the actual command name from program.args or the command that was executed
+        const actualCommandName = program.args[0] || commandName;
+        const actualArgs = program.args.slice(1);
+
+        // Merge all options (global + command-specific)
+        const allOptions = { ...globalOpts, ...commandOptions };
+
+        // Non-blocking: don't await to avoid slowing down command exit
+        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(
+          () => {
+            // Ignore errors
+          }
+        );
+      }
+    } catch {
+      // Ignore errors logging history
+    }
+  }
+
+  // Check for updates after command execution (with rate limiting, unless --check-updates flag is used)
+  const updateNotificationAllowed = shouldDisplayUpdateNotification({
+    isPiped,
+    json: typeof commandOptions.json === 'boolean' ? commandOptions.json : undefined,
+    yaml: typeof commandOptions.yaml === 'boolean' ? commandOptions.yaml : undefined,
+    output: typeof commandOptions.output === 'string' ? commandOptions.output : undefined,
+  });
+
+  if (!isUpdateCheckDisabled()) {
+    if (hasCheckUpdatesFlag && process.argv.length > 3) {
+      // --check-updates flag with a command - check after command execution
+      const latestVersion = await checkForUpdates(version, true);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      } else if (!latestVersion) {
+        console.log(chalk.green('✓ You are using the latest version.'));
+      }
+    } else if (process.argv.length === 2) {
+      // No arguments provided (shouldn't happen due to early exit, but just in case)
+      const latestVersion = await checkForUpdates(version, false);
+      if (latestVersion && updateNotificationAllowed) {
+        showUpdateNotification(version, latestVersion);
+      }
+    } else if (!hasCheckUpdatesFlag) {
+      // Background check for regular commands (non-blocking, cached for 24 hours)
+      if (updateNotificationAllowed) {
+        checkForUpdates(version, false)
+          .then((latest) => {
+            if (latest) {
+              showUpdateNotification(version, latest);
+            }
+          })
+          .catch(() => {
+            // Silent failure for background checks
+          });
+      }
+    }
+  }
+
+  // Only add newline if not piped (to avoid corrupting JSON output)
+  if (!isPiped) {
+    console.log(''); // Add a newline after command execution
+  }
 }
 
-main();
+main().catch((err) => {
+  const commandContext = (err as Error & { commandContext?: string })?.commandContext;
+  const context = commandContext ? `${commandContext} command` : 'run CLI';
+  // Determine verbose mode from CLI flags (default false if not available)
+  const globalOpts = program.opts();
+  const verboseOption =
+    typeof globalOpts.verbose === 'boolean'
+      ? globalOpts.verbose
+      : process.argv.includes('--verbose') || process.argv.includes('-v');
+  const verboseMode = getVerboseMode(verboseOption);
+  handleCliError(err, { verbose: verboseMode }, context);
+});

@@ -1,44 +1,46 @@
-import fs from "fs";
-import { credentials, initializeApi } from "../index.js";
-import chalk from "chalk";
-interface Options {
-  cardKey: number;
-  filename: string;
-  host: string;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-  credentialsFile: string;
-  verbose: boolean;
-}
-export async function uploadEnvCommand(options: Options) {
-  if (!fs.existsSync(options.filename)) {
-    throw new Error("File does not exist");
-  }
-  if (options.cardKey === undefined) {
-    if (credentials.cardKey === "") {
-      throw new Error("card-key is required");
-    }
-    options.cardKey = Number(credentials.cardKey);
-  }
-  try {
-    const api = await initializeApi(credentials, options);
+import { promises as fsPromises } from 'node:fs';
+import { credentials, printTitleBox } from '../runtime-credentials.js';
+import {
+  createSpinner,
+  initializeApi,
+  isStdoutPiped,
+  normalizeCardKey,
+  resolveSpinnerState,
+  validateFilePath,
+  withSpinnerOutcome,
+} from '../utils.js';
+import type { CommonOptions } from './types.js';
 
-    console.log("🚀 uploading env");
+interface Options extends CommonOptions {
+  cardKey?: string | number;
+  filename: string;
+}
+
+/**
+ * Uploads environment variables to a card from a JSON file.
+ * @param options - CLI options including card key, filename, and API credentials
+ * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
+ */
+export async function uploadEnvCommand(options: Options) {
+  // Validate and normalize filename
+  const normalizedFilename = await validateFilePath(options.filename, ['.json']);
+
+  const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
+  printTitleBox();
+  const isPiped = isStdoutPiped();
+  const { spinnerEnabled } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, '🚀 uploading env...');
+  const api = await initializeApi(credentials, options);
+
+  await withSpinnerOutcome(spinner, spinnerEnabled, async () => {
     const raw = { variables: {} };
-    const variables = fs.readFileSync(options.filename, "utf8");
+    const variables = await fsPromises.readFile(normalizedFilename, 'utf8');
     raw.variables = JSON.parse(variables);
-    const result = await api.uploadEnv(options.cardKey, raw);
-    console.log(`🎉 env uploaded`);
-    console.log("");
-  } catch (error: any) {
-    console.error(
-      chalk.redBright("Failed to upload environment variables: "),
-      error.message,
-    );
-    console.log("");
-    if (options.verbose) {
-      console.error(error);
-    }
-  }
+    return await api.uploadEnv(cardKey, raw);
+  });
+  console.log(`🎉 env uploaded`);
 }
