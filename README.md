@@ -137,12 +137,12 @@ macOS:
 
 ```sh
 # Apple Silicon
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.1/ipb-macos-arm64 -o ipb
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.2/ipb-macos-arm64 -o ipb
 chmod +x ipb
 sudo mv ipb /usr/local/bin/
 
 # Intel
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.1/ipb-macos-x64 -o ipb
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.2/ipb-macos-x64 -o ipb
 chmod +x ipb
 sudo mv ipb /usr/local/bin/
 ```
@@ -150,15 +150,15 @@ sudo mv ipb /usr/local/bin/
 Linux (.deb):
 
 ```sh
-wget https://github.com/devinpearson/ipb/releases/download/v0.9.1/ipb_0.9.1_amd64.deb
-sudo dpkg -i ipb_0.9.1_amd64.deb
+wget https://github.com/devinpearson/ipb/releases/download/v0.9.2/ipb_0.9.2_amd64.deb
+sudo dpkg -i ipb_0.9.2_amd64.deb
 sudo apt-get install -f
 ```
 
 Linux binary:
 
 ```sh
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.1/ipb-linux-x64 -o ipb
+curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.2/ipb-linux-x64 -o ipb
 # or: ipb-linux-arm64
 chmod +x ipb
 sudo mv ipb /usr/local/bin/
