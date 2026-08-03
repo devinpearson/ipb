@@ -20,7 +20,7 @@ interface Options extends CommonOptions {
 /**
  * Fetches saved code from a card and saves it to a file.
  * @param options - CLI options including card key, filename, and API credentials
- * @throws {CliError} When card key is missing, API doesn't support fetching, or file operations fail
+ * @throws {CliError} When card key is missing, API response is unexpected, or file operations fail
  */
 export async function fetchCommand(options: Options) {
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
@@ -36,17 +36,7 @@ export async function fetchCommand(options: Options) {
   let normalizedFilename = '';
   await withSpinner(spinner, spinnerEnabled, async () => {
     const api = await initializeApi(credentials, options);
-
-    // The api object may not have a getCode method; use getSavedCode if available, or handle gracefully
-    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
-    if (typeof (api as any).getSavedCode !== 'function') {
-      throw new CliError(
-        ERROR_CODES.UNSUPPORTED_OPERATION,
-        'API client does not support fetching saved code (getSavedCode missing)'
-      );
-    }
-    // biome-ignore lint/suspicious/noExplicitAny: API interface may not include all methods
-    const result = await (api as any).getSavedCode(cardKey);
+    const result = await api.getCode(cardKey);
 
     if (
       !result ||
@@ -60,15 +50,7 @@ export async function fetchCommand(options: Options) {
       );
     }
 
-    const fetchedCode = result.data.result.code;
-    if (typeof fetchedCode !== 'string') {
-      throw new CliError(
-        ERROR_CODES.INVESTEC_API_ERROR,
-        'Failed to fetch code: Unexpected API response'
-      );
-    }
-
-    code = fetchedCode;
+    code = result.data.result.code;
     normalizedFilename = await validateFilePathForWrite(options.filename, ['.js']);
   });
 

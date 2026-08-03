@@ -1,6 +1,6 @@
 {
   "name": "investec-ipb",
-  "version": "0.8.4",
+  "version": "0.9.0",
   "main": "bin/index.js",
   "bin": {
     "ipb": "./bin/index.js"
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run clean && tsc && npm run copy-files",
     "clean": "rimraf ./bin",
-    "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/ && cp instructions.txt ./bin/instructions.txt",
+    "copy-files": "cp -r ./templates/ ./bin/templates/ && cp -r ./assets/ ./bin/assets/ && cp instructions.txt ./bin/instructions.txt && chmod +x ./bin/index.js",
     "test": "vitest",
     "test:run": "vitest --run",
     "lint": "biome check .",
@@ -23,7 +23,7 @@
     "ci": "npm run build && npm run type-check && npm run lint && npm run lint:md && npm run format:check && npm run test:run && npm audit",
     "verify:ci": "npm run build && npm run test:run && npm run bundle",
     "dev": "vitest",
-    "tapes": "./scripts/tapes.sh",
+    "tapes": "npm run build && chmod +x ./bin/index.js && npm link && ./scripts/tapes.sh",
     "docs": "npm run build && node bin/index.js docs",
     "docs:source": "node --loader tsx src/cmds/docs.ts",
     "prepublishOnly": "npm run build && npm run docs",

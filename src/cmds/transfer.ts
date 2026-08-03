@@ -25,7 +25,7 @@ import type { CommonOptions } from './types.js';
 export async function transferCommand(
   accountId: string,
   beneficiaryAccountId: string,
-  amount: number,
+  amount: number | string,
   reference: string,
   options: CommonOptions
 ) {
@@ -42,11 +42,11 @@ export async function transferCommand(
   }
   validateAccountId(beneficiaryAccountId);
 
+  // Commander passes args as strings; coerce before validation/formatting.
   if (!amount) {
-    const amt = await input({ message: 'Enter amount (in rands):' });
-    amount = parseFloat(amt);
+    amount = await input({ message: 'Enter amount (in rands):' });
   }
-  validateAmount(amount);
+  amount = validateAmount(amount);
 
   if (!reference) {
     reference = await input({ message: 'Enter reference for the transfer:' });

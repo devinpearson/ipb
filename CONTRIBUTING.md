@@ -215,7 +215,7 @@ User-facing README download examples should use the same version as `package.jso
 
 ```sh
 IPB_NO_UPDATE_CHECK=1 npm run tapes
-# runs scripts/tapes.sh — requires VHS and a built CLI
+# builds, npm links local ipb, then runs scripts/tapes.sh — requires VHS
 ```
 
 Regenerate assets under `assets/` when UX of recorded commands changes meaningfully.
