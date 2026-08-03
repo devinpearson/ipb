@@ -1,5 +1,5 @@
 name: ipb
-version: '0.8.3'
+version: '0.9.3'
 summary: CLI application to manage Investec Programmable Banking cards
 description: |
   A command-line interface for managing and deploying code to Investec
@@ -19,7 +19,7 @@ base: core24
 
 apps:
   ipb:
-    command: ipb
+    command: usr/bin/ipb
     plugs:
       - network
       - home
