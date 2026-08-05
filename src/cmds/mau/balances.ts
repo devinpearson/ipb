@@ -10,7 +10,7 @@ import {
   withSpinner,
 } from '../../utils.js';
 import type { MauOptions } from '../types.js';
-import { extractMauRecord, resolveMauAccountId } from './helpers.js';
+import { extractMauBalance, resolveMauAccountId } from './helpers.js';
 
 /**
  * Fetch and display Mauritius (MAU) account balances.
@@ -53,7 +53,7 @@ export async function mauBalancesCommand(accountId: string, options: MauOptions)
       maxRetries: 3,
       verbose,
     });
-    balance = extractMauRecord(result);
+    balance = extractMauBalance(result);
   });
 
   if (!balance) {

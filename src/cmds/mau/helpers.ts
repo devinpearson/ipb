@@ -96,26 +96,66 @@ export function extractMauDataList<T extends object>(result: unknown, field: str
 }
 
 /**
- * Extracts a single MAU record (e.g. balance) from `{ data: {...} }` or a bare object.
+ * Returns true when value looks like a MAU balance record.
+ */
+function looksLikeBalanceRecord(value: unknown): value is Record<string, unknown> {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    ('accountNumber' in value || 'availableBalance' in value || 'accountShortName' in value)
+  );
+}
+
+/**
+ * Extracts a MAU balance record from documented and live response shapes.
+ * Live Mauritius balance payloads often look like `{ accounts: { balance: {...} } }`
+ * (with or without a `data` wrapper) instead of `{ data: { accountNumber, ... } }`.
+ * @param result - Raw getAccountBalances response
+ */
+export function extractMauBalance<T extends object>(result: unknown): T | undefined {
+  if (!result || typeof result !== 'object') {
+    return undefined;
+  }
+
+  const candidates: unknown[] = [result];
+  const data = (result as { data?: unknown }).data;
+  if (data !== undefined) {
+    candidates.push(data);
+  }
+
+  for (const candidate of candidates) {
+    if (looksLikeBalanceRecord(candidate)) {
+      return candidate as T;
+    }
+
+    const accounts = readNamedField(candidate, 'accounts');
+    const nestedBalance = readNamedField(accounts, 'balance');
+    if (looksLikeBalanceRecord(nestedBalance)) {
+      return nestedBalance as T;
+    }
+
+    // accounts may itself be the balance object in some payloads
+    if (looksLikeBalanceRecord(accounts)) {
+      return accounts as T;
+    }
+
+    const directBalance = readNamedField(candidate, 'balance');
+    if (looksLikeBalanceRecord(directBalance)) {
+      return directBalance as T;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts a single MAU record (generic) from `{ data: {...} }` or a bare object.
+ * Prefer {@link extractMauBalance} for balance endpoints.
  * @param result - Raw API response
  */
 export function extractMauRecord<T extends object>(result: unknown): T | undefined {
-  if (!result || typeof result !== 'object' || Array.isArray(result)) {
-    return undefined;
-  }
-  const data = (result as { data?: unknown }).data;
-  if (data && typeof data === 'object' && !Array.isArray(data)) {
-    // Prefer nested data when it looks like the record (not a list wrapper)
-    const record = data as Record<string, unknown>;
-    if (!('accounts' in record) && !('transactions' in record)) {
-      return data as T;
-    }
-  }
-  const root = result as Record<string, unknown>;
-  if ('accountNumber' in root || 'balance' in root || 'availableBalance' in root) {
-    return result as T;
-  }
-  return undefined;
+  return extractMauBalance<T>(result);
 }
 
 /**
