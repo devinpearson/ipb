@@ -36,6 +36,10 @@ describe('envListCommand', () => {
       expect.objectContaining({
         isPiped: false,
         outputOptions: { json: true, yaml: undefined, output: undefined },
+        items: expect.arrayContaining([
+          expect.objectContaining({ name: 'INVESTEC_MAU_CLIENT_ID' }),
+          expect.objectContaining({ name: 'INVESTEC_MAU_API_KEY' }),
+        ]),
       })
     );
   });

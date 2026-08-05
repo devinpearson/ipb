@@ -39,6 +39,7 @@ export function generateCompletionScript(shell: string): string {
     'f', // alias for fetch
     'logs',
     'log', // alias for logs
+    'mau',
     'merchants',
     'new',
     'pay',
@@ -81,8 +82,24 @@ export function generateCompletionScript(shell: string): string {
     beneficiaries: ['--json', '--yaml', '--output'],
     cards: ['--json', '--yaml', '--output'],
     c: ['--json', '--yaml', '--output'], // alias for cards
-    config: ['--card-key', '--openai-key', '--sandbox-key'],
-    cfg: ['--card-key', '--openai-key', '--sandbox-key'], // alias for config
+    config: [
+      '--card-key',
+      '--openai-key',
+      '--sandbox-key',
+      '--mau-api-key',
+      '--mau-client-id',
+      '--mau-client-secret',
+      '--mau-host',
+    ],
+    cfg: [
+      '--card-key',
+      '--openai-key',
+      '--sandbox-key',
+      '--mau-api-key',
+      '--mau-client-id',
+      '--mau-client-secret',
+      '--mau-host',
+    ], // alias for config
     countries: ['--json', '--yaml', '--output'],
     currencies: ['--json', '--yaml', '--output'],
     deploy: ['--filename', '--env', '--card-key', '--yes'],
@@ -96,6 +113,17 @@ export function generateCompletionScript(shell: string): string {
     f: ['--filename', '--card-key'], // alias for fetch
     logs: ['--filename', '--card-key'],
     log: ['--filename', '--card-key'], // alias for logs
+    mau: [
+      '--mau-api-key',
+      '--mau-client-id',
+      '--mau-client-secret',
+      '--mau-host',
+      '--from',
+      '--to',
+      '--json',
+      '--yaml',
+      '--output',
+    ],
     merchants: ['--json', '--yaml', '--output'],
     new: ['--template', '--force', '--verbose', '--spinner'],
     pay: ['--yes'],
@@ -234,6 +262,17 @@ _ipb() {
       COMPREPLY=($(compgen -W "list ls set show delete rm" -- "\${cur}"))
       return 0
     fi
+  fi
+
+  # Nested: ipb mau [accounts|balances|...]
+  if [[ "\${cmd}" == "mau" ]]; then
+    if [[ \${cword} -eq 2 ]]; then
+      COMPREPLY=($(compgen -W "accounts balances transactions documents statement" -- "\${cur}"))
+      return 0
+    fi
+    local mau_opts="${commandOptions.mau?.join(' ') || ''} ${globalOptionsList}"
+    COMPREPLY=($(compgen -W "\${mau_opts}" -- "\${cur}"))
+    return 0
   fi
 
   # Complete options for specific commands

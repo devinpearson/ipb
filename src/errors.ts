@@ -44,6 +44,8 @@ export const ERROR_CODES = {
   COMMAND_DISABLED: 'E4018',
   /** Client or environment does not support the requested operation (e.g. missing API method). */
   UNSUPPORTED_OPERATION: 'E4019',
+  /** Required date range (--from / --to) missing or invalid for MAU commands. */
+  MISSING_DATE_RANGE: 'E4020',
   // Add more as needed
 };
 

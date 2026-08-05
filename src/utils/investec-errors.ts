@@ -1,12 +1,20 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 
-type InvestecErrorContext = 'card-api-auth' | 'card-api-request' | 'pb-api-auth' | 'pb-api-request';
+type InvestecErrorContext =
+  | 'card-api-auth'
+  | 'card-api-request'
+  | 'pb-api-auth'
+  | 'pb-api-request'
+  | 'mau-api-auth'
+  | 'mau-api-request';
 
 const INVESTEC_ERROR_CONTEXT_MESSAGES: Record<InvestecErrorContext, string> = {
   'card-api-auth': 'Failed to authenticate with the Investec Card API',
   'card-api-request': 'Investec Card API request failed',
   'pb-api-auth': 'Failed to authenticate with the Investec Programmable Banking API',
   'pb-api-request': 'Investec Programmable Banking API request failed',
+  'mau-api-auth': 'Failed to authenticate with the Investec Mauritius (MAU) API',
+  'mau-api-request': 'Investec Mauritius (MAU) API request failed',
 };
 
 function extractInvestecErrorMessage(error: unknown): string | null {

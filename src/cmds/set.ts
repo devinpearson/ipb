@@ -26,6 +26,10 @@ interface Options {
   cardKey: string;
   openaiKey: string;
   sandboxKey: string;
+  mauHost?: string;
+  mauClientId?: string;
+  mauClientSecret?: string;
+  mauApiKey?: string;
   profile?: string;
   verbose: boolean;
   spinner?: boolean;
@@ -118,6 +122,18 @@ export async function configCommand(options: Options & ProfileOptions) {
     if (options.sandboxKey) {
       profileData.sandboxKey = options.sandboxKey;
     }
+    if (options.mauHost) {
+      profileData.mauHost = options.mauHost;
+    }
+    if (options.mauClientId) {
+      profileData.mauClientId = options.mauClientId;
+    }
+    if (options.mauClientSecret) {
+      profileData.mauClientSecret = options.mauClientSecret;
+    }
+    if (options.mauApiKey) {
+      profileData.mauApiKey = options.mauApiKey;
+    }
 
     await runWithConfigSpinner(options, `Saving profile "${profileName}"...`, () =>
       writeProfile(profileName, profileData)
@@ -148,6 +164,18 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     if (options.sandboxKey) {
       cred.sandboxKey = options.sandboxKey;
+    }
+    if (options.mauHost) {
+      cred.mauHost = options.mauHost;
+    }
+    if (options.mauClientId) {
+      cred.mauClientId = options.mauClientId;
+    }
+    if (options.mauClientSecret) {
+      cred.mauClientSecret = options.mauClientSecret;
+    }
+    if (options.mauApiKey) {
+      cred.mauApiKey = options.mauApiKey;
     }
     await runWithConfigSpinner(options, 'Saving credentials...', () =>
       writeCredentialsFile(credentialLocation.filename, cred)

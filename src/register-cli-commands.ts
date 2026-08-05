@@ -34,6 +34,13 @@ import {
   uploadCommand,
   uploadEnvCommand,
 } from './cmds/index.js';
+import {
+  mauAccountsCommand,
+  mauBalancesCommand,
+  mauDocumentsCommand,
+  mauStatementCommand,
+  mauTransactionsCommand,
+} from './cmds/mau/index.js';
 import { payCommand } from './cmds/pay.js';
 import { simulateCommand } from './cmds/simulate.js';
 import { transactionsCommand } from './cmds/transactions.js';
@@ -73,6 +80,28 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
     .option('--output <file>', 'Write JSON/YAML output to file instead of stdout');
+}
+
+/** Mauritius (MAU) credential + output options for `ipb mau` commands. */
+function addMauCredentialOptions(cmd: Command) {
+  return cmd
+    .option('--mau-api-key <mauApiKey>', 'API key for the Investec Mauritius (MAU) API')
+    .option('--mau-client-id <mauClientId>', 'Client ID for the Investec Mauritius (MAU) API')
+    .option(
+      '--mau-client-secret <mauClientSecret>',
+      'Client secret for the Investec Mauritius (MAU) API'
+    )
+    .option('--mau-host <mauHost>', 'Custom host for the Investec Mauritius (MAU) API')
+    .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
+    .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
+    .option(
+      '-s,--spinner',
+      'disable spinner during command execution (deprecated: use --no-spinner)'
+    )
+    .option('-v,--verbose', 'additional debugging information')
+    .option('--json', 'Output raw JSON instead of formatted table')
+    .option('--yaml', 'Output raw YAML instead of formatted table')
+    .option('--output <file>', 'Write JSON/YAML/PDF output to file instead of stdout');
 }
 
 /** Spinner + verbose only (for commands that do not use Investec API credential flags). */
@@ -125,6 +154,7 @@ Examples:
   # Save to default credentials
   $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
   $ ipb config --card-key <card-key>
+  $ ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
   
   # Save to a profile
   $ ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
@@ -152,6 +182,10 @@ Examples:
     .option('--card-key <cardKey>', 'Set your card key for the Investec API')
     .option('--openai-key <openaiKey>', 'Set your OpenAI API key for AI code generation')
     .option('--sandbox-key <sandboxKey>', 'Set your sandbox key for AI generation')
+    .option('--mau-api-key <mauApiKey>', 'Set Mauritius (MAU) API key')
+    .option('--mau-client-id <mauClientId>', 'Set Mauritius (MAU) client ID')
+    .option('--mau-client-secret <mauClientSecret>', 'Set Mauritius (MAU) client secret')
+    .option('--mau-host <mauHost>', 'Set Mauritius (MAU) API host')
     .action(withCommandContext('config', configCommand));
 
   // Profile subcommands
@@ -654,6 +688,118 @@ Examples:
       `
       )
   ).action(withCommandContext('beneficiaries', beneficiariesCommand));
+
+  // Mauritius (MAU) Open Banking
+  const mauCmd = program
+    .command('mau')
+    .description(
+      'Mauritius (MAU) Open Banking commands. Uses separate MAU credentials (mauClientId, mauClientSecret, mauApiKey).'
+    )
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ ipb mau accounts
+  $ ipb mau balances 5331
+  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
+  $ ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
+  $ ipb mau statement 5331 2025-01-31 -o statement.pdf
+  $ ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
+      `
+    );
+
+  addMauCredentialOptions(
+    mauCmd
+      .command('accounts')
+      .description(
+        'List Mauritius Investec accounts. Shows account IDs, numbers, currencies, and profile names.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb mau accounts
+  $ ipb mau accounts --json
+  $ ipb mau accounts --yaml --output mau-accounts.yaml
+      `
+      )
+  ).action(withCommandContext('mau accounts', mauAccountsCommand));
+
+  addMauCredentialOptions(
+    mauCmd
+      .command('balances')
+      .description(
+        'Get Mauritius account balance information including available balance and encumbrances.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb mau balances 5331
+  $ ipb mau balances 5331 --json
+      `
+      )
+  )
+    .argument('<accountId>', 'Numeric Mauritius account ID')
+    .action(withCommandContext('mau balances', mauBalancesCommand));
+
+  addMauCredentialOptions(
+    mauCmd
+      .command('transactions')
+      .description(
+        'Get Mauritius account transactions for a required date range (--from / --to, YYYY-MM-DD).'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
+  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31 --json
+      `
+      )
+  )
+    .argument('<accountId>', 'Numeric Mauritius account ID')
+    .requiredOption('--from <fromDate>', 'Start date (YYYY-MM-DD)')
+    .requiredOption('--to <toDate>', 'End date (YYYY-MM-DD)')
+    .action(withCommandContext('mau transactions', mauTransactionsCommand));
+
+  addMauCredentialOptions(
+    mauCmd
+      .command('documents')
+      .description('List available Mauritius account documents (e.g. statements) for a date range.')
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
+  $ ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31 --json
+      `
+      )
+  )
+    .argument('<accountId>', 'Numeric Mauritius account ID')
+    .requiredOption('--from <fromDate>', 'Start date (YYYY-MM-DD)')
+    .requiredOption('--to <toDate>', 'End date (YYYY-MM-DD)')
+    .action(withCommandContext('mau documents', mauDocumentsCommand));
+
+  addMauCredentialOptions(
+    mauCmd
+      .command('statement')
+      .description(
+        'Download a Mauritius account statement PDF for a document date. Defaults to statement-<accountId>-<date>.pdf.'
+      )
+      .addHelpText(
+        'after',
+        `
+Examples:
+  $ ipb mau statement 5331 2025-01-31
+  $ ipb mau statement 5331 2025-01-31 --output ./statement.pdf
+      `
+      )
+  )
+    .argument('<accountId>', 'Numeric Mauritius account ID')
+    .argument('<documentDate>', 'Document date (YYYY-MM-DD)')
+    .action(withCommandContext('mau statement', mauStatementCommand));
+
   // AI & Code Generation
   addSpinnerVerboseOptions(
     program

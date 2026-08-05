@@ -22,6 +22,10 @@ export const testCredentials: Credentials = {
   cardKey: '123',
   openaiKey: '',
   sandboxKey: '',
+  mauHost: 'https://openapi.investec.com',
+  mauClientId: 'mau-cid',
+  mauClientSecret: 'mau-secret',
+  mauApiKey: 'mau-key',
 };
 
 export type RuntimeCredentialsMockOptions = {
@@ -44,6 +48,7 @@ export function getRuntimeCredentialsMock(options?: RuntimeCredentialsMockOption
     credentials,
     printTitleBox: vi.fn(),
     optionCredentials: vi.fn(async (_o: unknown, c: Credentials) => c),
+    optionMauCredentials: vi.fn(async (_o: unknown, c: Credentials) => c),
   };
 
   if (options?.credentialLocation !== undefined) {

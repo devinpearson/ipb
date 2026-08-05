@@ -1,4 +1,4 @@
-import { initializeApi, initializePbApi, normalizeCardKey } from './utils/api.js';
+import { initializeApi, initializeMauApi, initializePbApi, normalizeCardKey } from './utils/api.js';
 import { determineExitCode, handleCliError, withCommandContext } from './utils/cli-errors.js';
 import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
 import {
@@ -20,7 +20,7 @@ import {
   writeFileAtomic,
   writeProfile,
 } from './utils/credentials-store.js';
-import { validateCredentialsFile } from './utils/credentials-validation.js';
+import { validateCredentialsFile, validateMauCredentials } from './utils/credentials-validation.js';
 import { formatFileSize, getFileSize } from './utils/file-size.js';
 import {
   checkFilePermissions,
@@ -35,7 +35,13 @@ import {
   logCommandHistory,
   readCommandHistory,
 } from './utils/history.js';
-import { validateAccountId, validateAmount } from './utils/input-validation.js';
+import {
+  validateAccountId,
+  validateAmount,
+  validateDateRange,
+  validateIsoDate,
+  validateMauAccountId,
+} from './utils/input-validation.js';
 import {
   confirmDestructiveOperation,
   getModuleDirname,
@@ -202,7 +208,14 @@ export {
 export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
 export type { OutputOptions, TableData, TableRow };
 export { formatFileSize, getFileSize };
-export { initializeApi, initializePbApi, normalizeCardKey, validateCredentialsFile };
+export {
+  initializeApi,
+  initializeMauApi,
+  initializePbApi,
+  normalizeCardKey,
+  validateCredentialsFile,
+  validateMauCredentials,
+};
 export { getHistoryFilePath, logCommandHistory, readCommandHistory };
 export type { CommandHistoryEntry };
 
@@ -214,7 +227,13 @@ export {
   validateFilePathForWrite,
 };
 
-export { validateAccountId, validateAmount };
+export {
+  validateAccountId,
+  validateAmount,
+  validateDateRange,
+  validateIsoDate,
+  validateMauAccountId,
+};
 
 /**
  * Prompts for user confirmation before executing a destructive operation.

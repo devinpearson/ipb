@@ -177,6 +177,9 @@ ipb config --client-id <id> --client-secret <secret> --api-key <key>
 # Optional card key / host — see ipb config --help
 ipb config --card-key <card-key>
 
+# Mauritius (MAU) credentials (separate from ZA PB/Card)
+ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
+
 # Named profiles
 ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
 ipb config --profile staging --client-id <id> --client-secret <secret> --api-key <key>
@@ -190,6 +193,19 @@ Use a profile on any command:
 ```sh
 ipb cards --profile staging
 ipb deploy --profile production -f main.js -c <card-key>
+ipb mau accounts --profile production
+```
+
+### How to use Mauritius (MAU) Open Banking
+
+MAU uses the same OAuth shape as ZA APIs but **separate credentials** (`mauClientId`, `mauClientSecret`, `mauApiKey`, optional `mauHost`).
+
+```sh
+ipb mau accounts
+ipb mau balances 5331
+ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
+ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
+ipb mau statement 5331 2025-01-31 --output statement.pdf
 ```
 
 Edit in your editor (`EDITOR`, default `nano` / `notepad.exe`):
@@ -352,7 +368,8 @@ Information-oriented lookup. Authoritative flags: `ipb <command> --help` or [GEN
 | `env` / `upload-env` | Card environment variables |
 | `logs` (`log`) | Execution logs |
 | `enable` / `disable` | Toggle code on a card |
-| `accounts` (`acc`) / `balances` (`bal`) / `transactions` (`tx`) | Account data |
+| `accounts` (`acc`) / `balances` (`bal`) / `transactions` (`tx`) | Account data (ZA PB) |
+| `mau` | Mauritius Open Banking (`accounts`, `balances`, `transactions`, `documents`, `statement`) |
 | `beneficiaries` / `transfer` / `pay` | Beneficiaries and payments |
 | `countries` / `currencies` / `merchants` | Reference data |
 | `completion` / `docs` / `env-list` | Shell completion, docs dump, env catalogue |
@@ -362,6 +379,7 @@ These commands are **disabled** and return an error: `ai`, `bank`, `register`, `
 ### Shared options (most API commands)
 
 - Auth: `--client-id`, `--client-secret`, `--api-key`, `--host`, `--credentials-file`, `--profile`
+- MAU auth: `--mau-client-id`, `--mau-client-secret`, `--mau-api-key`, `--mau-host`
 - Output: `--json`, `--yaml`, `--output <file>`, `-v` / `--verbose`
 - Spinner: `--no-spinner` (preferred); `-s` / `--spinner` is deprecated
 - Destructive: `--yes` where supported
@@ -378,6 +396,7 @@ ipb env-list --json
 Common categories:
 
 - **API:** `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
+- **MAU API:** `INVESTEC_MAU_HOST`, `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`
 - **Behaviour:** `DEBUG`, `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
 
 ### Exit codes
@@ -409,6 +428,8 @@ Messages look like `Error (E####): …`.
 | `E4010` | File not found |
 | `E4012` | Missing account ID |
 | `E4014` | Rate limit exceeded |
+| `E4019` | Unsupported operation |
+| `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.
