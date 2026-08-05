@@ -23,11 +23,57 @@ export function normalizeToArray<T extends object>(value: unknown): T[] {
   return [];
 }
 
+function readNamedField(source: unknown, field: string): unknown {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    return undefined;
+  }
+  const record = source as Record<string, unknown>;
+  if (field in record) {
+    return record[field];
+  }
+  const capitalized = field.charAt(0).toUpperCase() + field.slice(1);
+  if (capitalized in record) {
+    return record[capitalized];
+  }
+  return undefined;
+}
+
 /**
  * Extracts the accounts list from a Mauritius getAccounts response.
+ * Supports `{ data: { accounts } }`, top-level `{ accounts }`, and singleton objects.
  * @param result - Raw getAccounts response
  */
 export function extractMauAccounts<T extends object>(result: unknown): T[] {
+  if (!result || typeof result !== 'object') {
+    return [];
+  }
+  const root = result as { data?: unknown };
+  const data = root.data;
+
+  if (Array.isArray(data)) {
+    return data as T[];
+  }
+
+  const nestedAccounts = readNamedField(data, 'accounts');
+  if (nestedAccounts !== undefined) {
+    return normalizeToArray<T>(nestedAccounts);
+  }
+
+  const topLevelAccounts = readNamedField(result, 'accounts');
+  if (topLevelAccounts !== undefined) {
+    return normalizeToArray<T>(topLevelAccounts);
+  }
+
+  return [];
+}
+
+/**
+ * Extracts a named list field from MAU list responses.
+ * Tries `data[field]`, then top-level `field`.
+ * @param result - Raw API response
+ * @param field - Field name (e.g. transactions)
+ */
+export function extractMauDataList<T extends object>(result: unknown, field: string): T[] {
   if (!result || typeof result !== 'object') {
     return [];
   }
@@ -35,31 +81,41 @@ export function extractMauAccounts<T extends object>(result: unknown): T[] {
   if (Array.isArray(data)) {
     return data as T[];
   }
-  if (data && typeof data === 'object') {
-    const accounts =
-      (data as { accounts?: unknown; Accounts?: unknown }).accounts ??
-      (data as { Accounts?: unknown }).Accounts;
-    if (accounts !== undefined) {
-      return normalizeToArray<T>(accounts);
-    }
+
+  const nested = readNamedField(data, field);
+  if (nested !== undefined) {
+    return normalizeToArray<T>(nested);
   }
+
+  const topLevel = readNamedField(result, field);
+  if (topLevel !== undefined) {
+    return normalizeToArray<T>(topLevel);
+  }
+
   return [];
 }
 
 /**
- * Extracts a named list field from `{ data: { [field]: ... } }` responses.
+ * Extracts a single MAU record (e.g. balance) from `{ data: {...} }` or a bare object.
  * @param result - Raw API response
- * @param field - Field name under `data` (e.g. transactions)
  */
-export function extractMauDataList<T extends object>(result: unknown, field: string): T[] {
-  if (!result || typeof result !== 'object') {
-    return [];
+export function extractMauRecord<T extends object>(result: unknown): T | undefined {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    return undefined;
   }
   const data = (result as { data?: unknown }).data;
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    return Array.isArray(data) ? (data as T[]) : [];
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    // Prefer nested data when it looks like the record (not a list wrapper)
+    const record = data as Record<string, unknown>;
+    if (!('accounts' in record) && !('transactions' in record)) {
+      return data as T;
+    }
   }
-  return normalizeToArray<T>((data as Record<string, unknown>)[field]);
+  const root = result as Record<string, unknown>;
+  if ('accountNumber' in root || 'balance' in root || 'availableBalance' in root) {
+    return result as T;
+  }
+  return undefined;
 }
 
 /**
