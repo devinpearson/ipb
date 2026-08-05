@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractMauAccounts,
+  extractMauBalance,
   extractMauDataList,
   extractMauRecord,
   normalizeToArray,
@@ -66,5 +67,18 @@ describe('MAU response normalization', () => {
     const balance = { accountNumber: '1', balance: 10, availableBalance: 9 };
     expect(extractMauRecord({ data: balance })).toEqual(balance);
     expect(extractMauRecord(balance)).toEqual(balance);
+  });
+
+  it('extractMauBalance unwraps accounts.balance nesting', () => {
+    const balance = {
+      accountNumber: '10101010101',
+      accountType: 'CALL DEPOSIT',
+      availableBalance: 100,
+      balance: 200,
+      currency: 'USD',
+    };
+    expect(extractMauBalance({ accounts: { balance } })).toEqual(balance);
+    expect(extractMauBalance({ data: { accounts: { balance } } })).toEqual(balance);
+    expect(extractMauBalance({ data: { balance } })).toEqual(balance);
   });
 });
