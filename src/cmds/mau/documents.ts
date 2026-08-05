@@ -11,7 +11,7 @@ import {
   withSpinner,
 } from '../../utils.js';
 import type { MauOptions } from '../types.js';
-import { resolveMauAccountId } from './helpers.js';
+import { normalizeToArray, resolveMauAccountId } from './helpers.js';
 
 interface MauDocumentsOptions extends MauOptions {
   from?: string;
@@ -51,8 +51,25 @@ export async function mauDocumentsCommand(accountId: string, options: MauDocumen
       maxRetries: 3,
       verbose,
     });
-    const accountNumber = result.availableDocuments.accountNumber;
-    documents = result.availableDocuments.documentInformation.map((doc) => ({
+    const root = result as {
+      availableDocuments?: {
+        accountNumber?: string;
+        documentInformation?: unknown;
+      };
+      data?: {
+        availableDocuments?: {
+          accountNumber?: string;
+          documentInformation?: unknown;
+        };
+      };
+    };
+    const available = root.availableDocuments ?? root.data?.availableDocuments;
+    const accountNumber = available?.accountNumber ?? '';
+    const documentInformation = normalizeToArray<{
+      documentDate: string;
+      documentType: string;
+    }>(available?.documentInformation);
+    documents = documentInformation.map((doc) => ({
       documentDate: doc.documentDate,
       documentType: doc.documentType,
       accountNumber,

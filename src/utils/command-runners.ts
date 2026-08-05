@@ -40,7 +40,7 @@ export async function runListCommand<TFull, TSimple = TFull>(
 ): Promise<void> {
   const { isPiped, items, outputOptions, emptyMessage, countMessage, mapSimple } = options;
 
-  if (!items || items.length === 0) {
+  if (!Array.isArray(items) || items.length === 0) {
     if (!isPiped) {
       console.log(emptyMessage);
     } else {
