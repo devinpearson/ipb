@@ -51,7 +51,19 @@ export async function mauDocumentsCommand(accountId: string, options: MauDocumen
       maxRetries: 3,
       verbose,
     });
-    const available = result.availableDocuments;
+    const root = result as {
+      availableDocuments?: {
+        accountNumber?: string;
+        documentInformation?: unknown;
+      };
+      data?: {
+        availableDocuments?: {
+          accountNumber?: string;
+          documentInformation?: unknown;
+        };
+      };
+    };
+    const available = root.availableDocuments ?? root.data?.availableDocuments;
     const accountNumber = available?.accountNumber ?? '';
     const documentInformation = normalizeToArray<{
       documentDate: string;
