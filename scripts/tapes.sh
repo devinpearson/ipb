@@ -22,25 +22,25 @@ if ! ipb --version >/dev/null 2>&1; then
 fi
 
 tapes=(
+  accounts
+  balances
+  beneficiaries
   cards
   deploy
   env
   fetch
   logs
   new
+  pay
   publish
   published
   run
   simulate
   toggle
+  transactions
+  transfer
   upload-env
   upload
-  accounts
-  beneficiaries
-  balances
-  transactions
-  pay
-  transfer
 )
 
 for name in "${tapes[@]}"; do

@@ -1,7 +1,7 @@
 # IPB CLI Command Reference
 
 > This documentation is auto-generated from the CLI command definitions.
-> Last generated: 2026-03-24T17:50:02.946Z
+> Last generated: 2026-08-05T10:41:08.758Z
 
 ## Table of Contents
 
@@ -29,6 +29,7 @@
 - [pay](#pay)
 - [transactions](#transactions-aliases-tx)
 - [beneficiaries](#beneficiaries)
+- [mau](#mau)
 - [new](#new)
 - [completion](#completion)
 - [docs](#docs)
@@ -51,6 +52,10 @@ Configure authentication credentials. Set API keys, client credentials, and card
 - `--card-key <cardKey>` (required) - Set your card key for the Investec API
 - `--openai-key <openaiKey>` (required) - Set your OpenAI API key for AI code generation
 - `--sandbox-key <sandboxKey>` (required) - Set your sandbox key for AI generation
+- `--mau-api-key <mauApiKey>` (required) - Set Mauritius (MAU) API key
+- `--mau-client-id <mauClientId>` (required) - Set Mauritius (MAU) client ID
+- `--mau-client-secret <mauClientSecret>` (required) - Set Mauritius (MAU) client secret
+- `--mau-host <mauHost>` (required) - Set Mauritius (MAU) API host
 
 **Subcommands:**
 
@@ -359,6 +364,101 @@ Get transaction history for an account. Retrieves and displays recent transactio
 List all beneficiaries. Shows all registered beneficiaries linked to your Investec profile with their IDs and details.
 
 **Usage:** `ipb beneficiaries`
+
+
+## mau
+
+Mauritius (MAU) Open Banking commands. Uses separate MAU credentials (mauClientId, mauClientSecret, mauApiKey).
+
+**Usage:** `ipb mau`
+
+**Subcommands:**
+
+### accounts
+
+List Mauritius Investec accounts. Shows account IDs, numbers, currencies, and profile names.
+
+**Usage:** `ipb mau accounts`
+
+**Options:**
+
+- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+
+### balances
+
+Get Mauritius account balance information including available balance and encumbrances.
+
+**Usage:** `ipb mau balances <accountId>`
+
+**Arguments:**
+
+- `<accountId>` (required) - Numeric Mauritius account ID
+
+**Options:**
+
+- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+
+### transactions
+
+Get Mauritius account transactions for a required date range (--from / --to, YYYY-MM-DD).
+
+**Usage:** `ipb mau transactions <accountId>`
+
+**Arguments:**
+
+- `<accountId>` (required) - Numeric Mauritius account ID
+
+**Options:**
+
+- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--from <fromDate>` (required) - Start date (YYYY-MM-DD)
+- `--to <toDate>` (required) - End date (YYYY-MM-DD)
+
+### documents
+
+List available Mauritius account documents (e.g. statements) for a date range.
+
+**Usage:** `ipb mau documents <accountId>`
+
+**Arguments:**
+
+- `<accountId>` (required) - Numeric Mauritius account ID
+
+**Options:**
+
+- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--from <fromDate>` (required) - Start date (YYYY-MM-DD)
+- `--to <toDate>` (required) - End date (YYYY-MM-DD)
+
+### statement
+
+Download a Mauritius account statement PDF for a document date. Defaults to statement-<accountId>-<date>.pdf.
+
+**Usage:** `ipb mau statement <accountId> <documentDate>`
+
+**Arguments:**
+
+- `<accountId>` (required) - Numeric Mauritius account ID
+- `<documentDate>` (required) - Document date (YYYY-MM-DD)
+
+**Options:**
+
+- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
 
 
 ## new

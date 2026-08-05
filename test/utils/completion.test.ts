@@ -24,4 +24,10 @@ describe('generateCompletionScript', () => {
       expect.objectContaining({ code: ERROR_CODES.INVALID_INPUT })
     );
   });
+
+  it('includes mau command and nested subcommands in bash', () => {
+    const script = generateCompletionScript('bash');
+    expect(script).toContain('mau');
+    expect(script).toContain('accounts balances transactions documents statement');
+  });
 });

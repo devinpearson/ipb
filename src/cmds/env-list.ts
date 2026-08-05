@@ -65,6 +65,39 @@ export async function envListCommand(options: CommonOptions) {
       category: 'API Credentials',
     },
     {
+      name: 'INVESTEC_MAU_HOST',
+      description:
+        'API host URL for the Investec Mauritius (MAU) Open Banking API. Defaults to the same production host as ZA APIs.',
+      required: false,
+      default: 'https://openapi.investec.com',
+      example: 'https://openapi.investec.com',
+      category: 'API Credentials',
+    },
+    {
+      name: 'INVESTEC_MAU_CLIENT_ID',
+      description:
+        'Client ID for authenticating with the Investec Mauritius (MAU) API. Separate from ZA PB/Card credentials.',
+      required: false,
+      example: 'your-mau-client-id',
+      category: 'API Credentials',
+    },
+    {
+      name: 'INVESTEC_MAU_CLIENT_SECRET',
+      description:
+        'Client secret for authenticating with the Investec Mauritius (MAU) API. Separate from ZA PB/Card credentials.',
+      required: false,
+      example: 'your-mau-client-secret',
+      category: 'API Credentials',
+    },
+    {
+      name: 'INVESTEC_MAU_API_KEY',
+      description:
+        'API key for accessing the Investec Mauritius (MAU) API. Separate from ZA PB/Card credentials.',
+      required: false,
+      example: 'your-mau-api-key',
+      category: 'API Credentials',
+    },
+    {
       name: 'OPENAI_API_KEY',
       description:
         'OpenAI API key (reserved for future use; the `ipb ai` command is currently disabled).',
@@ -92,7 +125,7 @@ export async function envListCommand(options: CommonOptions) {
     {
       name: 'IPB_MOCK_APIS',
       description:
-        'Use in-process mock Programmable Banking and Card API clients (no network). Does not enable verbose output. For offline demos, set dummy INVESTEC_* credentials or use a local credentials file.',
+        'Use in-process mock Programmable Banking, Card, and Mauritius (MAU) API clients (no network). Does not enable verbose output. For offline demos, set dummy INVESTEC_* / INVESTEC_MAU_* credentials or use a local credentials file.',
       required: false,
       default: 'false',
       example: '1',

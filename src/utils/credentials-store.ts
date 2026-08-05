@@ -24,6 +24,10 @@ const defaultCreds = {
   cardKey: '',
   openaiKey: '',
   sandboxKey: '',
+  mauHost: '',
+  mauClientId: '',
+  mauClientSecret: '',
+  mauApiKey: '',
 };
 
 /**
@@ -106,6 +110,10 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
         'openaiKey',
         'sandboxKey',
         'cardKey',
+        'mauHost',
+        'mauClientId',
+        'mauClientSecret',
+        'mauApiKey',
       ];
 
       let loaded: Record<string, unknown> = {};

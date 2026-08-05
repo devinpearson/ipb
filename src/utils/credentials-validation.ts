@@ -24,3 +24,24 @@ export function validateCredentialsFile(
     );
   }
 }
+
+/**
+ * Validates that required Mauritius (MAU) credential fields are present.
+ * @param creds - Credentials object to validate
+ */
+export function validateMauCredentials(creds: Credentials | Record<string, string>): void {
+  const credsRecord = creds as Record<string, string>;
+  const requiredFields = ['mauClientId', 'mauClientSecret', 'mauApiKey'];
+  const missing = requiredFields.filter(
+    (field) =>
+      !credsRecord[field] ||
+      (typeof credsRecord[field] === 'string' && credsRecord[field].trim() === '')
+  );
+
+  if (missing.length > 0) {
+    throw new CliError(
+      ERROR_CODES.INVALID_CREDENTIALS,
+      `Missing required MAU credential fields: ${missing.join(', ')}. Run 'ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>' to set them.`
+    );
+  }
+}

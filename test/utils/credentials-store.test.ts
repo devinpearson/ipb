@@ -37,6 +37,10 @@ function getBaseCredentials(): Credentials {
     cardKey: '',
     openaiKey: '',
     sandboxKey: '',
+    mauHost: '',
+    mauClientId: '',
+    mauClientSecret: '',
+    mauApiKey: '',
   };
 }
 

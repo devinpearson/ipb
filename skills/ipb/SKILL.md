@@ -3,9 +3,10 @@ name: ipb
 description: >-
   Operate the Investec Programmable Banking CLI (ipb): configure credentials,
   list cards/accounts, deploy and simulate card code, fetch logs, transfer/pay,
-  and read machine-readable JSON output. Use when the user asks to run ipb,
-  manage programmable cards, deploy card JavaScript, check Investec accounts or
-  balances, or automate Investec Programmable Banking from a terminal agent.
+  Mauritius (MAU) Open Banking, and read machine-readable JSON output. Use when
+  the user asks to run ipb, manage programmable cards, deploy card JavaScript,
+  check Investec accounts or balances, use MAU APIs, or automate Investec
+  Programmable Banking from a terminal agent.
 ---
 
 # Use the `ipb` CLI
@@ -16,7 +17,7 @@ You are helping a user operate **investec-ipb** (`ipb`), a terminal CLI for Inve
 
 - CLI installed and on `PATH` (`ipb --version` works).
 - Node.js ≥ 24 if installed via npm: `npm install -g investec-ipb`.
-- Investec API credentials from the [Developer Portal](https://developer.investec.com) (client id, client secret, API key). Card operations also need a card key.
+- Investec API credentials from the [Developer Portal](https://developer.investec.com) (client id, client secret, API key). Card operations also need a card key. Mauritius (MAU) commands need separate MAU credentials.
 
 If `ipb` is missing, tell the user how to install it; do not assume this git repo is present.
 
@@ -38,6 +39,9 @@ ipb config --client-id <id> --client-secret <secret> --api-key <key>
 # Optional: card key for card commands
 ipb config --card-key <card-key>
 
+# Optional: Mauritius (MAU) credentials (separate from ZA PB/Card)
+ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
+
 # Optional: named environments
 ipb config --profile production --client-id <id> --client-secret <secret> --api-key <key>
 ipb config profile set production
@@ -45,7 +49,7 @@ ipb config profile set production
 
 Credentials live under `~/.ipb/` (owner-only permissions). Profiles: `ipb config profile list|set|show|delete`. Edit in `$EDITOR`: `ipb config edit`.
 
- creds can also come from env vars (`INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`, optional `INVESTEC_HOST`) — warn that env secrets are less ideal than the credentials file.
+Creds can also come from env vars (`INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`, optional `INVESTEC_HOST`; MAU: `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`, optional `INVESTEC_MAU_HOST`) — warn that env secrets are less ideal than the credentials file.
 
 ## Common workflows
 
@@ -54,9 +58,21 @@ Credentials live under `~/.ipb/` (owner-only permissions). Profiles: `ipb config
 ```bash
 ipb cards --json
 ipb accounts --json
-ipb balances -a <account-id> --json
-ipb transactions -a <account-id> --json
+ipb balances <account-id> --json
+ipb transactions <account-id> --json
 ipb beneficiaries --json
+```
+
+### Mauritius (MAU) Open Banking
+
+Uses separate credentials from ZA PB. Account IDs are numeric. Transactions/documents require `--from` / `--to` (YYYY-MM-DD).
+
+```bash
+ipb mau accounts --json
+ipb mau balances 5331 --json
+ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31 --json
+ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31 --json
+ipb mau statement 5331 2025-01-31 --output statement.pdf
 ```
 
 ### Local card-code simulation (no Investec account required for `run`)
@@ -116,6 +132,7 @@ Success exits `0`. Non-zero exits are typed (validation, auth, file, API, networ
 | Problem | What to try |
 |---------|-------------|
 | Auth / invalid credentials | Re-run `ipb config`, check profile with `ipb config profile show` |
+| Missing MAU credentials | `ipb config --mau-client-id … --mau-client-secret … --mau-api-key …` |
 | Missing card key | `ipb cards` then pass `-c` / `ipb config --card-key` |
 | Rate limited | Wait and retry; use `--verbose` to see retry behavior |
 | Command unknown | `ipb --help` — do not invent subcommands |

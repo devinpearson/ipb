@@ -22,6 +22,11 @@ export interface Credentials {
   cardKey: string;
   openaiKey: string;
   sandboxKey: string;
+  /** Investec Mauritius (MAU) API host */
+  mauHost: string;
+  mauClientId: string;
+  mauClientSecret: string;
+  mauApiKey: string;
 }
 
 export interface BasicOptions {
@@ -30,4 +35,29 @@ export interface BasicOptions {
   clientId: string;
   clientSecret: string;
   credentialsFile: string;
+}
+
+/** CLI options for Mauritius (MAU) API commands */
+export interface MauOptions {
+  mauHost?: string;
+  mauApiKey?: string;
+  mauClientId?: string;
+  mauClientSecret?: string;
+  credentialsFile?: string;
+  profile?: string;
+  verbose: boolean;
+  spinner?: boolean;
+  json?: boolean;
+  yaml?: boolean;
+  output?: string;
+}
+
+/** Credential override options for MAU API initialization */
+export interface MauBasicOptions {
+  mauHost?: string;
+  mauApiKey?: string;
+  mauClientId?: string;
+  mauClientSecret?: string;
+  credentialsFile?: string;
+  profile?: string;
 }

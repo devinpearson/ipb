@@ -152,6 +152,27 @@ describe('configCommand', () => {
     );
   });
 
+  it('writes MAU credentials to the default credentials file', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    await configCommand({
+      ...baseOptions(),
+      mauClientId: 'mau-cid',
+      mauClientSecret: 'mau-secret',
+      mauApiKey: 'mau-key',
+      mauHost: 'https://openapisandbox.investec.com',
+    });
+
+    expect(writeCredentialsFile).toHaveBeenCalledWith(
+      '/tmp/.ipb/.credentials.json',
+      expect.objectContaining({
+        mauClientId: 'mau-cid',
+        mauClientSecret: 'mau-secret',
+        mauApiKey: 'mau-key',
+        mauHost: 'https://openapisandbox.investec.com',
+      })
+    );
+  });
+
   it('prints message when listing profiles and none exist', async () => {
     mockState.profiles = [];
     await configCommand({
