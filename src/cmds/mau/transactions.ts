@@ -11,7 +11,7 @@ import {
   withSpinner,
 } from '../../utils.js';
 import type { MauOptions } from '../types.js';
-import { resolveMauAccountId } from './helpers.js';
+import { extractMauDataList, resolveMauAccountId } from './helpers.js';
 
 interface MauTransactionsOptions extends MauOptions {
   from?: string;
@@ -56,7 +56,7 @@ export async function mauTransactionsCommand(accountId: string, options: MauTran
       maxRetries: 3,
       verbose,
     });
-    transactions = result.data.transactions;
+    transactions = extractMauDataList(result, 'transactions');
   });
 
   await runListCommand({
