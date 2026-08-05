@@ -9,6 +9,7 @@ import {
   withSpinner,
 } from '../../utils.js';
 import type { MauOptions } from '../types.js';
+import { extractMauAccounts } from './helpers.js';
 
 /**
  * List Mauritius (MAU) Investec accounts.
@@ -45,7 +46,7 @@ export async function mauAccountsCommand(options: MauOptions) {
       maxRetries: 3,
       verbose,
     });
-    accounts = result.data.accounts;
+    accounts = extractMauAccounts(result);
   });
 
   await runListCommand({

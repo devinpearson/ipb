@@ -91,6 +91,26 @@ describe('mau commands', () => {
     );
   });
 
+  it('mauAccountsCommand normalizes a singleton accounts object', async () => {
+    const account = {
+      accountId: 5331,
+      accountNumber: '10101010101',
+      accountName: 'USD',
+      accountCurrency: 'USD',
+      profileId: 1,
+      profileName: 'Mock',
+    };
+    mockApi.getAccounts.mockResolvedValue({ data: { accounts: account } });
+
+    await mauAccountsCommand(baseOptions);
+
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [account],
+      })
+    );
+  });
+
   it('mauBalancesCommand fetches balances for a numeric account id', async () => {
     mockApi.getAccountBalances.mockResolvedValue({
       data: {
