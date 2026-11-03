@@ -11,8 +11,6 @@ Community-maintained project aligned with the Investec Programmable Banking comm
 
 ## Documentation map
 
-This README follows [Divio’s documentation system](https://documentation.divio.com/): pick the section that matches what you need.
-
 | I want to… | Go to |
 |------------|--------|
 | Learn by doing (first successful flow) | [Tutorials](#tutorials) |
@@ -27,13 +25,15 @@ Full option lists for every command: [GENERATED_README.md](./GENERATED_README.md
 
 ## Tutorials
 
-Learning-oriented: follow in order. You will install the CLI, save credentials, list a card, scaffold a project, simulate locally, deploy, and fetch logs.
+Learning-oriented: follow in order. Part 1 needs no Investec account: you write card code and test it on your machine. Part 2 puts it on your card.
 
 ### Your first card flow
 
-**Time:** about 10 minutes. **You need:** Node.js 24+ (or a standalone binary), Investec API credentials from the [Developer Portal](https://developer.investec.com), and a programmable card.
+**Time:** about 10 minutes. **You need:** Node.js 24+ (or a [standalone binary](#how-to-install)). For part 2, also Investec API credentials from the [Developer Portal](https://developer.investec.com) and a programmable card.
 
-#### 1. Install
+#### Part 1: write and test card code (no account needed)
+
+##### 1. Install
 
 ```sh
 npm install -g investec-ipb
@@ -42,27 +42,7 @@ ipb --version
 
 Other install methods: [How to install](#how-to-install).
 
-#### 2. Save credentials
-
-Get your client ID, client secret, and API key from the [API quick start guide](https://investec.gitbook.io/programmable-banking-community-wiki/get-started/api-quick-start-guide/how-to-get-your-api-keys).
-
-```sh
-ipb config
-```
-
-You'll be prompted for each value; the secret and API key are hidden as you type, so they never land in your shell history. Prefer credential files over putting secrets in environment variables. See [Explanation: credentials and secrets](#credentials-and-secrets).
-
-#### 3. List your cards
-
-```sh
-ipb cards
-```
-
-Note a **card key** for later steps (`-c`).
-
-![cards command](assets/cards.gif)
-
-#### 4. Scaffold a project
+##### 2. Scaffold a project
 
 ```sh
 ipb new my-card-app
@@ -73,18 +53,54 @@ Optional templates: `--template default` or `--template petro`.
 
 ![new command](assets/new.gif)
 
-#### 5. Simulate locally (no API keys required for this step)
+Card code is plain JavaScript in `main.js`. The card calls three functions by name, so keep these names:
 
-Amount is in **cents**:
+```js
+// Runs before the card is charged. Return false to decline the transaction.
+const beforeTransaction = async (authorization) => {
+  console.log(authorization);
+};
+```
+
+`afterTransaction` runs after a successful transaction and `afterDecline` after a declined one.
+
+##### 3. Run it on a test transaction
 
 ```sh
-ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 \
-  --merchant "Test Merchant" --city "Cape Town" --country ZA
+ipb run -f main.js
+```
+
+This runs your code on a simulated R100 purchase at a test merchant in Cape Town, and you'll see what each function logged. Change the transaction with flags (amounts are in **cents**):
+
+```sh
+ipb run -f main.js --amount 60000 --merchant "Corner Cafe" --mcc 5814
 ```
 
 ![run command](assets/run.gif)
 
-#### 6. Deploy to the card
+#### Part 2: put it on your card
+
+##### 4. Save credentials
+
+Get your client ID, client secret, and API key from the [API quick start guide](https://investec.gitbook.io/programmable-banking-community-wiki/get-started/api-quick-start-guide/how-to-get-your-api-keys).
+
+```sh
+ipb config
+```
+
+You'll be prompted for each value; the secret and API key are hidden as you type, so they never land in your shell history. Prefer credential files over putting secrets in environment variables. See [Explanation: credentials and secrets](#credentials-and-secrets).
+
+##### 5. List your cards
+
+```sh
+ipb cards
+```
+
+Note a **card key** for the next steps (`-c`).
+
+![cards command](assets/cards.gif)
+
+##### 6. Deploy to the card
 
 `deploy` uploads (and can publish) code. You will be asked to confirm unless you pass `--yes`.
 
@@ -94,7 +110,7 @@ ipb deploy -f main.js -c <card-key>
 
 ![deploy command](assets/deploy.gif)
 
-#### 7. Fetch execution logs
+##### 7. Fetch execution logs
 
 ```sh
 ipb logs -f executions.json -c <card-key>
@@ -118,10 +134,10 @@ Goal-oriented recipes. For every flag, use `ipb <command> --help`.
 npm install -g investec-ipb
 ```
 
-On Windows PowerShell (if scripts are blocked):
+On Windows PowerShell, if running `ipb` fails because scripts are disabled, allow local scripts for your user only:
 
 ```sh
-Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 **Homebrew (standalone binary, no Node.js):**
@@ -151,7 +167,9 @@ chmod +x ipb-linux-x64
 sudo mv ipb-linux-x64 /usr/local/bin/ipb
 ```
 
-A `.snap` package is also attached to each release.
+A `.snap` package (x64 Linux) is also attached to each release.
+
+Windows: download `ipb-win-x64.exe`, rename it to `ipb.exe`, and add its folder to `PATH`.
 
 **Verify a download** before you run it (this is a banking tool). Each release lists SHA-256 checksums in `checksums.txt`, and every binary from releases after v0.10.1 has a signed GitHub build attestation proving it was built from this repository by the release workflow:
 
@@ -160,9 +178,9 @@ shasum -a 256 ipb-macos-arm64          # compare with checksums.txt
 gh attestation verify ipb-macos-arm64 --repo devinpearson/ipb
 ```
 
-The npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements); check it with `npm audit signatures` after installing.
+On Windows, get the checksum with `Get-FileHash ipb-win-x64.exe -Algorithm SHA256` in PowerShell.
 
-Windows: download `ipb-win-x64.exe`, rename to `ipb.exe`, add to `PATH`.
+The npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements); check it with `npm audit signatures` after installing.
 
 More packaging options: [DISTRIBUTION.md](./DISTRIBUTION.md).
 
@@ -178,8 +196,9 @@ op read "op://vault/investec/client-secret" | ipb config --client-id <id> --clie
 # Or pass everything as flags (secrets end up in shell history)
 ipb config --client-id <id> --client-secret <secret> --api-key <key>
 
-# Optional card key / host — see ipb config --help
+# Default card key, and the API host (defaults to https://openapi.investec.com)
 ipb config --card-key <card-key>
+ipb config --host <url>
 
 # Mauritius (MAU) credentials (separate from ZA PB/Card)
 ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
@@ -216,9 +235,24 @@ ipb deploy --profile production -f main.js -c <card-key>
 ipb mau accounts --profile production
 ```
 
+Edit the saved file in your editor (`EDITOR`, default `nano` / `notepad.exe`):
+
+```sh
+ipb config edit
+ipb config edit --profile production
+```
+
+Or point one command at another credentials file (it can't be combined with `--profile`):
+
+```sh
+ipb cards --credentials-file /path/to/credentials.json
+```
+
 ### How to use Mauritius (MAU) Open Banking
 
-MAU uses the same OAuth shape as ZA APIs but **separate credentials** (`mauClientId`, `mauClientSecret`, `mauApiKey`, optional `mauHost`).
+MAU uses the same OAuth shape as ZA APIs but **separate credentials** (`mauClientId`, `mauClientSecret`, `mauApiKey`, optional `mauHost`). Save them with `ipb config --mau-client-id …` ([above](#how-to-configure-credentials-and-profiles)).
+
+`ipb mau accounts` lists your account IDs; `5331` below stands for one of them:
 
 ```sh
 ipb mau accounts
@@ -226,19 +260,6 @@ ipb mau balances 5331
 ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
 ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
 ipb mau statement 5331 2025-01-31 --output statement.pdf
-```
-
-Edit in your editor (`EDITOR`, default `nano` / `notepad.exe`):
-
-```sh
-ipb config edit
-ipb config edit --profile production
-```
-
-Custom credentials file:
-
-```sh
-ipb cards --credentials-file /path/to/credentials.json
 ```
 
 ### How to deploy code and manage card environments
@@ -370,10 +391,17 @@ ipb accounts --json | jq .
 # Skip confirms only when intentional
 ipb deploy -f main.js -c <card-key> --yes
 
-# Quiet / debug
+# Quiet / debug (still talks to Investec)
 ipb accounts --no-spinner
 ipb accounts --verbose
 # or: DEBUG=1 ipb accounts
+```
+
+To build or test a script without touching your accounts, set `IPB_MOCK_APIS=1`. Account, card and payment commands then use built-in test data and send nothing to Investec, so a `pay` "succeeds" without moving money. They still need credentials, so set dummy ones:
+
+```sh
+IPB_MOCK_APIS=1 INVESTEC_CLIENT_ID=x INVESTEC_CLIENT_SECRET=x INVESTEC_API_KEY=x \
+  ipb accounts --json
 ```
 
 When stdout is piped, the CLI favours structured output and turns spinners off. Destructive commands need `--yes` in non-interactive use.
@@ -423,7 +451,7 @@ Information-oriented lookup. Authoritative flags: `ipb <command> --help` or [GEN
 | Command | Purpose |
 |---------|---------|
 | `cards` (`c`) | List programmable cards |
-| `config` (`cfg`) | Save credentials; `profile` / `edit` subcommands |
+| `config` (`cfg`) | Save credentials; `profile` / `edit` / `delete` subcommands |
 | `new` | Scaffold a local project |
 | `run` (`r`) | Local transaction simulation |
 | `simulate` | Online simulator |
@@ -462,7 +490,8 @@ Common categories:
 
 - **API:** `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
 - **MAU API:** `INVESTEC_MAU_HOST`, `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`
-- **Behaviour:** `DEBUG`, `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
+- **Behaviour:** `DEBUG` (verbose output), `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
+- **Testing:** `IPB_MOCK_APIS` (built-in test data; nothing is sent to Investec)
 - **Agents and scripts:** `IPB_READ_ONLY` (block payments and card changes), `IPB_JSON_ERRORS` (print errors as JSON)
 - **Test transactions:** `IPB_TX_AMOUNT`, `IPB_TX_CURRENCY`, `IPB_TX_MCC`, `IPB_TX_MERCHANT`, `IPB_TX_CITY`, `IPB_TX_COUNTRY` change the defaults for `run` and `simulate`; a flag still wins
 
@@ -496,6 +525,10 @@ Messages look like `Error (E####): …`.
 | `E4012` | Missing account ID |
 | `E4013` | Invalid input (amount, account ID, beneficiary, option value) |
 | `E4014` | Rate limit exceeded |
+| `E4015` | Missing code ID (`publish` needs the `--code-id` that `upload` printed) |
+| `E4016` | The Investec API returned an error or an unexpected response |
+| `E4017` | Permission denied reading or writing a file |
+| `E4018` | Command disabled (`ai`, `bank`, `register`, `login`) |
 | `E4019` | Unsupported operation |
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
 | `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
@@ -515,12 +548,15 @@ Understanding-oriented background. Skip this until you care about the “why”.
 
 Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic writes; with `ipb config --keychain` the secrets live in the OS keychain instead. Command history (`~/.ipb/history.json`) never records secret values. Environment variables are convenient but can leak via process lists, CI logs, and shell history. The CLI may warn when secrets appear in the environment (especially with `--verbose` / `DEBUG` or in CI). Prefer `ipb config` and profiles for day-to-day use.
 
-**Resolution order** (highest wins):
+**Resolution order** (highest wins; each layer only replaces the values it sets):
 
-1. Command-line options (`--api-key`, …)
-2. `--profile` or the active profile
-3. Environment variables
-4. Default credentials file (`~/.ipb/.credentials.json`)
+1. Command-line options (`--api-key`, `--host`, …)
+2. `--credentials-file` (can't be combined with `--profile`)
+3. `--profile`, or else the active profile
+4. Environment variables (`INVESTEC_*`)
+5. Default credentials file (`~/.ipb/.credentials.json`)
+
+Read-only mode is the exception: if any layer turns it on, it stays on.
 
 ### Destructive operations and `--yes`
 
@@ -553,7 +589,7 @@ node bin/index.js --help
 
 ## License
 
-MIT — see [LICENSE.md](LICENSE.md).
+MIT — see [LICENSE](LICENSE).
 
 ## Contact
 

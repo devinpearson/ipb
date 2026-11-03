@@ -175,6 +175,25 @@ describe('configCommand', () => {
     );
   });
 
+  it('saves --host to the default credentials file and to a profile', async () => {
+    const { writeCredentialsFile, writeProfile } = await import('../../src/utils.ts');
+    await configCommand({ ...baseOptions(), host: 'https://sandbox.example.test' });
+    await configCommand({
+      ...baseOptions(),
+      profile: 'prod',
+      host: 'https://sandbox.example.test',
+    });
+
+    expect(writeCredentialsFile).toHaveBeenCalledWith(
+      '/tmp/.ipb/.credentials.json',
+      expect.objectContaining({ host: 'https://sandbox.example.test' })
+    );
+    expect(writeProfile).toHaveBeenCalledWith(
+      'prod',
+      expect.objectContaining({ host: 'https://sandbox.example.test' })
+    );
+  });
+
   it('writes MAU credentials to the default credentials file', async () => {
     const { writeCredentialsFile } = await import('../../src/utils.ts');
     await configCommand({

@@ -105,10 +105,10 @@ ipb cards --profile local-dev
 Mock APIs without hitting Investec (where supported):
 
 ```sh
-DEBUG=true node bin/index.js accounts
-# or
 IPB_MOCK_APIS=1 node bin/index.js accounts
 ```
+
+`DEBUG` only adds verbose output; it does not switch to the mock APIs.
 
 Skip npm update checks while developing offline / recording tapes:
 

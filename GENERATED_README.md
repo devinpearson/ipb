@@ -1,7 +1,7 @@
 # IPB CLI Command Reference
 
 > This documentation is auto-generated from the CLI command definitions.
-> Last generated: 2026-08-05T10:41:08.758Z
+> Last generated: 2026-11-03T17:18:31.317Z
 
 ## Table of Contents
 
@@ -49,13 +49,17 @@ Configure authentication credentials. Set API keys, client credentials, and card
 
 **Options:**
 
-- `--card-key <cardKey>` (required) - Set your card key for the Investec API
-- `--openai-key <openaiKey>` (required) - Set your OpenAI API key for AI code generation
-- `--sandbox-key <sandboxKey>` (required) - Set your sandbox key for AI generation
-- `--mau-api-key <mauApiKey>` (required) - Set Mauritius (MAU) API key
-- `--mau-client-id <mauClientId>` (required) - Set Mauritius (MAU) client ID
-- `--mau-client-secret <mauClientSecret>` (required) - Set Mauritius (MAU) client secret
-- `--mau-host <mauHost>` (required) - Set Mauritius (MAU) API host
+- `--card-key <cardKey>` - Set your card key for the Investec API
+- `--openai-key <openaiKey>` - Set your OpenAI API key for AI code generation
+- `--sandbox-key <sandboxKey>` - Set your sandbox key for AI generation
+- `--mau-api-key <mauApiKey>` - Set Mauritius (MAU) API key
+- `--mau-client-id <mauClientId>` - Set Mauritius (MAU) client ID
+- `--mau-client-secret <mauClientSecret>` - Set Mauritius (MAU) client secret
+- `--mau-host <mauHost>` - Set Mauritius (MAU) API host
+- `--read-only` - Block payments, transfers and card code changes (e.g. for AI agents)
+- `--no-read-only` - Turn read-only mode off (needs an interactive terminal)
+- `--keychain` - Keep secrets in the OS keychain instead of the file (macOS, Linux)
+- `--no-keychain` - Move secrets from the OS keychain back into the file
 
 **Subcommands:**
 
@@ -99,6 +103,17 @@ Delete a configuration profile
 
 - `<profile>` (required) - Profile name to delete
 
+### delete
+
+Delete stored credentials (~/.ipb/.credentials.json). Use --all to delete every profile too. Asks for confirmation.
+
+**Usage:** `ipb config delete`
+
+**Options:**
+
+- `--all` - Also delete all profiles and the active profile setting
+- `--yes` - Skip the confirmation prompt (not allowed while read-only mode is on)
+
 ### edit
 
 Open credentials file in your editor. Uses EDITOR environment variable or defaults to nano/vim/notepad.
@@ -115,8 +130,8 @@ Deploy JavaScript code to a programmable card. Uploads code and optional environ
 **Options:**
 
 - `-f,--filename <filename>` (required) - JavaScript file to deploy
-- `-e,--env <env>` (required) - Environment name (loads variables from .env.<env> file)
-- `-c,--card-key <cardKey>` (required) - Card identifier to deploy to
+- `-e,--env <env>` - Environment name (loads variables from .env.<env> file)
+- `-c,--card-key <cardKey>` - Card identifier to deploy to
 - `--yes` - Skip confirmation prompt for destructive operations
 
 
@@ -129,7 +144,7 @@ Fetch execution logs from a card. Retrieves transaction execution logs and saves
 **Options:**
 
 - `-f,--filename <filename>` (required) - Output filename for logs (JSON format)
-- `-c,--card-key <cardKey>` (required) - Card identifier to fetch logs from
+- `-c,--card-key <cardKey>` - Card identifier to fetch logs from
 
 
 ## run (aliases: r)
@@ -141,13 +156,13 @@ Run card code locally using the emulator. Test JavaScript code with simulated tr
 **Options:**
 
 - `-f,--filename <filename>` (required) - JavaScript file to execute
-- `-e,--env <env>` (required) - Environment file to load (.env.<env>)
-- `-a,--amount <amount>` (required) - Transaction amount in cents
-- `-u,--currency <currency>` (required) - Currency code (ISO 4217)
-- `-z,--mcc <mcc>` (required) - Merchant category code
-- `-m,--merchant <merchant>` (required) - Merchant name
-- `-i,--city <city>` (required) - Merchant city
-- `-o,--country <country>` (required) - Country code (ISO 3166-1 alpha-2)
+- `-e,--env <env>` - Environment file to load (.env.<env>)
+- `-a,--amount <amount>` - Transaction amount in cents
+- `-u,--currency <currency>` - Currency code (ISO 4217)
+- `-z,--mcc <mcc>` - Merchant category code
+- `-m,--merchant <merchant>` - Merchant name
+- `-i,--city <city>` - Merchant city
+- `-o,--country <country>` - Country code (ISO 3166-1 alpha-2)
 
 
 ## fetch (aliases: f)
@@ -159,7 +174,7 @@ Fetch saved code from a card. Downloads the code currently saved on a card and s
 **Options:**
 
 - `-f,--filename <filename>` (required) - Local filename to save the code to
-- `-c,--card-key <cardKey>` (required) - Card identifier to fetch code from
+- `-c,--card-key <cardKey>` - Card identifier to fetch code from
 
 
 ## upload (aliases: up)
@@ -171,7 +186,7 @@ Upload code to a card without publishing. Saves JavaScript code to a card but do
 **Options:**
 
 - `-f,--filename <filename>` (required) - JavaScript file to upload
-- `-c,--card-key <cardKey>` (required) - Card identifier to upload code to
+- `-c,--card-key <cardKey>` - Card identifier to upload code to
 
 
 ## env
@@ -183,7 +198,7 @@ Download environment variables from a card. Retrieves all environment variables 
 **Options:**
 
 - `-f,--filename <filename>` (required) - Output filename for environment variables (JSON format)
-- `-c,--card-key <cardKey>` (required) - Card identifier to fetch environment from
+- `-c,--card-key <cardKey>` - Card identifier to fetch environment from
 
 
 ## env-list
@@ -202,7 +217,7 @@ Upload environment variables to a card. Reads environment variables from a JSON 
 **Options:**
 
 - `-f,--filename <filename>` (required) - JSON file containing environment variables
-- `-c,--card-key <cardKey>` (required) - Card identifier to upload environment to
+- `-c,--card-key <cardKey>` - Card identifier to upload environment to
 
 
 ## published
@@ -214,7 +229,7 @@ Download the currently published code from a card. Retrieves the active code cur
 **Options:**
 
 - `-f,--filename <filename>` (required) - Local filename to save the published code to
-- `-c,--card-key <cardKey>` (required) - Card identifier to fetch published code from
+- `-c,--card-key <cardKey>` - Card identifier to fetch published code from
 
 
 ## publish (aliases: pub)
@@ -227,7 +242,7 @@ Publish previously uploaded code to make it active. Activates code that was uplo
 
 - `-f,--filename <filename>` (required) - JavaScript file to publish (must match uploaded code)
 - `-i,--code-id <codeId>` (required) - Code ID from previous upload command
-- `-c,--card-key <cardKey>` (required) - Card identifier to publish code to
+- `-c,--card-key <cardKey>` - Card identifier to publish code to
 - `--yes` - Skip confirmation prompt for destructive operations
 
 
@@ -240,14 +255,14 @@ Test code using the online simulator. Runs JavaScript code in the Investec cloud
 **Options:**
 
 - `-f,--filename <filename>` (required) - JavaScript file to simulate (required)
-- `-c,--card-key <cardKey>` (required) - Card identifier for simulation
-- `-e,--env <env>` (required) - Environment name
-- `-a,--amount <amount>` (required) - Transaction amount in cents
-- `-u,--currency <currency>` (required) - Currency code (ISO 4217)
-- `-z,--mcc <mcc>` (required) - Merchant category code
-- `-m,--merchant <merchant>` (required) - Merchant name
-- `-i,--city <city>` (required) - Merchant city
-- `-o,--country <country>` (required) - Country code (ISO 3166-1 alpha-2)
+- `-c,--card-key <cardKey>` - Card identifier for simulation
+- `-e,--env <env>` - Environment name
+- `-a,--amount <amount>` - Transaction amount in cents
+- `-u,--currency <currency>` - Currency code (ISO 4217)
+- `-z,--mcc <mcc>` - Merchant category code
+- `-m,--merchant <merchant>` - Merchant name
+- `-i,--city <city>` - Merchant city
+- `-o,--country <country>` - Country code (ISO 3166-1 alpha-2)
 
 
 ## enable
@@ -258,7 +273,7 @@ Enable programmable code on a card. Activates programmable card functionality. C
 
 **Options:**
 
-- `-c,--card-key <cardKey>` (required) - Card identifier to enable code on
+- `-c,--card-key <cardKey>` - Card identifier to enable code on
 
 
 ## disable
@@ -269,7 +284,7 @@ Disable programmable code on a card. Deactivates programmable card functionality
 
 **Options:**
 
-- `-c,--card-key <cardKey>` (required) - Card identifier to disable code on
+- `-c,--card-key <cardKey>` - Card identifier to disable code on
 - `--yes` - Skip confirmation prompt for destructive operations
 
 
@@ -279,6 +294,10 @@ List all supported currency codes. Shows ISO 4217 currency codes and names avail
 
 **Usage:** `ipb currencies`
 
+**Options:**
+
+- `--search <text>` - only show entries whose code or name contains this text
+
 
 ## countries
 
@@ -286,12 +305,20 @@ List all supported country codes. Shows ISO 3166-1 alpha-2 country codes and nam
 
 **Usage:** `ipb countries`
 
+**Options:**
+
+- `--search <text>` - only show entries whose code or name contains this text
+
 
 ## merchants
 
 List merchant categories and codes. Shows merchant category codes (MCC) with descriptions for use in transaction simulations.
 
 **Usage:** `ipb merchants`
+
+**Options:**
+
+- `--search <text>` - only show entries whose code or name contains this text
 
 
 ## accounts (aliases: acc)
@@ -327,7 +354,8 @@ Transfer money between your own accounts. Moves funds from one account to anothe
 
 **Options:**
 
-- `--yes` - Skip confirmation prompt for destructive operations
+- `--yes` - Skip confirmation prompt (required when not run in a terminal)
+- `--dry-run` - Check the accounts and show the summary without sending
 
 
 ## pay
@@ -345,7 +373,8 @@ Pay a beneficiary from your account. Makes a payment to a registered beneficiary
 
 **Options:**
 
-- `--yes` - Skip confirmation prompt for destructive operations
+- `--yes` - Skip confirmation prompt (required when not run in a terminal)
+- `--dry-run` - Check the account and beneficiary and show the summary without sending
 
 
 ## transactions (aliases: tx)
@@ -357,6 +386,12 @@ Get transaction history for an account. Retrieves and displays recent transactio
 **Arguments:**
 
 - `<accountId>` (required) - Account ID to fetch transactions for
+
+**Options:**
+
+- `--from <date>` - only transactions on or after this date (YYYY-MM-DD)
+- `--to <date>` - only transactions on or before this date (YYYY-MM-DD)
+- `--type <transactionType>` - only this transaction type (e.g. CardPurchases)
 
 
 ## beneficiaries
@@ -382,10 +417,10 @@ List Mauritius Investec accounts. Shows account IDs, numbers, currencies, and pr
 
 **Options:**
 
-- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
-- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
-- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
-- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--mau-api-key <mauApiKey>` - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` - Custom host for the Investec Mauritius (MAU) API
 
 ### balances
 
@@ -399,14 +434,14 @@ Get Mauritius account balance information including available balance and encumb
 
 **Options:**
 
-- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
-- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
-- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
-- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--mau-api-key <mauApiKey>` - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` - Custom host for the Investec Mauritius (MAU) API
 
 ### transactions
 
-Get Mauritius account transactions for a required date range (--from / --to, YYYY-MM-DD).
+Get Mauritius account transactions. Defaults to the last 3 months; override with --from / --to (YYYY-MM-DD).
 
 **Usage:** `ipb mau transactions <accountId>`
 
@@ -416,12 +451,12 @@ Get Mauritius account transactions for a required date range (--from / --to, YYY
 
 **Options:**
 
-- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
-- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
-- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
-- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
-- `--from <fromDate>` (required) - Start date (YYYY-MM-DD)
-- `--to <toDate>` (required) - End date (YYYY-MM-DD)
+- `--mau-api-key <mauApiKey>` - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` - Custom host for the Investec Mauritius (MAU) API
+- `--from <fromDate>` - Start date (YYYY-MM-DD). Defaults to 3 months before today.
+- `--to <toDate>` - End date (YYYY-MM-DD). Defaults to today.
 
 ### documents
 
@@ -435,10 +470,10 @@ List available Mauritius account documents (e.g. statements) for a date range.
 
 **Options:**
 
-- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
-- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
-- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
-- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--mau-api-key <mauApiKey>` - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` - Custom host for the Investec Mauritius (MAU) API
 - `--from <fromDate>` (required) - Start date (YYYY-MM-DD)
 - `--to <toDate>` (required) - End date (YYYY-MM-DD)
 
@@ -455,10 +490,10 @@ Download a Mauritius account statement PDF for a document date. Defaults to stat
 
 **Options:**
 
-- `--mau-api-key <mauApiKey>` (required) - API key for the Investec Mauritius (MAU) API
-- `--mau-client-id <mauClientId>` (required) - Client ID for the Investec Mauritius (MAU) API
-- `--mau-client-secret <mauClientSecret>` (required) - Client secret for the Investec Mauritius (MAU) API
-- `--mau-host <mauHost>` (required) - Custom host for the Investec Mauritius (MAU) API
+- `--mau-api-key <mauApiKey>` - API key for the Investec Mauritius (MAU) API
+- `--mau-client-id <mauClientId>` - Client ID for the Investec Mauritius (MAU) API
+- `--mau-client-secret <mauClientSecret>` - Client secret for the Investec Mauritius (MAU) API
+- `--mau-host <mauHost>` - Custom host for the Investec Mauritius (MAU) API
 
 
 ## new
@@ -474,7 +509,7 @@ Create a new project with scaffolding. Generates a new project directory with te
 **Options:**
 
 - `--force` - Overwrite existing project directory if it exists
-- `--template <template>` (required) - Template to use for project structure
+- `--template <template>` - Template to use for project structure
 
 
 ## completion
