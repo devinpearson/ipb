@@ -1,15 +1,11 @@
-import https from 'node:https';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { availableFunctions, tools } from '../function-calls.js';
-import { credentials, printTitleBox } from '../runtime-credentials.js';
+import { printTitleBox } from '../runtime-credentials.js';
+import { createOpenAIClient } from '../utils/openai-client.js';
 import { createSpinner, isStdoutPiped, resolveSpinnerState, withSpinner } from '../utils.js';
-
-const agent = new https.Agent({
-  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
-});
 
 let openai: OpenAI | undefined;
 
@@ -35,17 +31,7 @@ export async function bankCommand(prompt: string, options: Options) {
     prompt = await input({ message: 'Enter your banking prompt:' });
   }
 
-  openai = new OpenAI({
-    apiKey: credentials.openaiKey,
-  });
-
-  if (credentials.openaiKey === '' || credentials.openaiKey === undefined) {
-    openai = new OpenAI({
-      httpAgent: agent,
-      apiKey: credentials.sandboxKey,
-      baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
-    });
-  }
+  openai = createOpenAIClient();
 
   console.log(chalk.blueBright('Calling OpenAI with the prompt and instructions'));
   console.log(chalk.blueBright('Prompt:'));
@@ -110,7 +96,7 @@ async function generateResponse(prompt: string, instructions: string): Promise<s
 async function secondCall(
   functionResponse: unknown,
   messages: OpenAI.ChatCompletionMessageParam[],
-  toolCaller: OpenAI.ChatCompletionMessageToolCall,
+  toolCaller: OpenAI.ChatCompletionMessageFunctionToolCall,
   tools: OpenAI.ChatCompletionTool[]
 ) {
   if (!openai) {
@@ -163,6 +149,7 @@ async function toolCall(
   }
 
   for (const toolCall of toolCalls) {
+    if (toolCall.type !== 'function') continue; // only function tools are offered
     const functionName = toolCall.function.name;
     const functionToCall = availableFunctions[functionName];
     if (!functionToCall) continue; // skip unknown tools

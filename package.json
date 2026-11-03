@@ -71,10 +71,11 @@
     "investec-pb-api": "^0.3.13",
     "js-yaml": "^5.5.0",
     "node-fetch": "^3.3.2",
-    "openai": "^4.104.0",
+    "openai": "^7.47.0",
     "ora": "^10.0.0",
     "programmable-card-code-emulator": "^2.0.1",
-    "zod": "^3.25.76"
+    "undici": "^8.12.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

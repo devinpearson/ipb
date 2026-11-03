@@ -1,12 +1,11 @@
 import { promises as fsPromises } from 'node:fs';
-import https from 'node:https';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
-import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { CliError, ERROR_CODES } from '../errors.js';
-import { credentials, printTitleBox } from '../runtime-credentials.js';
+import { printTitleBox } from '../runtime-credentials.js';
+import { createOpenAIClient } from '../utils/openai-client.js';
 import {
   createSpinner,
   formatFileSize,
@@ -17,10 +16,6 @@ import {
   validateFilePathForWrite,
   withSpinner,
 } from '../utils.js';
-
-const agent = new https.Agent({
-  rejectUnauthorized: process.env.REJECT_UNAUTHORIZED !== 'false',
-});
 
 const instructions = `- You are a coding assistant that creates code snippets for users.
 - The purpose is to create a code snippet that helps the user control their credit card transactions and taking action if the transaction declines or if it is approved. 
@@ -192,16 +187,7 @@ export async function aiCommand(prompt: string, options: Options) {
 
 async function generateCode(prompt: string, instructions: string): Promise<Output | null> {
   try {
-    let openai = new OpenAI({
-      apiKey: credentials.openaiKey,
-    });
-    if (credentials.openaiKey === '' || credentials.openaiKey === undefined) {
-      openai = new OpenAI({
-        httpAgent: agent,
-        apiKey: credentials.sandboxKey,
-        baseURL: 'https://ipb.sandboxpay.co.za/proxy/v1',
-      });
-    }
+    const openai = createOpenAIClient();
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4.1',
