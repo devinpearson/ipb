@@ -69,7 +69,7 @@
     "investec-card-api": "^0.2.3",
     "investec-mau-api": "^0.1.1",
     "investec-pb-api": "^0.3.12",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^5.5.0",
     "node-fetch": "^3.3.2",
     "openai": "^4.104.0",
     "ora": "^10.0.0",
