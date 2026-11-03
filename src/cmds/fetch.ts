@@ -38,12 +38,7 @@ export async function fetchCommand(options: Options) {
     const api = await initializeApi(credentials, options);
     const result = await api.getCode(cardKey);
 
-    if (
-      !result ||
-      !result.data ||
-      !result.data.result ||
-      typeof result.data.result.code !== 'string'
-    ) {
+    if (typeof result?.data?.result?.code !== 'string') {
       throw new CliError(
         ERROR_CODES.INVESTEC_API_ERROR,
         'Failed to fetch code: Unexpected API response'
