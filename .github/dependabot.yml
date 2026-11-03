@@ -13,6 +13,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # TypeScript 7 drops the JS compiler API that Stryker uses to rewrite tsconfig.json.
+      # Remove once @stryker-mutator/core supports it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
