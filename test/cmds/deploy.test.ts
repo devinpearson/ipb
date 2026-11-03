@@ -40,11 +40,6 @@ vi.mock('../../src/utils.ts', async () => {
       return 1024; // 1 KB
     }),
     withRetry: vi.fn(async (fn) => fn()),
-    getTerminalCapabilities: vi.fn(() => ({
-      supportsUnicode: true,
-      supportsEmoji: true,
-      termType: 'xterm-256color',
-    })),
   };
 });
 

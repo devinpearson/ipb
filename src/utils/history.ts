@@ -19,7 +19,7 @@ export interface CommandHistoryEntry {
  * Gets the path to the command history file.
  * @returns Path to ~/.ipb/history.json
  */
-export function getHistoryFilePath(): string {
+function getHistoryFilePath(): string {
   return path.join(homedir(), '.ipb', 'history.json');
 }
 

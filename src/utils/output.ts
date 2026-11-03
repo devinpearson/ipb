@@ -16,7 +16,7 @@ const CliTable: CliTableConstructor | undefined = (() => {
   return typeof Ctor === 'function' ? Ctor : undefined;
 })();
 
-export interface TableRow {
+interface TableRow {
   [key: string]: string | number | boolean | null | undefined;
 }
 

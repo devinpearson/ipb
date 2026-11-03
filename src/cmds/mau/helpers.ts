@@ -21,7 +21,9 @@ export function normalizeToArray<T extends object>(value: unknown): T[] {
     return [value as T];
   }
   if (value !== undefined && isDebugEnabled()) {
-    process.stderr.write(`[debug] normalizeToArray: unexpected falsy value from API: ${JSON.stringify(value)}\n`);
+    process.stderr.write(
+      `[debug] normalizeToArray: unexpected falsy value from API: ${JSON.stringify(value)}\n`
+    );
   }
   return [];
 }

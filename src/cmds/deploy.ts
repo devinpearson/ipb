@@ -96,7 +96,9 @@ export async function deployCommand(options: Options) {
       }
     }
     const codeFileSize = await getFileSize(normalizedFilename);
-    spinner.update(`🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`);
+    spinner.update(
+      `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
+    );
     const raw = { code: '' };
 
     const code = await fsPromises.readFile(normalizedFilename, 'utf8');

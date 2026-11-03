@@ -48,27 +48,3 @@ export const ERROR_CODES = {
   /** Bank response did not confirm a payment or transfer (no reference number returned). */
   PAYMENT_NOT_CONFIRMED: 'E4021',
 };
-
-/**
- * Helper function to throw a custom CLI error.
- * @param code - Error code from ERROR_CODES
- * @param message - Error message
- * @throws {CliError} Always throws a CliError
- */
-export function throwCliError(code: string, message: string): never {
-  throw new CliError(code, message);
-}
-
-/**
- * Helper function to format and print error output.
- * @param error - The error to print (can be any type)
- */
-export function printCliError(error: unknown) {
-  if (error instanceof CliError) {
-    console.error(error.message);
-  } else if (error instanceof Error) {
-    console.error(`Error: ${error.message}`);
-  } else {
-    console.error('An unknown error occurred.');
-  }
-}

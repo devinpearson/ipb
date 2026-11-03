@@ -39,7 +39,9 @@ export async function mauTransactionsCommand(accountId: string, options: MauTran
   let transactions: MauTransaction[] | undefined;
   await withCommandSpinner(options, isPiped, '💳 fetching MAU transactions...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
-    const result = await withRetry(() => api.getAccountTransactions(resolvedId, fromDate, toDate), { verbose });
+    const result = await withRetry(() => api.getAccountTransactions(resolvedId, fromDate, toDate), {
+      verbose,
+    });
     transactions = extractMauDataList(result, 'transactions');
   });
 

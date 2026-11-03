@@ -14,7 +14,7 @@ import { vi } from 'vitest';
 import type { Credentials } from '../../src/cmds/types.js';
 
 /** Default credential shape for command tests (matches many existing inline mocks). */
-export const testCredentials: Credentials = {
+const testCredentials: Credentials = {
   host: 'https://openapi.investec.com',
   clientId: 'cid',
   clientSecret: 'secret',
@@ -56,18 +56,4 @@ export function getRuntimeCredentialsMock(options?: RuntimeCredentialsMockOption
   }
 
   return mock;
-}
-
-/** Spinner object returned by mocked `createSpinner` in command tests. */
-export function createSpinnerControlMock() {
-  return {
-    start: vi.fn(function (this: unknown) {
-      return this;
-    }),
-    stop: vi.fn(),
-    clear: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-    text: '',
-  };
 }

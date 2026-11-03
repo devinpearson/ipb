@@ -33,7 +33,9 @@ export async function mauDocumentsCommand(accountId: string, options: MauDocumen
   let documents: MauDocument[] | undefined;
   await withCommandSpinner(options, isPiped, '💳 fetching MAU documents...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
-    const result = await withRetry(() => api.getAccountDocuments(resolvedId, fromDate, toDate), { verbose });
+    const result = await withRetry(() => api.getAccountDocuments(resolvedId, fromDate, toDate), {
+      verbose,
+    });
     const root = result as {
       availableDocuments?: {
         accountNumber?: string;

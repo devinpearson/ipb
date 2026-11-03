@@ -96,7 +96,7 @@ export async function describeBeneficiary(
 }
 
 /** Investec returns statuses like "- No authorisation necessary <br> - Payment/Transfer effective date 2024-01-01". */
-export function cleanStatus(status: string | undefined): string {
+function cleanStatus(status: string | undefined): string {
   if (!status) {
     return '';
   }
