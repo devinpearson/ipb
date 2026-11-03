@@ -1,19 +1,20 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  filterBySearch,
   initializeApi,
   isStdoutPiped,
   runListCommand,
   withCommandSpinner,
   withRetry,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
+import type { ReferenceDataOptions } from './types.js';
 
 /**
  * Fetches and displays a list of supported countries.
  * @param options - CLI options including API credentials
  * @throws {Error} When API credentials are invalid or API call fails
  */
-export async function countriesCommand(options: CommonOptions) {
+export async function countriesCommand(options: ReferenceDataOptions) {
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {
@@ -29,9 +30,9 @@ export async function countriesCommand(options: CommonOptions) {
 
   await runListCommand({
     isPiped,
-    items: countries,
+    items: filterBySearch(countries, options.search),
     outputOptions: { json: options.json, yaml: options.yaml, output: options.output },
-    emptyMessage: 'No countries found',
+    emptyMessage: options.search ? `No countries match "${options.search}"` : 'No countries found',
     countMessage: (count) => `${count} country(ies) found.`,
     mapSimple: (rows) => rows.map(({ Code, Name }) => ({ Code, Name })),
   });

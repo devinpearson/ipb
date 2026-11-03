@@ -277,6 +277,13 @@ Reference data for MCC / country / currency values:
 ipb countries
 ipb currencies
 ipb merchants
+
+# Look up a code or name (case-insensitive)
+ipb merchants --search grocery
+ipb countries --search ZA
+
+# Download a list
+ipb merchants --output merchants.json
 ```
 
 ### How to enable or disable code on a card

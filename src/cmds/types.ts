@@ -20,6 +20,10 @@ export interface TransactionFilterOptions extends CommonOptions {
   type?: string;
 }
 
+export interface ReferenceDataOptions extends CommonOptions {
+  search?: string;
+}
+
 export interface PaymentOptions extends CommonOptions {
   dryRun?: boolean;
 }

@@ -329,3 +329,29 @@ describe('withSpinnerOutcome', () => {
     expect(spinner.fail).not.toHaveBeenCalled();
   });
 });
+
+describe('filterBySearch', () => {
+  const rows = [
+    { Code: 'ZA', Name: 'South Africa' },
+    { Code: 'GB', Name: 'United Kingdom' },
+  ];
+
+  it('returns everything when there is no search', async () => {
+    const { filterBySearch } = await import('../src/utils.ts');
+    expect(filterBySearch(rows, undefined)).toBe(rows);
+    expect(filterBySearch(rows, '   ')).toBe(rows);
+    expect(filterBySearch(undefined, 'za')).toBeUndefined();
+  });
+
+  it('matches any field, trimmed and case-insensitively', async () => {
+    const { filterBySearch } = await import('../src/utils.ts');
+    expect(filterBySearch(rows, ' za ')).toEqual([rows[0]]);
+    expect(filterBySearch(rows, 'KINGDOM')).toEqual([rows[1]]);
+    expect(filterBySearch(rows, 'zz')).toEqual([]);
+  });
+
+  it('matches numeric field values too', async () => {
+    const { filterBySearch } = await import('../src/utils.ts');
+    expect(filterBySearch([{ Code: 5411 }, { Code: 7623 }], '76')).toEqual([{ Code: 7623 }]);
+  });
+});

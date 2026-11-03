@@ -540,9 +540,12 @@ Examples:
   $ ipb currencies --json
   $ ipb currencies --yaml
   $ ipb currencies --output currencies.json
+  $ ipb currencies --search rand
       `
       )
-  ).action(withCommandContext('currencies', currenciesCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('currencies', currenciesCommand));
   addApiCredentialOptions(
     program
       .command('countries')
@@ -557,9 +560,12 @@ Examples:
   $ ipb countries --json
   $ ipb countries --yaml
   $ ipb countries --output countries.json
+  $ ipb countries --search africa
       `
       )
-  ).action(withCommandContext('countries', countriesCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('countries', countriesCommand));
   addApiCredentialOptions(
     program
       .command('merchants')
@@ -574,9 +580,13 @@ Examples:
   $ ipb merchants --json
   $ ipb merchants --yaml
   $ ipb merchants --output merchants.json
+  $ ipb merchants --search grocery
+  $ ipb merchants --search 5411 --json
       `
       )
-  ).action(withCommandContext('merchants', merchantsCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('merchants', merchantsCommand));
   // Account Management
   addApiCredentialOptions(
     program

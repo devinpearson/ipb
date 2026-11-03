@@ -172,4 +172,54 @@ describe('reference data and beneficiaries commands', () => {
       })
     );
   });
+
+  describe('--search', () => {
+    const options = {
+      host: 'h',
+      apiKey: 'k',
+      clientId: 'c',
+      clientSecret: 's',
+      credentialsFile: '',
+      verbose: false,
+    };
+    const merchants = [
+      { Code: '5411', Name: 'Grocery Stores, Supermarkets' },
+      { Code: '7623', Name: 'A/C, Refrigeration Repair' },
+    ];
+
+    it('filters merchants by name or code, case-insensitively', async () => {
+      mockState.cardApi.getMerchants.mockResolvedValue({ data: { result: merchants } });
+      const { runListCommand } = await import('../../src/utils.ts');
+
+      await merchantsCommand({ ...options, search: 'GROCERY' });
+      expect(runListCommand).toHaveBeenLastCalledWith(
+        expect.objectContaining({ items: [merchants[0]] })
+      );
+
+      await merchantsCommand({ ...options, search: '7623' });
+      expect(runListCommand).toHaveBeenLastCalledWith(
+        expect.objectContaining({ items: [merchants[1]] })
+      );
+    });
+
+    it('explains an empty result for countries and currencies', async () => {
+      mockState.cardApi.getCountries.mockResolvedValue({
+        data: { result: [{ Code: 'ZA', Name: 'South Africa' }] },
+      });
+      mockState.cardApi.getCurrencies.mockResolvedValue({
+        data: { result: [{ Code: 'ZAR', Name: 'Rand' }] },
+      });
+      const { runListCommand } = await import('../../src/utils.ts');
+
+      await countriesCommand({ ...options, search: 'narnia' });
+      expect(runListCommand).toHaveBeenLastCalledWith(
+        expect.objectContaining({ items: [], emptyMessage: 'No countries match "narnia"' })
+      );
+
+      await currenciesCommand({ ...options, search: 'rand' });
+      expect(runListCommand).toHaveBeenLastCalledWith(
+        expect.objectContaining({ items: [{ Code: 'ZAR', Name: 'Rand' }] })
+      );
+    });
+  });
 });
