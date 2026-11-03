@@ -49,7 +49,7 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   }
 
   // Validate account ID format
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!isPiped) {
     printTitleBox();

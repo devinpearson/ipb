@@ -44,13 +44,13 @@ export async function payCommand(
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!beneficiaryId) {
     beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
   }
-  // Beneficiary ID validation (similar format to account ID)
-  if (!beneficiaryId || beneficiaryId.trim().length === 0) {
+  beneficiaryId = beneficiaryId?.trim() ?? '';
+  if (!beneficiaryId) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Beneficiary ID is required');
   }
 

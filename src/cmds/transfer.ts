@@ -41,14 +41,14 @@ export async function transferCommand(
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!beneficiaryAccountId) {
     beneficiaryAccountId = await input({
       message: 'Enter beneficiary account ID:',
     });
   }
-  validateAccountId(beneficiaryAccountId);
+  beneficiaryAccountId = validateAccountId(beneficiaryAccountId);
 
   // Commander passes args as strings; coerce before validation/formatting.
   if (!amount) {

@@ -59,7 +59,7 @@ export async function transactionsCommand(accountId: string, options: Transactio
   }
 
   // Validate account ID format
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!isPiped) {
     printTitleBox();

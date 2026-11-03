@@ -1,5 +1,10 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 
+const PLAIN_DECIMAL = /^(\d+(\.\d*)?|\.\d+)$/;
+
+/** Above this, amounts lose cent precision and stringify in exponent form. */
+const MAX_AMOUNT = 1e12;
+
 /**
  * Validates a monetary amount and returns it as a number.
  * Accepts CLI string args (Commander always passes strings) or numbers.
@@ -8,25 +13,32 @@ import { CliError, ERROR_CODES } from '../errors.js';
  * @returns Parsed finite positive amount
  */
 export function validateAmount(amount: number | string, maxDecimals = 2): number {
-  if (typeof amount === 'string' && amount.trim() === '') {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a valid number');
-  }
-
-  const value = typeof amount === 'string' ? Number(amount.trim()) : Number(amount);
-
-  if (Number.isNaN(value)) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a valid number');
-  }
-
-  if (!Number.isFinite(value)) {
+  if (typeof amount === 'number' && !Number.isFinite(amount)) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a finite number');
   }
 
+  const text = String(amount).trim();
+  if (text.startsWith('-') && PLAIN_DECIMAL.test(text.slice(1))) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
+  }
+  // Number() would also accept "0x10", "0b11" and "1e3", silently paying R16, R3 or R1000.
+  if (!PLAIN_DECIMAL.test(text)) {
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      'Amount must be a valid number in rands, written as digits with an optional decimal point (e.g. 100 or 100.50)'
+    );
+  }
+
+  const value = Number(text);
   if (value <= 0) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
   }
+  if (value > MAX_AMOUNT) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount is too large');
+  }
 
-  const decimalPlaces = (value.toString().split('.')[1] || '').length;
+  // Count from what was typed (ignoring trailing zeros): 1e-7 has no "." in value.toString().
+  const decimalPlaces = (text.split('.')[1] ?? '').replace(/0+$/, '').length;
   if (decimalPlaces > maxDecimals) {
     throw new CliError(
       ERROR_CODES.INVALID_INPUT,
@@ -37,7 +49,10 @@ export function validateAmount(amount: number | string, maxDecimals = 2): number
   return value;
 }
 
-export function validateAccountId(accountId: string): void {
+/**
+ * Validates an account ID and returns it trimmed; callers must use the returned value.
+ */
+export function validateAccountId(accountId: string): string {
   if (!accountId || accountId.trim().length === 0) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID is required and cannot be empty');
   }
@@ -52,9 +67,15 @@ export function validateAccountId(accountId: string): void {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID cannot exceed 100 characters');
   }
 
-  if (trimmedId.includes('..') || trimmedId.includes('/') || trimmedId.includes('\\')) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Account ID contains invalid characters');
+  // The ID goes into the request URL, so anything beyond these could change the path or query.
+  if (!/^[A-Za-z0-9_-]+$/.test(trimmedId)) {
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      'Account ID contains invalid characters (only letters, digits, "-" and "_" are allowed)'
+    );
   }
+
+  return trimmedId;
 }
 
 /**
@@ -119,8 +140,9 @@ export function validateIsoDate(date: string, label: string): string {
     );
   }
 
+  // JavaScript rolls impossible dates over (2026-02-31 becomes 2026-03-03), so require a round trip.
   const parsed = new Date(`${trimmed}T00:00:00Z`);
-  if (Number.isNaN(parsed.getTime())) {
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== trimmed) {
     throw new CliError(ERROR_CODES.MISSING_DATE_RANGE, `${label} is not a valid date: ${trimmed}`);
   }
 
