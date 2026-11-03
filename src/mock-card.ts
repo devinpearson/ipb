@@ -10,14 +10,8 @@ import type {
   Transaction,
 } from 'investec-card-api';
 
+/** The card API methods the CLI uses. Credentials and tokens stay private to the client. */
 export interface ICardApi {
-  host: string;
-  clientId: string;
-  clientSecret: string;
-  apiKey: string;
-  token: string;
-  expiresIn: Date;
-
   getToken(): Promise<string>;
   getAccessToken(): Promise<AuthResponse>;
   uploadEnv(cardKey: number, env: object): Promise<EnvResponse>;

@@ -1,6 +1,8 @@
 /// <reference types="vitest" />
 
 import { CommanderError } from 'commander';
+import { InvestecApiError as CardApiError } from 'investec-card-api';
+import { InvestecApiError as PbApiError } from 'investec-pb-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES, ExitCode } from '../../src/errors.js';
 import {
@@ -83,6 +85,28 @@ describe('determineExitCode', () => {
   it('does not treat numbers that merely contain a status code as HTTP statuses', () => {
     expect(exitFor('Payment of R1500 failed')).toBe(ExitCode.GENERAL_ERROR);
     expect(exitFor('Error (E4013): bad input')).toBe(ExitCode.GENERAL_ERROR);
+  });
+
+  it.each([
+    [401, ExitCode.AUTH_ERROR],
+    [403, ExitCode.AUTH_ERROR],
+    [502, ExitCode.API_ERROR],
+    [400, ExitCode.GENERAL_ERROR],
+  ])(
+    'uses the status of a card API error whose message is the response body (%i)',
+    (status, expected) => {
+      const error = new CardApiError(
+        'Invalid API key supplied',
+        status,
+        'Invalid API key supplied'
+      );
+      expect(determineExitCode(error, undefined, error.message)).toBe(expected);
+    }
+  );
+
+  it('maps banking API errors by the status in their message', () => {
+    const error = new PbApiError(401, '/za/pb/v1/accounts', 'Unauthorized');
+    expect(determineExitCode(error, undefined, error.message)).toBe(ExitCode.AUTH_ERROR);
   });
 });
 
@@ -192,6 +216,17 @@ describe('handleCliError', () => {
   it('prints just the failure line and a blank line when there is no tip', () => {
     run(new Error('boom'));
     expect(errLines).toEqual(['ipb pay failed: boom', '']);
+  });
+
+  it('gives the credentials and rate-limit tips from a card API error status alone', () => {
+    expect(run(new CardApiError('Invalid API key supplied', 401))).toContain('Run `ipb config`');
+    errLines = [];
+    expect(run(new CardApiError('Quota exceeded', 429))).toContain('Please wait');
+  });
+
+  it('prints the API message without the status it adds for matching', () => {
+    run(new CardApiError('Invalid API key supplied', 401));
+    expect(errLines[0]).toBe('ipb pay failed: Invalid API key supplied');
   });
 
   it('gives no tip for unrecognised errors or numbers that only contain 429', () => {
