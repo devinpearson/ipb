@@ -1,17 +1,15 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializePbApi,
   isStdoutPiped,
   readStdin,
-  resolveSpinnerState,
   runListCommand,
   validateAccountId,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
+import type { AccountBalance, CommonOptions } from './types.js';
 
 /**
  * Fetches and displays account balances for a specific account.
@@ -56,34 +54,11 @@ export async function balancesCommand(accountId: string, options: CommonOptions)
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching balances...');
-  let result:
-    | {
-        data: {
-          accountId: string;
-          currency: string;
-          currentBalance: number;
-          availableBalance: number;
-          budgetBalance: number;
-          straightBalance: number;
-          cashBalance: number;
-        };
-      }
-    | undefined;
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  let result: { data: AccountBalance } | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching balances...', async (verbose) => {
     const api = await initializePbApi(credentials, options);
-
-    // Use retry logic with rate limit handling
-    result = await withRetry(() => api.getAccountBalances(accountId), {
-      maxRetries: 3,
-      verbose,
-    });
+    result = await withRetry(() => api.getAccountBalances(accountId), { verbose });
   });
 
   if (!result) {

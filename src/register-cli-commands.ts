@@ -72,10 +72,7 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
@@ -94,10 +91,7 @@ function addMauCredentialOptions(cmd: Command) {
     .option('--mau-host <mauHost>', 'Custom host for the Investec Mauritius (MAU) API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
@@ -107,10 +101,7 @@ function addMauCredentialOptions(cmd: Command) {
 /** Spinner + verbose only (for commands that do not use Investec API credential flags). */
 function addSpinnerVerboseOptions(cmd: Command) {
   return cmd
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information');
 }
 
@@ -701,7 +692,7 @@ Examples:
 Examples:
   $ ipb mau accounts
   $ ipb mau balances 5331
-  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
+  $ ipb mau transactions 5331
   $ ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
   $ ipb mau statement 5331 2025-01-31 -o statement.pdf
   $ ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
@@ -747,20 +738,21 @@ Examples:
     mauCmd
       .command('transactions')
       .description(
-        'Get Mauritius account transactions for a required date range (--from / --to, YYYY-MM-DD).'
+        'Get Mauritius account transactions. Defaults to the last 3 months; override with --from / --to (YYYY-MM-DD).'
       )
       .addHelpText(
         'after',
         `
 Examples:
+  $ ipb mau transactions 5331
   $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
-  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31 --json
+  $ ipb mau transactions 5331 --json
       `
       )
   )
     .argument('<accountId>', 'Numeric Mauritius account ID')
-    .requiredOption('--from <fromDate>', 'Start date (YYYY-MM-DD)')
-    .requiredOption('--to <toDate>', 'End date (YYYY-MM-DD)')
+    .option('--from <fromDate>', 'Start date (YYYY-MM-DD). Defaults to 3 months before today.')
+    .option('--to <toDate>', 'End date (YYYY-MM-DD). Defaults to today.')
     .action(withCommandContext('mau transactions', mauTransactionsCommand));
 
   addMauCredentialOptions(

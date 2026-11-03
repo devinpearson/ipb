@@ -6,7 +6,7 @@ import { mauBalancesCommand } from '../../src/cmds/mau/balances';
 import { mauDocumentsCommand } from '../../src/cmds/mau/documents';
 import { mauStatementCommand } from '../../src/cmds/mau/statement';
 import { mauTransactionsCommand } from '../../src/cmds/mau/transactions';
-import { CliError, ERROR_CODES } from '../../src/errors';
+import { ERROR_CODES } from '../../src/errors';
 
 vi.mock('../../src/runtime-credentials.ts', async () => {
   const { getRuntimeCredentialsMock } = await import('../helpers/cli-mocks.js');
@@ -23,6 +23,7 @@ vi.mock('../../src/utils.ts', async () => {
         return this;
       }),
       stop: vi.fn(),
+      update: vi.fn(),
     })),
     formatOutput: vi.fn(),
     runListCommand: vi.fn(),
@@ -140,11 +141,34 @@ describe('mau commands', () => {
     });
   });
 
-  it('mauTransactionsCommand requires a date range', async () => {
-    await expect(mauTransactionsCommand('5331', baseOptions)).rejects.toBeInstanceOf(CliError);
-    await expect(mauTransactionsCommand('5331', baseOptions)).rejects.toMatchObject({
-      code: ERROR_CODES.MISSING_DATE_RANGE,
-    });
+  it('mauTransactionsCommand defaults the date range when omitted', async () => {
+    const transactions = [
+      {
+        description: 'Credit',
+        creditAmount: 10,
+        debitAmount: 0,
+        transactionDate: '2024-01-02',
+        bankReference: 'REF',
+        amount: 10,
+        runningBalance: 100,
+      },
+    ];
+    mockApi.getAccountTransactions.mockResolvedValue({ data: { transactions } });
+
+    await mauTransactionsCommand('5331', baseOptions);
+
+    expect(mockApi.getAccountTransactions).toHaveBeenCalledWith(
+      '5331',
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+    );
+    const [, fromDate, toDate] = mockApi.getAccountTransactions.mock.calls[0];
+    expect(fromDate <= toDate).toBe(true);
+    expect(runListCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: transactions,
+      })
+    );
   });
 
   it('mauTransactionsCommand fetches transactions', async () => {

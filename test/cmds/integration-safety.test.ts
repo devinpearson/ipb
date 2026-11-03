@@ -27,6 +27,7 @@ const mockState = vi.hoisted(() => ({
     fail: vi.fn(function () {
       return this;
     }),
+    update: vi.fn(),
     text: '',
   },
   cardApi: {
@@ -81,6 +82,16 @@ vi.mock('../../src/utils.ts', async () => {
   };
 });
 
+vi.mock('../../src/utils/spinner.js', async () => {
+  const actual = await vi.importActual<typeof import('../../src/utils/spinner.js')>(
+    '../../src/utils/spinner.js'
+  );
+  return {
+    ...actual,
+    createSpinner: vi.fn(() => mockState.spinner),
+  };
+});
+
 describe('integration safety net', () => {
   beforeEach(() => {
     mockState.isPiped = false;
@@ -90,6 +101,7 @@ describe('integration safety net', () => {
     mockState.spinner.clear.mockClear();
     mockState.spinner.succeed.mockClear();
     mockState.spinner.fail.mockClear();
+    mockState.spinner.update.mockClear();
     mockState.cardApi.getCode.mockReset();
     mockState.cardApi.getCards.mockReset();
     mockState.cardApi.uploadEnv.mockReset();

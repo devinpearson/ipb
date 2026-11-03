@@ -1,16 +1,14 @@
 import { writeFile } from 'node:fs/promises';
 import { credentials, printTitleBox } from '../../runtime-credentials.js';
 import {
-  createSpinner,
   getSafeText,
   initializeMauApi,
   isStdoutPiped,
-  resolveSpinnerState,
   validateFilePathForWrite,
   validateIsoDate,
   validateMauAccountId,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../../utils.js';
 import type { MauOptions } from '../types.js';
 import { resolveMauAccountId } from './helpers.js';
@@ -39,19 +37,10 @@ export async function mauStatementCommand(
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 downloading MAU statement...');
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  await withCommandSpinner(options, isPiped, '💳 downloading MAU statement...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
-    const pdf = await withRetry(() => api.downloadAccountStatement(resolvedId, date), {
-      maxRetries: 3,
-      verbose,
-    });
+    const pdf = await withRetry(() => api.downloadAccountStatement(resolvedId, date), { verbose });
     await writeFile(outputPath, Buffer.from(pdf));
   });
 

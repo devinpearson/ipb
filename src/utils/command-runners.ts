@@ -3,6 +3,7 @@ import { formatFileSize, getFileSize } from './file-size.js';
 import type { OutputOptions } from './output.js';
 import { formatOutput } from './output.js';
 import { createSpinner, type Spinner, withSpinner } from './spinner.js';
+import { resolveSpinnerState } from './runtime-flags.js';
 
 interface RunListCommandOptions<TFull, TSimple = TFull> {
   isPiped: boolean;
@@ -79,6 +80,35 @@ export async function runWriteCommand(options: RunWriteCommandOptions): Promise<
   console.log(successMessage(formatFileSize(finalSize)));
 }
 
+interface WithCommandSpinnerOptions {
+  spinner?: boolean;
+  verbose?: boolean;
+}
+
+/**
+ * Encapsulates the spinner setup boilerplate shared by every command:
+ * resolve spinner/verbose state, create the spinner, and run the operation inside it.
+ * @param options - Command options carrying spinner/verbose flags
+ * @param isPiped - Whether stdout is piped
+ * @param label - Initial spinner label
+ * @param operation - Async work to execute; receives the resolved verbose flag
+ * @returns The operation's return value plus the resolved spinnerEnabled and verbose flags
+ */
+export async function withCommandSpinner(
+  options: WithCommandSpinnerOptions,
+  isPiped: boolean,
+  label: string,
+  operation: (verbose: boolean) => Promise<void>
+): Promise<void> {
+  const { spinnerEnabled, verbose } = resolveSpinnerState({
+    spinnerFlag: options.spinner,
+    verboseFlag: options.verbose,
+    isPiped,
+  });
+  const spinner = createSpinner(spinnerEnabled, label);
+  await withSpinner(spinner, spinnerEnabled, () => operation(verbose));
+}
+
 /**
  * Handles common read-file then upload flow with spinner progress text updates.
  * @param options - Read and upload command options
@@ -92,11 +122,11 @@ export async function runReadUploadCommand<TResult>(
 
   return await withSpinner(spinner, spinnerEnabled, async () => {
     const codeFileSize = await getFileSize(filename);
-    spinner.text = readMessage(formatFileSize(codeFileSize));
+    spinner.update(readMessage(formatFileSize(codeFileSize)));
     const readContent = readFileContent ?? ((path: string) => readFile(path, 'utf8'));
     const content = await readContent(filename);
     const contentSize = Buffer.byteLength(content, 'utf8');
-    spinner.text = uploadMessage(formatFileSize(contentSize));
+    spinner.update(uploadMessage(formatFileSize(contentSize)));
     return await upload(content);
   });
 }

@@ -18,12 +18,12 @@ export function validateAmount(amount: number | string, maxDecimals = 2): number
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a valid number');
   }
 
-  if (value <= 0) {
-    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
-  }
-
   if (!Number.isFinite(value)) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be a finite number');
+  }
+
+  if (value <= 0) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, 'Amount must be positive');
   }
 
   const decimalPlaces = (value.toString().split('.')[1] || '').length;
@@ -79,6 +79,33 @@ export function validateMauAccountId(accountId: string): string {
 }
 
 /**
+ * Formats a Date as local YYYY-MM-DD.
+ * @param date - Date to format
+ */
+export function formatLocalIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Default MAU transaction window: from = today minus 3 calendar months, to = today.
+ */
+export function defaultMauTransactionDateRange(now: Date = new Date()): {
+  fromDate: string;
+  toDate: string;
+} {
+  const to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const from = new Date(to);
+  from.setMonth(from.getMonth() - 3);
+  return {
+    fromDate: formatLocalIsoDate(from),
+    toDate: formatLocalIsoDate(to),
+  };
+}
+
+/**
  * Validates a date string in YYYY-MM-DD format.
  * @param date - Date string
  * @param label - Field label for error messages (e.g. --from, --to)
@@ -101,29 +128,34 @@ export function validateIsoDate(date: string, label: string): string {
 }
 
 /**
- * Validates a required from/to date range.
+ * Validates a from/to date range, optionally applying defaults when values are omitted.
  * @param fromDate - Start date option
  * @param toDate - End date option
+ * @param defaults - Optional defaults when from/to are missing
  */
 export function validateDateRange(
   fromDate: string | undefined,
-  toDate: string | undefined
+  toDate: string | undefined,
+  defaults?: { fromDate: string; toDate: string }
 ): { fromDate: string; toDate: string } {
-  if (!fromDate || fromDate.trim() === '') {
+  const resolvedFrom = fromDate?.trim() || defaults?.fromDate;
+  const resolvedTo = toDate?.trim() || defaults?.toDate;
+
+  if (!resolvedFrom) {
     throw new CliError(
       ERROR_CODES.MISSING_DATE_RANGE,
       'Start date is required. Provide --from YYYY-MM-DD'
     );
   }
-  if (!toDate || toDate.trim() === '') {
+  if (!resolvedTo) {
     throw new CliError(
       ERROR_CODES.MISSING_DATE_RANGE,
       'End date is required. Provide --to YYYY-MM-DD'
     );
   }
 
-  const from = validateIsoDate(fromDate, '--from');
-  const to = validateIsoDate(toDate, '--to');
+  const from = validateIsoDate(resolvedFrom, '--from');
+  const to = validateIsoDate(resolvedTo, '--to');
 
   if (from > to) {
     throw new CliError(

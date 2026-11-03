@@ -1,14 +1,12 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializePbApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
+import type { Account, CommonOptions } from './types.js';
 
 /**
  * Fetch and display Investec accounts.
@@ -20,30 +18,11 @@ export async function accountsCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching accounts...');
-  let accounts:
-    | Array<{
-        accountId: string;
-        accountNumber: string;
-        referenceName: string;
-        productName: string;
-      }>
-    | undefined;
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  let accounts: Account[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching accounts...', async (verbose) => {
     const api = await initializePbApi(credentials, options);
-    if (verbose && !isPiped) console.log('💳 fetching accounts...');
-
-    // Use retry logic with rate limit handling
-    const result = await withRetry(() => api.getAccounts(), {
-      maxRetries: 3,
-      verbose,
-    });
+    const result = await withRetry(() => api.getAccounts(), { verbose });
     accounts = result.data.accounts;
   });
 

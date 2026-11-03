@@ -1,16 +1,14 @@
 import { credentials, printTitleBox } from '../../runtime-credentials.js';
 import {
-  createSpinner,
   initializeMauApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
   validateDateRange,
   validateMauAccountId,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../../utils.js';
-import type { MauOptions } from '../types.js';
+import type { MauDocument, MauOptions } from '../types.js';
 import { normalizeToArray, resolveMauAccountId } from './helpers.js';
 
 interface MauDocumentsOptions extends MauOptions {
@@ -31,26 +29,11 @@ export async function mauDocumentsCommand(accountId: string, options: MauDocumen
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching MAU documents...');
-  let documents:
-    | Array<{
-        documentDate: string;
-        documentType: string;
-        accountNumber: string;
-      }>
-    | undefined;
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  let documents: MauDocument[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching MAU documents...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
-    const result = await withRetry(() => api.getAccountDocuments(resolvedId, fromDate, toDate), {
-      maxRetries: 3,
-      verbose,
-    });
+    const result = await withRetry(() => api.getAccountDocuments(resolvedId, fromDate, toDate), { verbose });
     const root = result as {
       availableDocuments?: {
         accountNumber?: string;

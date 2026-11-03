@@ -92,10 +92,7 @@ export async function transferCommand(
             theirReference: reference,
           },
         ]),
-      {
-        maxRetries: 3,
-        verbose,
-      }
+      { verbose }
     );
   });
 

@@ -20,6 +20,7 @@ vi.mock('../../src/utils.ts', async () => {
         return this;
       }),
       stop: vi.fn(),
+      update: vi.fn(),
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),

@@ -1,14 +1,12 @@
 import { credentials, printTitleBox } from '../../runtime-credentials.js';
 import {
-  createSpinner,
   initializeMauApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../../utils.js';
-import type { MauOptions } from '../types.js';
+import type { MauAccount, MauOptions } from '../types.js';
 import { extractMauAccounts } from './helpers.js';
 
 /**
@@ -21,31 +19,11 @@ export async function mauAccountsCommand(options: MauOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching MAU accounts...');
-  let accounts:
-    | Array<{
-        accountId: number;
-        accountNumber: string;
-        accountName?: string;
-        accountCurrency: string;
-        profileId: number;
-        profileName: string;
-      }>
-    | undefined;
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  let accounts: MauAccount[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching MAU accounts...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
-    if (verbose && !isPiped) console.log('💳 fetching MAU accounts...');
-
-    const result = await withRetry(() => api.getAccounts(), {
-      maxRetries: 3,
-      verbose,
-    });
+    const result = await withRetry(() => api.getAccounts(), { verbose });
     accounts = extractMauAccounts(result);
   });
 

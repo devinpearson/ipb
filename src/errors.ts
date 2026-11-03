@@ -21,7 +21,6 @@ export enum ExitCode {
   PERMISSION_ERROR = 7,
 }
 
-// Example error codes and messages
 export const ERROR_CODES = {
   MISSING_API_TOKEN: 'E4002',
   MISSING_CARD_KEY: 'E4003',
@@ -32,12 +31,12 @@ export const ERROR_CODES = {
   INVALID_PROJECT_NAME: 'E4008',
   PROJECT_EXISTS: 'E4009',
   FILE_NOT_FOUND: 'E4010',
-  MISSING_EMAIL_OR_PASSWORD: 'E4011', // Added for register command
-  MISSING_ACCOUNT_ID: 'E4012', // Added for balances command
-  INVALID_INPUT: 'E4013', // Added for input validation errors
-  RATE_LIMIT_EXCEEDED: 'E4014', // Added for rate limiting errors
-  MISSING_CODE_ID: 'E4015', // Added for missing code ID
-  INVESTEC_API_ERROR: 'E4016', // Added for Investec API communication failures
+  MISSING_EMAIL_OR_PASSWORD: 'E4011',
+  MISSING_ACCOUNT_ID: 'E4012',
+  INVALID_INPUT: 'E4013',
+  RATE_LIMIT_EXCEEDED: 'E4014',
+  MISSING_CODE_ID: 'E4015',
+  INVESTEC_API_ERROR: 'E4016',
   /** File or directory exists but cannot be read or written (e.g. EACCES, EPERM). */
   PERMISSION_DENIED: 'E4017',
   /** Command exists but is intentionally disabled in this build. */
@@ -46,7 +45,6 @@ export const ERROR_CODES = {
   UNSUPPORTED_OPERATION: 'E4019',
   /** Required date range (--from / --to) missing or invalid for MAU commands. */
   MISSING_DATE_RANGE: 'E4020',
-  // Add more as needed
 };
 
 /**

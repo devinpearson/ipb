@@ -1,6 +1,6 @@
 import { initializeApi, initializeMauApi, initializePbApi, normalizeCardKey } from './utils/api.js';
 import { determineExitCode, handleCliError, withCommandContext } from './utils/cli-errors.js';
-import { runListCommand, runReadUploadCommand, runWriteCommand } from './utils/command-runners.js';
+import { runListCommand, runReadUploadCommand, runWriteCommand, withCommandSpinner } from './utils/command-runners.js';
 import {
   cleanupTempFiles,
   deleteProfile,
@@ -36,6 +36,8 @@ import {
   readCommandHistory,
 } from './utils/history.js';
 import {
+  defaultMauTransactionDateRange,
+  formatLocalIsoDate,
   validateAccountId,
   validateAmount,
   validateDateRange,
@@ -93,26 +95,6 @@ import {
   shouldDisplayUpdateNotification,
   showUpdateNotification,
 } from './utils/update.js';
-
-/**
- * Configures chalk to respect NO_COLOR and FORCE_COLOR environment variables.
- * Should be called at application startup before any chalk usage.
- *
- * According to clig.dev guidelines:
- * - NO_COLOR: Disable color output (any value)
- * - FORCE_COLOR: Force color output (any value)
- *
- * Note: Chalk v5 automatically respects NO_COLOR, but we explicitly configure it
- * to ensure FORCE_COLOR is also handled correctly.
- */
-export function configureChalk(): void {
-  // Chalk v5 automatically respects NO_COLOR, but we can configure FORCE_COLOR
-  // by ensuring the environment variable is set properly
-  // The actual color disabling is handled by chalk internally when NO_COLOR is set
-  // We don't need to do anything special - chalk v5 handles NO_COLOR automatically
-  // and FORCE_COLOR is also respected by chalk's internal detection
-  // This function exists for documentation and future extensibility
-}
 
 export {
   getVerboseMode,
@@ -205,7 +187,7 @@ export {
   showUpdateNotification,
 };
 
-export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand };
+export { formatOutput, printTable, runListCommand, runReadUploadCommand, runWriteCommand, withCommandSpinner };
 export type { OutputOptions, TableData, TableRow };
 export { formatFileSize, getFileSize };
 export {
@@ -231,6 +213,8 @@ export {
   validateAccountId,
   validateAmount,
   validateDateRange,
+  defaultMauTransactionDateRange,
+  formatLocalIsoDate,
   validateIsoDate,
   validateMauAccountId,
 };

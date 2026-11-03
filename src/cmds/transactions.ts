@@ -1,27 +1,15 @@
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializePbApi,
   isStdoutPiped,
   readStdin,
-  resolveSpinnerState,
   runListCommand,
   validateAccountId,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
-
-/**
- * Minimal transaction type for CLI display.
- */
-type Transaction = {
-  uuid: string;
-  amount: number;
-  transactionDate: string;
-  description: string;
-  // ...other fields can be added as needed
-};
+import type { CommonOptions, Transaction } from './types.js';
 
 /**
  * Fetch and display transactions for a given account.
@@ -53,7 +41,6 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   }
 
   if (!accountId || accountId.trim() === '') {
-    const { CliError, ERROR_CODES } = await import('../errors.js');
     throw new CliError(
       ERROR_CODES.MISSING_ACCOUNT_ID,
       'Account ID is required. Provide it as an argument or via stdin.'
@@ -66,21 +53,11 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching transactions...');
-  let transactions: Transaction[] | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializePbApi(credentials, options);
 
-    // Use retry logic with rate limit handling
-    const result = await withRetry(() => api.getAccountTransactions(accountId), {
-      maxRetries: 3,
-      verbose,
-    });
+  let transactions: Transaction[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching transactions...', async (verbose) => {
+    const api = await initializePbApi(credentials, options);
+    const result = await withRetry(() => api.getAccountTransactions(accountId), { verbose });
     transactions = result.data.transactions;
   });
 

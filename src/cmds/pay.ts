@@ -98,10 +98,7 @@ export async function payCommand(
             theirReference: reference,
           },
         ]),
-      {
-        maxRetries: 3,
-        verbose: options.verbose,
-      }
+      { verbose: options.verbose }
     )
   );
   for (const transfer of result.data.TransferResponses) {

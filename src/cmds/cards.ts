@@ -1,12 +1,10 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializeApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -27,21 +25,11 @@ export async function cardsCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching cards...');
-  let cards: CardSummary[] | null | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializeApi(credentials, options);
 
-    // Use retry logic with rate limit handling
-    const result = await withRetry(() => api.getCards(), {
-      maxRetries: 3,
-      verbose,
-    });
+  let cards: CardSummary[] | null | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching cards...', async (verbose) => {
+    const api = await initializeApi(credentials, options);
+    const result = await withRetry(() => api.getCards(), { verbose });
     cards = result.data.cards;
   });
 
