@@ -3,6 +3,9 @@ import { CliError, ERROR_CODES, ExitCode } from '../errors.js';
 import { detectRateLimit, formatRateLimitInfo } from './retry.js';
 import { isDebugEnabled } from './runtime-flags.js';
 
+/** Word boundaries stop CLI codes like `E4013` matching as HTTP 401. */
+const HTTP_AUTH_STATUS = /\b40[13]\b/;
+
 /** Stable exit mapping for {@link CliError} codes (avoids matching `E4016` as HTTP 401 in heuristics). */
 const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
   [ERROR_CODES.MISSING_API_TOKEN]: ExitCode.AUTH_ERROR,
@@ -23,6 +26,8 @@ const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
   [ERROR_CODES.PERMISSION_DENIED]: ExitCode.PERMISSION_ERROR,
   [ERROR_CODES.COMMAND_DISABLED]: ExitCode.GENERAL_ERROR,
   [ERROR_CODES.UNSUPPORTED_OPERATION]: ExitCode.GENERAL_ERROR,
+  [ERROR_CODES.MISSING_DATE_RANGE]: ExitCode.VALIDATION_ERROR,
+  [ERROR_CODES.PAYMENT_NOT_CONFIRMED]: ExitCode.API_ERROR,
 };
 
 export function determineExitCode(
@@ -44,8 +49,7 @@ export function determineExitCode(
     lowerMessage.includes('credentials') ||
     lowerMessage.includes('authentication') ||
     lowerMessage.includes('unauthorized') ||
-    lowerMessage.includes('401') ||
-    lowerMessage.includes('403') ||
+    HTTP_AUTH_STATUS.test(lowerMessage) ||
     lowerMessage.includes('invalid token')
   ) {
     return ExitCode.AUTH_ERROR;
@@ -128,8 +132,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     lowerMessage.includes('credentials') ||
     lowerMessage.includes('authentication') ||
     lowerMessage.includes('unauthorized') ||
-    lowerMessage.includes('401') ||
-    lowerMessage.includes('403') ||
+    HTTP_AUTH_STATUS.test(lowerMessage) ||
     lowerMessage.includes('invalid token')
   ) {
     suggestion =

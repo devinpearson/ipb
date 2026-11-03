@@ -91,7 +91,7 @@ export async function ensureCredentialsDirectory(credentialLocation: {
   folder: string;
 }): Promise<void> {
   if (!fs.existsSync(credentialLocation.folder)) {
-    await mkdir(credentialLocation.folder, { recursive: true });
+    await mkdir(credentialLocation.folder, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -161,7 +161,12 @@ export async function writeFileAtomic(
 
   try {
     await ensureCredentialsDirectory({ folder: dir });
-    await writeFile(tempPath, data, { encoding: 'utf8', flag: 'w' });
+    // Create with final permissions so secrets are never briefly world-readable.
+    await writeFile(tempPath, data, {
+      encoding: 'utf8',
+      flag: 'w',
+      mode: options.permissions ?? 0o666,
+    });
 
     const fd = await open(tempPath, 'r+');
     try {

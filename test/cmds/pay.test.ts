@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { payCommand } from '../../src/cmds/pay';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
@@ -19,8 +19,33 @@ const mockUtilsState = vi.hoisted(() => ({
   confirmed: true,
   pbApi: {
     payMultiple: vi.fn(),
+    getAccounts: vi.fn(),
+    getBeneficiaries: vi.fn(),
   },
 }));
+
+const accountsResponse = {
+  data: {
+    accounts: ['acc-001', 'acc-007'].map((accountId) => ({
+      accountId,
+      accountNumber: '10011001',
+      accountName: 'Mr Test',
+      referenceName: 'Everyday',
+      productName: 'Private Bank Account',
+    })),
+  },
+};
+
+const beneficiariesResponse = {
+  data: ['benef-001', 'benef-009'].map((beneficiaryId) => ({
+    beneficiaryId,
+    beneficiaryName: 'City Power',
+    name: 'City Power',
+    bank: 'FNB',
+    accountNumber: '62000000',
+  })),
+  meta: { totalPages: 1 },
+};
 
 vi.mock('../../src/utils.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/utils.ts')>('../../src/utils.ts');
@@ -60,6 +85,12 @@ describe('payCommand', () => {
     mockInput.mockReset();
     mockUtilsState.confirmed = true;
     mockUtilsState.pbApi.payMultiple.mockReset();
+    mockUtilsState.pbApi.getAccounts.mockResolvedValue(accountsResponse);
+    mockUtilsState.pbApi.getBeneficiaries.mockResolvedValue(beneficiariesResponse);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('accepts numeric amounts', async () => {
@@ -82,7 +113,123 @@ describe('payCommand', () => {
         theirReference: 'Utilities',
       },
     ]);
-    expect(logSpy).toHaveBeenCalledWith('Transfer to benef-001, reference prn-001 was successful.');
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Payment to benef-001 accepted (reference prn-001)')
+    );
+    logSpy.mockRestore();
+  });
+
+  it('shows beneficiary and account names in the confirmation summary', async () => {
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({
+      data: {
+        TransferResponses: [{ BeneficiaryName: 'City Power', PaymentReferenceNumber: 'p1' }],
+      },
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await payCommand('acc-001', 'benef-001', '10', 'ref', baseOptions);
+
+    const output = logSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('Everyday (Private Bank Account, 10011001)');
+    expect(output).toContain('City Power (FNB, 62000000)');
+    logSpy.mockRestore();
+  });
+
+  it('refuses to pay a beneficiary that is not on the profile', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(payCommand('acc-001', 'benef-typo', '10', 'ref', baseOptions)).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof CliError &&
+        err.code === ERROR_CODES.INVALID_INPUT &&
+        err.message.includes('benef-typo')
+    );
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
+  });
+
+  it('refuses to pay from an account that is not the user’s', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(payCommand('acc-999', 'benef-001', '10', 'ref', baseOptions)).rejects.toThrow(
+      /acc-999 is not one of your accounts/
+    );
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
+  });
+
+  it('allows an unlisted beneficiary when the beneficiary list is paginated', async () => {
+    mockUtilsState.pbApi.getBeneficiaries.mockResolvedValue({
+      ...beneficiariesResponse,
+      meta: { totalPages: 2 },
+    });
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({
+      data: {
+        TransferResponses: [{ BeneficiaryAccountId: 'benef-x', PaymentReferenceNumber: 'p1' }],
+      },
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await payCommand('acc-001', 'benef-x', '10', 'ref', baseOptions);
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('name not found'));
+    expect(mockUtilsState.pbApi.payMultiple).toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it('fails with PAYMENT_NOT_CONFIRMED when the bank returns no reference number', async () => {
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({
+      data: {
+        TransferResponses: [
+          {
+            BeneficiaryName: 'City Power',
+            PaymentReferenceNumber: '',
+            Status: 'Insufficient funds',
+          },
+        ],
+      },
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(payCommand('acc-001', 'benef-001', '10', 'ref', baseOptions)).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.PAYMENT_NOT_CONFIRMED
+    );
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('was not confirmed by the bank'));
+    expect(logSpy).toHaveBeenCalledWith('  Status: Insufficient funds');
+    logSpy.mockRestore();
+  });
+
+  it('fails with PAYMENT_NOT_CONFIRMED when the bank returns no results', async () => {
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({ data: { TransferResponses: [] } });
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(payCommand('acc-001', 'benef-001', '10', 'ref', baseOptions)).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.PAYMENT_NOT_CONFIRMED
+    );
+  });
+
+  it('warns when the payment needs approval in the app and cleans up the status text', async () => {
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({
+      data: {
+        TransferResponses: [
+          {
+            BeneficiaryName: 'City Power',
+            PaymentReferenceNumber: 'p1',
+            AuthorisationRequired: true,
+            Status: '- Authorisation required <br> - Payment/Transfer effective date 2026-11-03',
+          },
+        ],
+      },
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await payCommand('acc-001', 'benef-001', '10', 'ref', baseOptions);
+
+    const output = logSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('needs your approval (reference p1)');
+    expect(output).toContain('Approve it in the Investec app');
+    expect(output).not.toContain('accepted');
+    expect(output).toContain(
+      'Status: Authorisation required; Payment/Transfer effective date 2026-11-03'
+    );
     logSpy.mockRestore();
   });
 
@@ -106,7 +253,7 @@ describe('payCommand', () => {
         theirReference: 'test-payment',
       },
     ]);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Amount: R100.00'));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('R100.00'));
     logSpy.mockRestore();
   });
 

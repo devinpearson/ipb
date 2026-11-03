@@ -41,7 +41,7 @@ export async function mauStatementCommand(
   await withCommandSpinner(options, isPiped, '💳 downloading MAU statement...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
     const pdf = await withRetry(() => api.downloadAccountStatement(resolvedId, date), { verbose });
-    await writeFile(outputPath, Buffer.from(pdf));
+    await writeFile(outputPath, Buffer.from(pdf), { mode: 0o600 });
   });
 
   console.log(getSafeText(`✅ Statement saved to ${outputPath}`));

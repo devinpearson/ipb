@@ -45,6 +45,8 @@ export const ERROR_CODES = {
   UNSUPPORTED_OPERATION: 'E4019',
   /** Required date range (--from / --to) missing or invalid for MAU commands. */
   MISSING_DATE_RANGE: 'E4020',
+  /** Bank response did not confirm a payment or transfer (no reference number returned). */
+  PAYMENT_NOT_CONFIRMED: 'E4021',
 };
 
 /**

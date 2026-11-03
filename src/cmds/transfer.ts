@@ -11,6 +11,7 @@ import {
   withRetry,
   withSpinnerOutcome,
 } from '../utils.js';
+import { describeOwnAccounts, reportTransferResults } from './payment-helpers.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -52,13 +53,15 @@ export async function transferCommand(
     reference = await input({ message: 'Enter reference for the transfer:' });
   }
 
-  // Show transfer summary and require confirmation
   printTitleBox();
+  const api = await initializePbApi(credentials, options);
+  const [fromLabel, toLabel] = await describeOwnAccounts(api, [accountId, beneficiaryAccountId]);
+
   console.log(`\nTransfer Summary:`);
   console.log('-------------------------');
-  console.log(`From Account: ${accountId}`);
-  console.log(`To Account: ${beneficiaryAccountId}`);
-  console.log(`Amount: R${amount.toFixed(2)}`);
+  console.log(`From:      ${fromLabel}`);
+  console.log(`To:        ${toLabel}`);
+  console.log(`Amount:    R${amount.toFixed(2)}`);
   console.log(`Reference: ${reference}\n`);
 
   const confirmed = await confirmDestructiveOperation(
@@ -78,7 +81,6 @@ export async function transferCommand(
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 transferring...');
-  const api = await initializePbApi(credentials, options);
 
   const result = await withSpinnerOutcome(spinner, spinnerEnabled, async () => {
     // Use retry logic with rate limit handling
@@ -96,7 +98,5 @@ export async function transferCommand(
     );
   });
 
-  for (const transfer of result.data.TransferResponses) {
-    console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
-  }
+  reportTransferResults(result.data.TransferResponses, 'Transfer');
 }

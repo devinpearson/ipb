@@ -13,6 +13,11 @@ import {
   withRetry,
   withSpinner,
 } from '../utils.js';
+import {
+  describeBeneficiary,
+  describeOwnAccounts,
+  reportTransferResults,
+} from './payment-helpers.js';
 import type { CommonOptions } from './types.js';
 
 /**
@@ -61,13 +66,16 @@ export async function payCommand(
   }
 
   const api = await initializePbApi(credentials, options);
+  const [fromLabel] = await describeOwnAccounts(api, [accountId]);
+  const beneficiary = await describeBeneficiary(api, beneficiaryId);
 
-  // Show transaction summary and require confirmation
-  console.log(`\nTransaction Summary:`);
+  console.log(`\nPayment Summary:`);
   console.log('-------------------------');
-  console.log(`Account: ${accountId}`);
-  console.log(`Beneficiary: ${beneficiaryId}`);
-  console.log(`Amount: R${amount.toFixed(2)}`);
+  console.log(`From:      ${fromLabel}`);
+  console.log(
+    `To:        ${beneficiary.label ?? `${beneficiaryId} (name not found — check this ID carefully)`}`
+  );
+  console.log(`Amount:    R${amount.toFixed(2)}`);
   console.log(`Reference: ${reference}\n`);
 
   const confirmed = await confirmDestructiveOperation(
@@ -101,9 +109,5 @@ export async function payCommand(
       { verbose: options.verbose }
     )
   );
-  for (const transfer of result.data.TransferResponses) {
-    console.log(
-      `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`
-    );
-  }
+  reportTransferResults(result.data.TransferResponses, 'Payment');
 }

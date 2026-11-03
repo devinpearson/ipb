@@ -430,6 +430,7 @@ Messages look like `Error (E####): …`.
 | `E4014` | Rate limit exceeded |
 | `E4019` | Unsupported operation |
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
+| `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.

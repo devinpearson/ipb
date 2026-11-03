@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 
-import { mkdtemp, rm } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -48,5 +48,18 @@ describe('history sanitization', () => {
     const history = readCommandHistory();
     expect(history).toHaveLength(1);
     expect(history[0]?.args).toEqual(['***', 'merchant-name', '***']);
+  });
+});
+
+describe.skipIf(process.platform === 'win32')('history file permissions', () => {
+  it('writes history as owner-only and tightens an existing ~/.ipb directory', async () => {
+    const ipbDir = path.join(tempHome, '.ipb');
+    await mkdir(ipbDir, { mode: 0o755 });
+    await chmod(ipbDir, 0o755);
+
+    await logCommandHistory('pay', ['acc-1', 'benef-1', '100.00', 'rent'], {}, 0);
+
+    expect((await stat(path.join(ipbDir, 'history.json'))).mode & 0o777).toBe(0o600);
+    expect((await stat(ipbDir)).mode & 0o777).toBe(0o700);
   });
 });

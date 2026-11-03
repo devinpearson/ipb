@@ -46,11 +46,14 @@ async function writeCommandHistory(history: CommandHistoryEntry[]): Promise<void
     const historyPath = getHistoryFilePath();
     const dir = path.dirname(historyPath);
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    } else {
+      // History holds account IDs, amounts and references; earlier versions left ~/.ipb at 755.
+      fs.chmodSync(dir, 0o700);
     }
     const trimmedHistory = history.slice(-1000);
     const jsonData = JSON.stringify(trimmedHistory, null, 2);
-    await writeFileAtomic(historyPath, jsonData);
+    await writeFileAtomic(historyPath, jsonData, { permissions: 0o600 });
   } catch {
     // Ignore errors writing history
   }

@@ -2,8 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { formatFileSize, getFileSize } from './file-size.js';
 import type { OutputOptions } from './output.js';
 import { formatOutput } from './output.js';
-import { createSpinner, type Spinner, withSpinner } from './spinner.js';
 import { resolveSpinnerState } from './runtime-flags.js';
+import { createSpinner, type Spinner, withSpinner } from './spinner.js';
 
 interface RunListCommandOptions<TFull, TSimple = TFull> {
   isPiped: boolean;
@@ -73,7 +73,7 @@ export async function runWriteCommand(options: RunWriteCommandOptions): Promise<
 
   const writeSpinner = createSpinner(spinnerEnabled, progressMessage(formatFileSize(contentSize)));
   await withSpinner(writeSpinner, spinnerEnabled, async () => {
-    await writeFile(filename, content, 'utf8');
+    await writeFile(filename, content, { encoding: 'utf8', mode: 0o600 });
   });
 
   const finalSize = await getFileSize(filename);
