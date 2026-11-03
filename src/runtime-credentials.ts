@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import process from 'node:process';
 import chalk from 'chalk';
 import type { BasicOptions, Credentials, MauBasicOptions } from './cmds/types.js';
-import { CliError } from './errors.js';
+import { CliError, ERROR_CODES } from './errors.js';
 import {
   getActiveProfile,
   loadCredentialsFile,
@@ -40,7 +40,7 @@ const defaultHost = 'https://openapi.investec.com';
 
 /** Default credentials from env and optional ~/.ipb/.credentials.json (module init). */
 export const credentials: Credentials = {
-  host: process.env.INVESTEC_HOST || 'https://openapi.investec.com',
+  host: process.env.INVESTEC_HOST || cred.host || defaultHost,
   clientId: process.env.INVESTEC_CLIENT_ID || cred.clientId || '',
   clientSecret: process.env.INVESTEC_CLIENT_SECRET || cred.clientSecret || '',
   apiKey: process.env.INVESTEC_API_KEY || cred.apiKey || '',
@@ -63,6 +63,14 @@ async function resolveCredentialSource(
   base: Credentials
 ): Promise<Credentials> {
   let creds = base;
+
+  if (options.profile && options.credentialsFile) {
+    // Picking one silently would send requests with credentials the user didn't expect.
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      'Use either --profile or --credentials-file, not both.'
+    );
+  }
 
   if (options.profile) {
     creds = await loadProfile(creds, options.profile);

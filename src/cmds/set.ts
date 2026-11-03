@@ -32,6 +32,7 @@ import {
 } from './config-subcommands.js';
 
 const CONFIG_FIELDS = [
+  'host',
   'clientId',
   'clientSecret',
   'apiKey',
@@ -49,6 +50,7 @@ type ConfigField = (typeof CONFIG_FIELDS)[number];
 const SECRET_FIELDS: ReadonlySet<ConfigField> = new Set<ConfigField>(SECRET_STORE_FIELDS);
 
 const FLAG_NAMES: Record<ConfigField, string> = {
+  host: '--host',
   clientId: '--client-id',
   clientSecret: '--client-secret',
   apiKey: '--api-key',
