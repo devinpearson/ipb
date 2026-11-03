@@ -109,3 +109,33 @@ describe('credentials kept in the OS keychain', () => {
     expect(readKeychainSecret('profile:plain')).toBe('someone else');
   });
 });
+
+describe('secret-store details', () => {
+  it('tells you how to re-enter a missing profile item', async () => {
+    await writeProfile('prod', { clientId: 'cid', secretStore: 'keychain' });
+    const { deleteKeychainSecret } = await import('../../src/utils/os-keychain');
+    deleteKeychainSecret('profile:prod');
+
+    const error = await readProfile('prod').catch((e: unknown) => e);
+    expect((error as CliError).code).toBe(ERROR_CODES.SECRET_STORE_ERROR);
+    expect((error as CliError).message).toBe(
+      'Error (E4023): Your secrets are set to live in the OS keychain, but there\'s no "profile:prod" item there. Run `ipb config --profile prod` to enter them again.'
+    );
+  });
+
+  it('returns a record that does not use the keychain untouched', async () => {
+    const { revealSecrets } = await import('../../src/utils/secret-store');
+    const record = { apiKey: 'k' };
+
+    expect(revealSecrets(record, 'default')).toBe(record);
+  });
+
+  it('ignores non-string values in the keychain item', async () => {
+    await writeProfile('prod', { clientId: 'cid', secretStore: 'keychain' });
+    writeKeychainSecret('profile:prod', JSON.stringify({ apiKey: 5, clientSecret: 's' }));
+
+    const profile = await readProfile('prod');
+    expect(profile.apiKey).toBe('');
+    expect(profile.clientSecret).toBe('s');
+  });
+});

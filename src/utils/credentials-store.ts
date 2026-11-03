@@ -413,16 +413,9 @@ export async function loadProfile(
     return credentials;
   }
 
-  try {
-    const profileData = await readProfile(profileName);
-    return {
-      ...credentials,
-      ...profileData,
-    };
-  } catch (error) {
-    if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
-      throw error;
-    }
-    throw error;
-  }
+  const profileData = await readProfile(profileName);
+  return {
+    ...credentials,
+    ...profileData,
+  };
 }

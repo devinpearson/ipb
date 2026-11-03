@@ -137,3 +137,112 @@ describe.skipIf(process.platform === 'win32')('history file permissions', () => 
     expect((await stat(ipbDir)).mode & 0o777).toBe(0o700);
   });
 });
+
+describe('history edge cases', () => {
+  const historyFile = () => path.join(tempHome, '.ipb', 'history.json');
+
+  it('starts over when the history file is not a list', async () => {
+    await mkdir(path.join(tempHome, '.ipb'), { recursive: true });
+    await writeFile(historyFile(), JSON.stringify({ not: 'a list' }));
+
+    await logCommandHistory('accounts', [], {}, 0);
+
+    expect(readCommandHistory().map((entry) => entry.command)).toEqual(['accounts']);
+  });
+
+  it('copes with old entries whose args are not a list', async () => {
+    await mkdir(path.join(tempHome, '.ipb'), { recursive: true });
+    await writeFile(historyFile(), JSON.stringify([{ command: 'old', args: 'x', exitCode: 0 }]));
+
+    await logCommandHistory('accounts', [], {}, 0);
+
+    expect(readCommandHistory()[0]).toMatchObject({ command: 'old', args: [], options: {} });
+  });
+
+  it('keeps only the newest 1000 entries', async () => {
+    await mkdir(path.join(tempHome, '.ipb'), { recursive: true });
+    const old = Array.from({ length: 1000 }, (_, i) => ({
+      timestamp: i,
+      command: `c${i}`,
+      args: [],
+      options: {},
+      exitCode: 0,
+    }));
+    await writeFile(historyFile(), JSON.stringify(old));
+
+    await logCommandHistory('newest', [], {}, 0);
+
+    const history = readCommandHistory();
+    expect(history).toHaveLength(1000);
+    expect(history[0]?.command).toBe('c1');
+    expect(history.at(-1)?.command).toBe('newest');
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'creates a missing home folder chain for the owner only',
+    async () => {
+      process.env.HOME = path.join(tempHome, 'not', 'there');
+
+      await logCommandHistory('accounts', [], {}, 0);
+
+      const dir = path.join(tempHome, 'not', 'there', '.ipb');
+      expect((await stat(dir)).mode & 0o777).toBe(0o700);
+    }
+  );
+
+  it.each([
+    '--clientid',
+    '--client_id',
+    '--client-secret',
+    '--apikey',
+    '--api_key',
+    '--openai-key',
+    '--openaikey',
+    '--sandbox_key',
+    '--cardkey',
+    '--password',
+    '--token',
+    '--auth',
+    '--credential',
+    '--mau-api-key',
+  ])('masks the value after %s', async (flag) => {
+    await logCommandHistory('config', [flag, 'v4lue'], {}, 0);
+
+    expect(readCommandHistory()[0]?.args).toEqual([flag, '***']);
+  });
+
+  it('masks only the one value after a sensitive flag', async () => {
+    await logCommandHistory('config', ['--api-key', 'v', 'next'], {}, 0);
+
+    expect(readCommandHistory()[0]?.args).toEqual(['--api-key', '***', 'next']);
+  });
+
+  it('stops masking when a sensitive flag is followed by another flag', async () => {
+    await logCommandHistory('config', ['--api-key', '--verbose', 'next'], {}, 0);
+
+    expect(readCommandHistory()[0]?.args).toEqual(['--api-key', '--verbose', 'next']);
+  });
+
+  it('does not mask the value after a positional word that looks sensitive', async () => {
+    await logCommandHistory('pay', ['token', 'value'], {}, 0);
+
+    expect(readCommandHistory()[0]?.args).toEqual(['token', 'value']);
+  });
+
+  it('masks sensitive options with any real value, and leaves empty ones alone', async () => {
+    await logCommandHistory(
+      'config',
+      [],
+      { apiKey: 0, clientSecret: null, cardKey: '', openaiKey: false, host: 'h' },
+      0
+    );
+
+    expect(readCommandHistory()[0]?.options).toEqual({
+      apiKey: '***',
+      clientSecret: null,
+      cardKey: '',
+      openaiKey: false,
+      host: 'h',
+    });
+  });
+});

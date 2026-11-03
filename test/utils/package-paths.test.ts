@@ -32,3 +32,10 @@ describe('getTemplatePath', () => {
     expect(getTemplatePath('default', path.resolve('.'))).toBe(path.resolve('templates/default'));
   });
 });
+
+describe('getPackageDataDir defaults', () => {
+  it('treats the source tree as the unbundled build', () => {
+    // src/utils/package-paths.ts → src, as bin/utils/package-paths.js → bin.
+    expect(getPackageDataDir()).toBe(path.resolve('src'));
+  });
+});
