@@ -16,9 +16,15 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
 
   const errorMessage = error instanceof Error ? error.message : String(error);
   const lowerMessage = errorMessage.toLowerCase();
+  const status =
+    typeof error === 'object' && 'response' in error
+      ? (error as { response?: { status?: number } }).response?.status
+      : undefined;
 
   if (
-    errorMessage.includes('429') ||
+    status === 429 ||
+    // Whole-number match: amounts or account numbers like "R14290" must not trigger a resend.
+    /\b429\b/.test(errorMessage) ||
     lowerMessage.includes('rate limit') ||
     lowerMessage.includes('too many requests') ||
     lowerMessage.includes('ratelimit') ||
@@ -128,7 +134,14 @@ export function formatRateLimitInfo(info: RateLimitInfo): string {
     }
   }
 
-  return parts.length > 0 ? parts.join(', ') : 'Rate limit exceeded';
+  return parts.length > 0 ? parts.join(', ') : NO_RATE_LIMIT_DETAILS;
+}
+
+const NO_RATE_LIMIT_DETAILS = 'Rate limit exceeded';
+
+function detailsSuffix(info: RateLimitInfo): string {
+  const details = formatRateLimitInfo(info);
+  return details === NO_RATE_LIMIT_DETAILS ? '' : ` ${details}.`;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -162,45 +175,37 @@ export async function withRetry<T>(
 ): Promise<T> {
   const { maxRetries = 3, baseDelay = 1000, maxDelay = 60000, verbose = false, onRetry } = options;
 
-  let lastError: unknown;
-  let lastRateLimitInfo: RateLimitInfo | null = null;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      lastError = error;
       const rateLimitInfo = detectRateLimit(error);
-      if (rateLimitInfo && attempt < maxRetries) {
-        lastRateLimitInfo = rateLimitInfo;
-        const delay = rateLimitInfo.retryAfter
-          ? rateLimitInfo.retryAfter * 1000
-          : calculateBackoffDelay(attempt, baseDelay, maxDelay);
-
-        if (verbose) {
-          const warningText = getSafeText(
-            `⚠️  Rate limit exceeded. ${formatRateLimitInfo(rateLimitInfo)}. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`
-          );
-          console.log(chalk.yellow(warningText));
-        }
-
-        if (onRetry) {
-          onRetry(attempt, error, delay);
-        }
-
-        await sleep(delay);
-        continue;
+      if (!rateLimitInfo) {
+        throw error;
       }
-      throw error;
+      if (attempt >= maxRetries) {
+        throw new CliError(
+          ERROR_CODES.RATE_LIMIT_EXCEEDED,
+          `Rate limit exceeded after ${maxRetries + 1} attempts.${detailsSuffix(rateLimitInfo)}`
+        );
+      }
+
+      const delay = rateLimitInfo.retryAfter
+        ? rateLimitInfo.retryAfter * 1000
+        : calculateBackoffDelay(attempt, baseDelay, maxDelay);
+
+      if (verbose) {
+        const warningText = getSafeText(
+          `⚠️  Rate limit exceeded.${detailsSuffix(rateLimitInfo)} Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries + 1})`
+        );
+        console.log(chalk.yellow(warningText));
+      }
+
+      if (onRetry) {
+        onRetry(attempt, error, delay);
+      }
+
+      await sleep(delay);
     }
   }
-
-  if (lastRateLimitInfo) {
-    throw new CliError(
-      ERROR_CODES.RATE_LIMIT_EXCEEDED,
-      `Rate limit exceeded after ${maxRetries + 1} attempts. ${formatRateLimitInfo(lastRateLimitInfo)}`
-    );
-  }
-
-  throw lastError;
 }
