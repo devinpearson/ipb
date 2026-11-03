@@ -60,20 +60,25 @@ export function normalizeCardKey(
   credentialsCardKey: string
 ): number {
   if (cardKey !== undefined) {
-    const num = typeof cardKey === 'string' ? Number(cardKey) : cardKey;
-    if (Number.isNaN(num)) {
-      throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'Invalid card key: must be a number');
-    }
-    return num;
+    return parseCardKey(cardKey, 'Invalid card key');
   }
-  if (credentialsCardKey === '') {
+  if (credentialsCardKey.trim() === '') {
     throw new CliError(ERROR_CODES.MISSING_CARD_KEY, 'card-key is required');
   }
-  const num = Number(credentialsCardKey);
-  if (Number.isNaN(num)) {
+  return parseCardKey(credentialsCardKey, 'Invalid card key in credentials');
+}
+
+/**
+ * Card keys are positive whole numbers. Number() alone would turn "0x10" into card 16,
+ * "1e3" into 1000 and accept "1.5" or "-4".
+ */
+function parseCardKey(value: string | number, label: string): number {
+  const text = String(value).trim();
+  const num = Number(text);
+  if (!/^\d+$/.test(text) || !Number.isSafeInteger(num) || num === 0) {
     throw new CliError(
       ERROR_CODES.MISSING_CARD_KEY,
-      'Invalid card key in credentials: must be a number'
+      `${label}: must be a positive whole number (digits only), got "${text}". Run \`ipb cards\` to list your card keys.`
     );
   }
   return num;

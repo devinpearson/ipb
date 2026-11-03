@@ -75,7 +75,10 @@ const mockApi = {
   uploadCode: vi.fn(),
   uploadEnv: vi.fn(),
   uploadPublishedCode: vi.fn(),
+  getEnv: vi.fn(),
 };
+
+const previousEnvResponse = { data: { result: { variables: { OLD: 'value' } } } };
 
 (initializeApi as vi.Mock).mockResolvedValue(mockApi);
 
@@ -85,6 +88,7 @@ describe('deployCommand', () => {
     console.log = vi.fn();
     mockFsPromises.access.mockResolvedValue(undefined);
     delete process.env.IPB_READ_ONLY;
+    mockApi.getEnv.mockResolvedValue(previousEnvResponse);
   });
 
   it('is blocked in read-only mode before reading files or calling the API', async () => {
@@ -163,8 +167,8 @@ describe('deployCommand', () => {
     const { validateFilePath } = await import('../../src/utils.ts');
     const { resolve } = await import('node:path');
     (validateFilePath as vi.Mock)
-      .mockResolvedValueOnce(resolve('.env.production')) // For env file
-      .mockResolvedValueOnce(resolve('test.js')); // For code file
+      .mockResolvedValueOnce(resolve('test.js')) // code file is checked first
+      .mockResolvedValueOnce(resolve('.env.production'));
     mockFsPromises.readFile.mockResolvedValueOnce(mockEnvContent).mockResolvedValueOnce(mockCode);
     mockFsPromises.stat
       .mockResolvedValueOnce({ size: Buffer.byteLength(mockEnvContent, 'utf8') })
@@ -186,6 +190,105 @@ describe('deployCommand', () => {
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining('code deployed with codeId: code-123')
     );
+  });
+
+  describe('with an env file', () => {
+    const envOptions = {
+      filename: 'test.js',
+      env: 'production',
+      cardKey: 'test-card-key',
+      host: 'h',
+      apiKey: 'k',
+      clientId: 'c',
+      clientSecret: 's',
+      credentialsFile: '',
+      verbose: false,
+    };
+    const saved = { data: { result: { codeId: 'code-9' } } };
+
+    beforeEach(async () => {
+      const { validateFilePath } = await import('../../src/utils.ts');
+      const { resolve } = await import('node:path');
+      (validateFilePath as vi.Mock)
+        .mockResolvedValueOnce(resolve('test.js'))
+        .mockResolvedValueOnce(resolve('.env.production'));
+      mockFsPromises.readFile
+        .mockResolvedValueOnce('NEW=value')
+        .mockResolvedValueOnce('console.log(1);');
+      mockApi.uploadCode.mockResolvedValue(saved);
+      mockApi.uploadEnv.mockResolvedValue({});
+    });
+
+    it('saves code, records the old env, uploads the new env, then publishes', async () => {
+      mockApi.uploadPublishedCode.mockResolvedValue(saved);
+
+      await deployCommand(envOptions);
+
+      const order = (fn: vi.Mock) => fn.mock.invocationCallOrder[0] ?? 0;
+      expect(order(mockApi.uploadCode)).toBeLessThan(order(mockApi.getEnv));
+      expect(order(mockApi.getEnv)).toBeLessThan(order(mockApi.uploadEnv));
+      expect(order(mockApi.uploadEnv)).toBeLessThan(order(mockApi.uploadPublishedCode));
+      expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith(
+        'test-card-key',
+        'code-9',
+        'console.log(1);'
+      );
+    });
+
+    it('restores the previous env when publishing fails', async () => {
+      mockApi.uploadPublishedCode.mockRejectedValue(new Error('publish exploded'));
+
+      const error = await deployCommand(envOptions).catch((e) => e);
+
+      expect(mockApi.uploadEnv).toHaveBeenNthCalledWith(1, 'test-card-key', {
+        variables: { NEW: 'value' },
+      });
+      expect(mockApi.uploadEnv).toHaveBeenNthCalledWith(2, 'test-card-key', {
+        variables: { OLD: 'value' },
+      });
+      expect(error).toBeInstanceOf(CliError);
+      expect(error.code).toBe(ERROR_CODES.DEPLOY_FAILED);
+      expect(error.message).toContain('previous environment variables were restored');
+      expect(error.message).toContain('publish exploded');
+    });
+
+    it('says so when restoring the env also fails', async () => {
+      mockApi.uploadPublishedCode.mockRejectedValue(new Error('publish exploded'));
+      mockApi.uploadEnv
+        .mockResolvedValueOnce({})
+        .mockRejectedValueOnce(new Error('restore failed'));
+
+      const error = await deployCommand(envOptions).catch((e) => e);
+
+      expect(error.code).toBe(ERROR_CODES.DEPLOY_FAILED);
+      expect(error.message).toContain('could not be restored');
+      expect(error.message).toContain('ipb upload-env');
+      expect(error.message).toContain('restore failed');
+    });
+
+    it('does not touch the env if saving the code fails', async () => {
+      mockApi.uploadCode.mockRejectedValue(new Error('save failed'));
+
+      await expect(deployCommand(envOptions)).rejects.toThrow('save failed');
+      expect(mockApi.getEnv).not.toHaveBeenCalled();
+      expect(mockApi.uploadEnv).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rethrows a publish failure unchanged when no env was uploaded', async () => {
+    const { resolve } = await import('node:path');
+    const { validateFilePath } = await import('../../src/utils.ts');
+    (validateFilePath as vi.Mock).mockResolvedValueOnce(resolve('test.js'));
+    mockFsPromises.readFile.mockResolvedValueOnce('x');
+    mockApi.uploadCode.mockResolvedValue({ data: { result: { codeId: 'c1' } } });
+    const publishError = new Error('publish exploded');
+    mockApi.uploadPublishedCode.mockRejectedValue(publishError);
+
+    await expect(
+      deployCommand({ filename: 'test.js', cardKey: 'k', verbose: false } as never)
+    ).rejects.toBe(publishError);
+    expect(mockApi.getEnv).not.toHaveBeenCalled();
+    expect(mockApi.uploadEnv).not.toHaveBeenCalled();
   });
 
   it('should throw CliError when env file does not exist', async () => {
@@ -214,6 +317,8 @@ describe('deployCommand', () => {
     const error = await deployCommand(options).catch((e) => e);
     expect(error).toBeInstanceOf(CliError);
     expect(error.message).toContain('Env file');
+    expect(initializeApi).not.toHaveBeenCalled();
+    expect(mockApi.uploadCode).not.toHaveBeenCalled();
   });
 
   it('should use default card key when not provided', async () => {
