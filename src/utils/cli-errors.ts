@@ -1,13 +1,23 @@
 import chalk from 'chalk';
 import { CommanderError } from 'commander';
 import { CliError, ERROR_CODES, ExitCode } from '../errors.js';
-import { detectRateLimit, formatRateLimitInfo } from './retry.js';
+import { detectRateLimit, formatRateLimitInfo, httpStatusOf } from './retry.js';
 import { isDebugEnabled } from './runtime-flags.js';
 
 /** Word boundaries stop CLI codes like `E4013` or amounts like `R1500` matching as HTTP statuses. */
 const HTTP_AUTH_STATUS = /\b40[13]\b/;
 const HTTP_SERVER_STATUS = /\b50[0234]\b/;
 const HTTP_RATE_LIMIT_STATUS = /\b429\b/;
+
+/**
+ * Lower-cased text the checks below match against. An API error's status is appended because the
+ * message may leave it out (investec-card-api uses the response body as the message), so a 401 or
+ * 429 is still recognised.
+ */
+function matchableText(error: unknown, message: string): string {
+  const status = httpStatusOf(error);
+  return (status === undefined ? message : `${message} (HTTP ${status})`).toLowerCase();
+}
 
 /** Stable exit mapping for {@link CliError} codes (avoids matching `E4016` as HTTP 401 in heuristics). */
 const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
@@ -36,15 +46,15 @@ const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
 };
 
 export function determineExitCode(
-  _error: unknown,
+  error: unknown,
   errorCode: string | undefined,
-  _errorMessage: string
+  errorMessage: string
 ): ExitCode {
   if (errorCode && EXIT_CODE_BY_CLI_CODE[errorCode] !== undefined) {
     return EXIT_CODE_BY_CLI_CODE[errorCode];
   }
 
-  const lowerMessage = _errorMessage.toLowerCase();
+  const lowerMessage = matchableText(error, errorMessage);
 
   if (lowerMessage.includes('received undefined')) {
     return ExitCode.VALIDATION_ERROR;
@@ -159,7 +169,7 @@ export function handleCliError(
 
   const exitCode = determineExitCode(error, errorCode, errorMessage);
   let suggestion = '';
-  const lowerMessage = errorMessage.toLowerCase();
+  const lowerMessage = matchableText(error, errorMessage);
 
   if (
     errorCode === ERROR_CODES.FILE_NOT_FOUND ||

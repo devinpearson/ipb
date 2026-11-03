@@ -1,8 +1,14 @@
 /// <reference types="vitest" />
 
+import { InvestecApiError as CardApiError } from 'investec-card-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES } from '../../src/errors.js';
-import { detectRateLimit, formatRateLimitInfo, withRetry } from '../../src/utils/retry.js';
+import {
+  detectRateLimit,
+  formatRateLimitInfo,
+  httpStatusOf,
+  withRetry,
+} from '../../src/utils/retry.js';
 
 function httpError(message: string, status?: number, headers?: Headers | Record<string, string>) {
   return Object.assign(new Error(message), { response: { status, headers } });
@@ -27,6 +33,11 @@ describe('detectRateLimit', () => {
     expect(detectRateLimit(httpError('Request failed', 429))).not.toBeNull();
     expect(detectRateLimit(new Error('Request failed with status code 429'))).not.toBeNull();
     expect(detectRateLimit('429')).not.toBeNull();
+  });
+
+  it('detects HTTP 429 from the status on an Investec client error', () => {
+    expect(detectRateLimit(new CardApiError('Quota exceeded', 429))).toEqual({ retryAfter: 60 });
+    expect(detectRateLimit(new CardApiError('Quota exceeded', 400))).toBeNull();
   });
 
   it.each(['Rate limit hit', 'Too Many Requests', 'RateLimit reached', 'rate-limit'])(
@@ -93,6 +104,21 @@ describe('detectRateLimit', () => {
       })
     );
     expect(info).toEqual({ retryAfter: 60 });
+  });
+});
+
+describe('httpStatusOf', () => {
+  it('reads status, then response.status, and ignores anything that is not a number', () => {
+    expect(httpStatusOf(new CardApiError('x', 401))).toBe(401);
+    expect(httpStatusOf(httpError('x', 503))).toBe(503);
+    expect(
+      httpStatusOf(Object.assign(new Error('x'), { status: 401, response: { status: 503 } }))
+    ).toBe(401);
+    expect(httpStatusOf(Object.assign(new Error('x'), { status: '401' }))).toBeUndefined();
+    expect(httpStatusOf(httpError('x'))).toBeUndefined();
+    expect(httpStatusOf(new Error('x'))).toBeUndefined();
+    expect(httpStatusOf(null)).toBeUndefined();
+    expect(httpStatusOf('429')).toBeUndefined();
   });
 });
 

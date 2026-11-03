@@ -9,6 +9,21 @@ export interface RateLimitInfo {
   retryAfter?: number;
 }
 
+/**
+ * The HTTP status carried by an API error: `status` on the Investec client errors, or
+ * `response.status` on fetch-style errors. Their messages don't always include it.
+ */
+export function httpStatusOf(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) {
+    return undefined;
+  }
+  const { status, response } = error as { status?: unknown; response?: { status?: unknown } };
+  if (typeof status === 'number') {
+    return status;
+  }
+  return typeof response?.status === 'number' ? response.status : undefined;
+}
+
 export function detectRateLimit(error: unknown): RateLimitInfo | null {
   if (!error) {
     return null;
@@ -16,10 +31,7 @@ export function detectRateLimit(error: unknown): RateLimitInfo | null {
 
   const errorMessage = error instanceof Error ? error.message : String(error);
   const lowerMessage = errorMessage.toLowerCase();
-  const status =
-    typeof error === 'object' && 'response' in error
-      ? (error as { response?: { status?: number } }).response?.status
-      : undefined;
+  const status = httpStatusOf(error);
 
   if (
     status === 429 ||

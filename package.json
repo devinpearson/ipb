@@ -61,15 +61,15 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.9.0",
+    "@inquirer/prompts": "^8.7.5",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
     "dotenv": "^18.0.9",
-    "investec-card-api": "^0.2.3",
+    "investec-card-api": "^0.3.0",
     "investec-mau-api": "^0.1.1",
-    "investec-pb-api": "^0.3.12",
-    "js-yaml": "^4.3.1",
+    "investec-pb-api": "^0.3.13",
+    "js-yaml": "^5.5.0",
     "node-fetch": "^3.3.2",
     "openai": "^4.104.0",
     "ora": "^10.0.0",
@@ -81,7 +81,6 @@
     "@biomejs/biome": "^2.6.4",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
-    "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.0.5",
     "@yao-pkg/pkg": "^6.24.0",
@@ -113,5 +112,9 @@
       "node24-linux-arm64",
       "node24-win-x64"
     ]
+  },
+  "overrides": {
+    "qs": "^6.17.1",
+    "re2js": "^2.9.1"
   }
 }

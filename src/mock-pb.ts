@@ -19,14 +19,8 @@ export interface PayMultiple {
   theirReference: string;
 }
 
+/** The banking API methods the CLI uses. Credentials and tokens stay private to the client. */
 export interface IPbApi {
-  host: string;
-  clientId: string;
-  clientSecret: string;
-  apiKey: string;
-  token: string;
-  expiresIn: Date;
-
   getToken(): Promise<string>;
   getAccessToken(): Promise<AuthResponse>;
   getAccounts(): Promise<AccountResponse>;
