@@ -107,6 +107,25 @@ function addSpinnerVerboseOptions(cmd: Command) {
 }
 
 /**
+ * Test transaction options for `run` and `simulate`. Each default can be changed with an
+ * IPB_TX_* environment variable, e.g. IPB_TX_CURRENCY=USD; a flag still wins.
+ */
+function addTransactionOptions(cmd: Command) {
+  const options: [flags: string, description: string, env: string, defaultValue: string][] = [
+    ['-a,--amount <amount>', 'Transaction amount in cents', 'IPB_TX_AMOUNT', '10000'],
+    ['-u,--currency <currency>', 'Currency code (ISO 4217)', 'IPB_TX_CURRENCY', 'zar'],
+    ['-z,--mcc <mcc>', 'Merchant category code', 'IPB_TX_MCC', '0000'],
+    ['-m,--merchant <merchant>', 'Merchant name', 'IPB_TX_MERCHANT', 'The Coders Bakery'],
+    ['-i,--city <city>', 'Merchant city', 'IPB_TX_CITY', 'Cape Town'],
+    ['-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'IPB_TX_COUNTRY', 'ZA'],
+  ];
+  for (const [flags, description, env, defaultValue] of options) {
+    cmd.addOption(new Option(flags, description).env(env).default(defaultValue));
+  }
+  return cmd;
+}
+
+/**
  * Registers all subcommands, options, and actions on `program`.
  */
 export function registerCliCommands(program: Command, deps: RegisterCliCommandsDeps): void {
@@ -308,31 +327,27 @@ Examples:
     .requiredOption('-f,--filename <filename>', 'Output filename for logs (JSON format)')
     .option('-c,--card-key <cardKey>', 'Card identifier to fetch logs from')
     .action(withCommandContext('logs', logsCommand));
-  addSpinnerVerboseOptions(
-    program
-      .command('run')
-      .alias('r')
-      .description(
-        'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
-      )
-      .addHelpText(
-        'after',
-        `
+  addTransactionOptions(
+    addSpinnerVerboseOptions(
+      program
+        .command('run')
+        .alias('r')
+        .description(
+          'Run card code locally using the emulator. Test JavaScript code with simulated transactions without deploying to a card.'
+        )
+        .addHelpText(
+          'after',
+          `
 Examples:
   $ ipb run -f main.js -e prod --amount 60000 --currency ZAR
   $ ipb run -f app.js --amount 10000 --merchant "Test Store" --city "Cape Town"
+  $ IPB_TX_CURRENCY=USD IPB_TX_AMOUNT=2500 ipb run -f main.js   # change the defaults
       `
-      )
-  )
-    .requiredOption('-f,--filename <filename>', 'JavaScript file to execute')
-    .option('-e,--env <env>', 'Environment file to load (.env.<env>)')
-    .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
-    .option('-u,--currency <currency>', 'Currency code (ISO 4217)', 'zar')
-    .option('-z,--mcc <mcc>', 'Merchant category code', '0000')
-    .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
-    .option('-i,--city <city>', 'Merchant city', 'Cape Town')
-    .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
-    .action(withCommandContext('run', runCommand));
+        )
+    )
+      .requiredOption('-f,--filename <filename>', 'JavaScript file to execute')
+      .option('-e,--env <env>', 'Environment file to load (.env.<env>)')
+  ).action(withCommandContext('run', runCommand));
   addApiCredentialOptions(
     program
       .command('fetch')
@@ -470,31 +485,26 @@ Examples:
     .option('-c,--card-key <cardKey>', 'Card identifier to publish code to')
     .option('--yes', 'Skip confirmation prompt for destructive operations')
     .action(withCommandContext('publish', publishCommand));
-  addApiCredentialOptions(
-    program
-      .command('simulate')
-      .description(
-        'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
-      )
-      .addHelpText(
-        'after',
-        `
+  addTransactionOptions(
+    addApiCredentialOptions(
+      program
+        .command('simulate')
+        .description(
+          'Test code using the online simulator. Runs JavaScript code in the Investec cloud environment with simulated transactions. Similar to run but uses cloud infrastructure.'
+        )
+        .addHelpText(
+          'after',
+          `
 Examples:
   $ ipb simulate -f main.js -c card-123 --amount 60000 --currency ZAR
   $ ipb simulate -f app.js --card-key card-456 --env production
       `
-      )
-  )
-    .requiredOption('-f,--filename <filename>', 'JavaScript file to simulate (required)')
-    .option('-c,--card-key <cardKey>', 'Card identifier for simulation')
-    .option('-e,--env <env>', 'Environment name', 'development')
-    .option('-a,--amount <amount>', 'Transaction amount in cents', '10000')
-    .option('-u,--currency <currency>', 'Currency code (ISO 4217)', 'zar')
-    .option('-z,--mcc <mcc>', 'Merchant category code', '0000')
-    .option('-m,--merchant <merchant>', 'Merchant name', 'The Coders Bakery')
-    .option('-i,--city <city>', 'Merchant city', 'Cape Town')
-    .option('-o,--country <country>', 'Country code (ISO 3166-1 alpha-2)', 'ZA')
-    .action(withCommandContext('simulate', simulateCommand));
+        )
+    )
+      .requiredOption('-f,--filename <filename>', 'JavaScript file to simulate (required)')
+      .option('-c,--card-key <cardKey>', 'Card identifier for simulation')
+      .option('-e,--env <env>', 'Environment name', 'development')
+  ).action(withCommandContext('simulate', simulateCommand));
   addApiCredentialOptions(
     program
       .command('enable')

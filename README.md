@@ -283,6 +283,13 @@ ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 \
   --merchant "Test Merchant" --city "Cape Town" --country ZA
 ```
 
+To change the defaults for a project, set `IPB_TX_*` variables (for example in a `.envrc` with [direnv](https://direnv.net/), or your shell profile). Flags still win:
+
+```sh
+export IPB_TX_CURRENCY=USD IPB_TX_AMOUNT=2500 IPB_TX_MERCHANT="Corner Cafe"
+ipb run -f main.js
+```
+
 Reference data for MCC / country / currency values:
 
 ```sh
@@ -459,6 +466,7 @@ Common categories:
 - **MAU API:** `INVESTEC_MAU_HOST`, `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`
 - **Behaviour:** `DEBUG`, `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
 - **Agents and scripts:** `IPB_READ_ONLY` (block payments and card changes), `IPB_JSON_ERRORS` (print errors as JSON)
+- **Test transactions:** `IPB_TX_AMOUNT`, `IPB_TX_CURRENCY`, `IPB_TX_MCC`, `IPB_TX_MERCHANT`, `IPB_TX_CITY`, `IPB_TX_COUNTRY` change the defaults for `run` and `simulate`; a flag still wins
 
 ### Exit codes
 
