@@ -116,7 +116,7 @@ export async function envListCommand(options: CommonOptions) {
     {
       name: 'DEBUG',
       description:
-        'Verbose / debug output (equivalent to --verbose when no flag is passed). Also enables mock Investec APIs together with in-process test data. For recordings without verbose logs, use IPB_MOCK_APIS instead.',
+        'Verbose / debug output (equivalent to --verbose when no flag is passed). Still calls the real Investec APIs; use IPB_MOCK_APIS for test data.',
       required: false,
       default: 'false',
       example: 'true',

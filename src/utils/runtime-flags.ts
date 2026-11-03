@@ -21,10 +21,11 @@ export function isDebugEnabled(): boolean {
 
 /**
  * When true, the CLI uses in-process mock Programmable Banking and Card API clients (no network to Investec).
- * Enabled when DEBUG is set or `IPB_MOCK_APIS` is truthy; use the latter for tape generation without verbose output.
+ * Only `IPB_MOCK_APIS` turns this on. DEBUG must not: it is often set for other tools (`DEBUG=express:*`),
+ * and fake accounts or a "successful" payment that never reached the bank would be easy to miss.
  */
 export function isMockApisEnabled(): boolean {
-  return isDebugEnabled() || isTruthyEnv(process.env.IPB_MOCK_APIS);
+  return isTruthyEnv(process.env.IPB_MOCK_APIS);
 }
 
 /**

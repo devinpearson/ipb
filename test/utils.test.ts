@@ -91,9 +91,9 @@ describe('isMockApisEnabled', () => {
     expect(isMockApisEnabled()).toBe(true);
   });
 
-  it('is true when DEBUG is truthy', () => {
-    process.env.DEBUG = '1';
-    expect(isMockApisEnabled()).toBe(true);
+  it.each(['1', 'true', 'express:*'])('stays false when DEBUG is %s', (value) => {
+    process.env.DEBUG = value;
+    expect(isMockApisEnabled()).toBe(false);
   });
 });
 

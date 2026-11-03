@@ -5,6 +5,7 @@ set -euo pipefail
 trap 'printf "\nInterrupted — stopping tape generation.\n" >&2; exit 130' INT TERM
 
 export DEBUG=true
+export IPB_MOCK_APIS=1
 export IPB_NO_UPDATE_CHECK="${IPB_NO_UPDATE_CHECK:-1}"
 
 # npm link points the global `ipb` at ./bin/index.js; tsc emits without +x.
