@@ -44,7 +44,8 @@ for template in default petro; do
 done
 
 step run -f demo-default/main.js
-"${IPB[@]}" run -f demo-default/main.js --no-spinner >/dev/null
+# The template's handlers log the transaction; no output means the emulator didn't call them.
+"${IPB[@]}" run -f demo-default/main.js --no-spinner 2>&1 | grep -q '"centsAmount"'
 
 step accounts --json "(mock APIs)"
 IPB_MOCK_APIS=1 INVESTEC_CLIENT_ID=smoke INVESTEC_CLIENT_SECRET=smoke INVESTEC_API_KEY=smoke \
