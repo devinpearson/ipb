@@ -40,6 +40,7 @@ for template in default petro; do
   step new "demo-$template" --template "$template"
   "${IPB[@]}" new "demo-$template" --template "$template" --no-spinner >/dev/null
   test -f "demo-$template/main.js"
+  test -f "demo-$template/.env.prod"
 done
 
 step run -f demo-default/main.js

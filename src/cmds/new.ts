@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../runtime-credentials.js';
@@ -61,7 +62,7 @@ export async function newCommand(name: string, options: Options) {
     if (fs.existsSync(name) && options.force) {
       fs.rmSync(name, { recursive: true, force: true });
     }
-    fs.cpSync(uri, name, { recursive: true });
+    copyDirectory(uri, name);
   });
 
   console.log(getSafeText(`🚀 Created new project from template ${options.template}`));
@@ -73,4 +74,21 @@ export async function newCommand(name: string, options: Options) {
   console.log(
     getSafeText(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`)
   );
+}
+
+/**
+ * Recursively copies a folder using only readdir/readFile/writeFile. fs.cpSync is implemented
+ * natively and can't read from the pkg binary's built-in snapshot, so it fails on templates there.
+ */
+function copyDirectory(source: string, destination: string): void {
+  fs.mkdirSync(destination, { recursive: true });
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    const from = path.join(source, entry.name);
+    const to = path.join(destination, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectory(from, to);
+    } else {
+      fs.writeFileSync(to, fs.readFileSync(from));
+    }
+  }
 }
