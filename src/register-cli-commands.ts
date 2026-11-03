@@ -150,6 +150,10 @@ Examples:
   # Read one secret from stdin (keeps it out of shell history)
   $ op read "op://vault/investec/secret" | ipb config --client-secret -
 
+  # Keep secrets in the macOS Keychain / Linux keyring instead of the file
+  $ ipb config --keychain
+  $ ipb config --profile production --keychain
+
   # Save to default credentials
   $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
   $ ipb config --card-key <card-key>
@@ -187,6 +191,8 @@ Examples:
     .option('--mau-host <mauHost>', 'Set Mauritius (MAU) API host')
     .option('--read-only', 'Block payments, transfers and card code changes (e.g. for AI agents)')
     .option('--no-read-only', 'Turn read-only mode off (needs an interactive terminal)')
+    .option('--keychain', 'Keep secrets in the OS keychain instead of the file (macOS, Linux)')
+    .option('--no-keychain', 'Move secrets from the OS keychain back into the file')
     .action(withCommandContext('config', configCommand));
 
   // Profile subcommands

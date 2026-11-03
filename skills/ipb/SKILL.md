@@ -161,6 +161,7 @@ Bad arguments give `"name": "USAGE_ERROR"` with `"code": null`; run `ipb <comman
 | Command unknown | `ipb --help` — do not invent subcommands |
 | Disabled command error | Use editor + `deploy` / `run` instead of `ai` / `login` / `register` / `bank` |
 | `E4022` read-only | Use `--dry-run` and hand the command to the user; do not disable read-only mode |
+| `E4023` keychain | Ask the user to unlock their keychain or re-enter secrets with `ipb config`; never read the keychain yourself |
 | `E4021` payment not confirmed | Check `ipb transactions <account-id> --json` before any retry |
 
 ## Installing this skill on any agent

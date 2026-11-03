@@ -198,6 +198,18 @@ ipb config delete
 ipb config delete --all
 ```
 
+#### Keep secrets in the OS keychain
+
+On macOS (Keychain) and Linux (any libsecret keyring, e.g. GNOME Keyring, via `secret-tool`), `--keychain` moves the client secret and API keys out of the file:
+
+```sh
+ipb config --keychain                       # default credentials
+ipb config --profile production --keychain  # one profile
+ipb config --no-keychain                    # move them back into the file
+```
+
+The file keeps the client ID, card key and other settings plus `"secretStore": "keychain"`; the secrets are one keychain item per credential set (service `investec-ipb`, account `default` or `profile:<name>`). Later `ipb config` changes update the keychain, and `ipb config delete` and `ipb config profile delete` remove the item too. Secrets are passed to `security` / `secret-tool` on stdin, never as arguments. Windows isn't supported yet. On Linux servers without a running keyring, keep the file (or use env vars in CI).
+
 Use a profile on any command:
 
 ```sh
@@ -482,6 +494,7 @@ Messages look like `Error (E####): …`.
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
 | `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
 | `E4022` | Blocked by read-only mode (`IPB_READ_ONLY` or `ipb config --read-only`) |
+| `E4023` | The OS keychain could not be read or written (missing item, locked keyring, `secret-tool` not installed) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.
@@ -494,7 +507,7 @@ Understanding-oriented background. Skip this until you care about the “why”.
 
 ### Credentials and secrets
 
-Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic writes. Environment variables are convenient but can leak via process lists, CI logs, and shell history. The CLI may warn when secrets appear in the environment (especially with `--verbose` / `DEBUG` or in CI). Prefer `ipb config` and profiles for day-to-day use.
+Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic writes; with `ipb config --keychain` the secrets live in the OS keychain instead. Command history (`~/.ipb/history.json`) never records secret values. Environment variables are convenient but can leak via process lists, CI logs, and shell history. The CLI may warn when secrets appear in the environment (especially with `--verbose` / `DEBUG` or in CI). Prefer `ipb config` and profiles for day-to-day use.
 
 **Resolution order** (highest wins):
 

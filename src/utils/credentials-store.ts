@@ -17,6 +17,13 @@ import path from 'node:path';
 import type { Credentials } from '../cmds/types.js';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { normalizeFilePath } from './file-validation.js';
+import {
+  forgetSecrets,
+  keychainAccount,
+  revealSecrets,
+  storeSecrets,
+  usesKeychain,
+} from './secret-store.js';
 
 const defaultCreds = {
   clientId: '',
@@ -62,7 +69,7 @@ export function readCredentialsFileSync(
   if (fs.existsSync(credentialLocation.filename)) {
     try {
       const data = fs.readFileSync(credentialLocation.filename, 'utf8');
-      return { ...defaultCreds, ...JSON.parse(data) };
+      return revealSecrets({ ...defaultCreds, ...JSON.parse(data) }, keychainAccount());
     } catch (error) {
       if (onError && error instanceof Error) {
         onError(error);
@@ -73,17 +80,22 @@ export function readCredentialsFileSync(
   return defaultCreds;
 }
 
-export async function readCredentialsFile(credentialLocation: {
-  filename: string;
-  folder: string;
-}): Promise<Record<string, string>> {
+export async function readCredentialsFile(
+  credentialLocation: { filename: string; folder: string },
+  options: { allowMissingSecrets?: boolean } = {}
+): Promise<Record<string, string>> {
   try {
     if (fs.existsSync(credentialLocation.filename)) {
       const data = await readFile(credentialLocation.filename, 'utf8');
-      return { ...defaultCreds, ...JSON.parse(data) };
+      return revealSecrets({ ...defaultCreds, ...JSON.parse(data) }, keychainAccount(), {
+        allowMissing: options.allowMissingSecrets,
+      });
     }
     return defaultCreds;
   } catch (error) {
+    if (error instanceof CliError) {
+      throw error;
+    }
     throwCredentialPathError('Failed to read credentials file', credentialLocation.filename, error);
   }
 }
@@ -200,11 +212,16 @@ export async function writeFileAtomic(
   }
 }
 
+/**
+ * Writes a credentials or profile file. With `secretStore: "keychain"`, secrets go to the OS keychain
+ * under `account` and only the rest is written to disk.
+ */
 export async function writeCredentialsFile(
   filepath: string,
-  data: Record<string, string>
+  data: Record<string, string>,
+  account: string = keychainAccount()
 ): Promise<void> {
-  const jsonData = JSON.stringify(data, null, 2);
+  const jsonData = JSON.stringify(storeSecrets(data, account), null, 2);
   await writeFileAtomic(filepath, jsonData, { permissions: 0o600 });
 }
 
@@ -238,7 +255,10 @@ export async function listProfiles(): Promise<string[]> {
   }
 }
 
-export async function readProfile(profileName: string): Promise<Record<string, string>> {
+export async function readProfile(
+  profileName: string,
+  options: { allowMissingSecrets?: boolean } = {}
+): Promise<Record<string, string>> {
   const profilePath = getProfilePath(profileName);
   if (!fs.existsSync(profilePath)) {
     throw new CliError(
@@ -249,8 +269,13 @@ export async function readProfile(profileName: string): Promise<Record<string, s
 
   try {
     const data = await readFile(profilePath, 'utf8');
-    return { ...defaultCreds, ...JSON.parse(data) };
+    return revealSecrets({ ...defaultCreds, ...JSON.parse(data) }, keychainAccount(profileName), {
+      allowMissing: options.allowMissingSecrets,
+    });
   } catch (error) {
+    if (error instanceof CliError) {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new CliError(
       ERROR_CODES.INVALID_CREDENTIALS,
@@ -267,7 +292,7 @@ export async function writeProfile(
   await ensureCredentialsDirectory({ folder: profilesDir });
 
   const profilePath = getProfilePath(profileName);
-  await writeCredentialsFile(profilePath, data);
+  await writeCredentialsFile(profilePath, data, keychainAccount(profileName));
 }
 
 export async function deleteProfile(profileName: string): Promise<void> {
@@ -278,6 +303,7 @@ export async function deleteProfile(profileName: string): Promise<void> {
 
   try {
     await access(profilePath, constants.F_OK);
+    forgetKeychainItemFor(profilePath);
     await unlink(profilePath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -308,9 +334,38 @@ export function listStoredCredentialPaths(includeProfiles: boolean): string[] {
   return paths.filter((p) => fs.existsSync(p));
 }
 
+/** Keychain account for a stored credentials file, or null for files that aren't credential sets. */
+function keychainAccountForPath(filePath: string): string | null {
+  if (path.resolve(filePath) === path.resolve(path.join(homedir(), '.ipb', '.credentials.json'))) {
+    return keychainAccount();
+  }
+  if (path.resolve(path.dirname(filePath)) === path.resolve(getProfilesDirectory())) {
+    return keychainAccount(path.basename(filePath, '.json'));
+  }
+  return null;
+}
+
+/** Deletes the keychain item behind a credentials or profile file that keeps its secrets there. */
+function forgetKeychainItemFor(filePath: string): void {
+  const account = keychainAccountForPath(filePath);
+  if (!account) {
+    return;
+  }
+  let record: Record<string, unknown>;
+  try {
+    record = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+  if (usesKeychain(record)) {
+    forgetSecrets(account);
+  }
+}
+
 export async function deleteStoredCredentials(paths: string[]): Promise<void> {
   for (const filePath of paths) {
     try {
+      forgetKeychainItemFor(filePath);
       await unlink(filePath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

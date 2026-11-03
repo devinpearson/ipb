@@ -49,4 +49,6 @@ export const ERROR_CODES = {
   PAYMENT_NOT_CONFIRMED: 'E4021',
   /** Command would move money or change card code, but read-only mode is on. */
   READ_ONLY: 'E4022',
+  /** The OS keychain (macOS Keychain, libsecret) could not be read or written. */
+  SECRET_STORE_ERROR: 'E4023',
 };
