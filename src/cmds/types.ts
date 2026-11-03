@@ -14,6 +14,16 @@ export interface CommonOptions {
   yes?: boolean; // skip confirmation prompts for destructive operations
 }
 
+export interface TransactionFilterOptions extends CommonOptions {
+  from?: string;
+  to?: string;
+  type?: string;
+}
+
+export interface PaymentOptions extends CommonOptions {
+  dryRun?: boolean;
+}
+
 export interface Credentials {
   host: string;
   clientId: string;

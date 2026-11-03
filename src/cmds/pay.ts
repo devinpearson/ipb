@@ -14,11 +14,15 @@ import {
   withSpinner,
 } from '../utils.js';
 import {
+  assertCanConfirm,
   describeBeneficiary,
   describeOwnAccounts,
+  humanLog,
+  printSummary,
   reportTransferResults,
+  writeJson,
 } from './payment-helpers.js';
-import type { CommonOptions } from './types.js';
+import type { PaymentOptions } from './types.js';
 
 /**
  * Pays a beneficiary from an account.
@@ -34,7 +38,7 @@ export async function payCommand(
   beneficiaryId: string,
   amount: number | string,
   reference: string,
-  options: CommonOptions
+  options: PaymentOptions
 ) {
   // Prompt for missing arguments interactively
   if (!accountId) {
@@ -61,30 +65,38 @@ export async function payCommand(
   }
 
   const isPiped = isStdoutPiped();
+  const log = humanLog(options.json);
   if (!isPiped) {
     printTitleBox();
   }
 
   const api = await initializePbApi(credentials, options);
-  const [fromLabel] = await describeOwnAccounts(api, [accountId]);
+  const [fromLabel = accountId] = await describeOwnAccounts(api, [accountId]);
   const beneficiary = await describeBeneficiary(api, beneficiaryId);
 
-  console.log(`\nPayment Summary:`);
-  console.log('-------------------------');
-  console.log(`From:      ${fromLabel}`);
-  console.log(
-    `To:        ${beneficiary.label ?? `${beneficiaryId} (name not found — check this ID carefully)`}`
-  );
-  console.log(`Amount:    R${amount.toFixed(2)}`);
-  console.log(`Reference: ${reference}\n`);
+  printSummary(log, options.dryRun ? 'Payment Summary (dry run)' : 'Payment Summary', [
+    ['From', fromLabel],
+    ['To', beneficiary.label ?? `${beneficiaryId} (name not found — check this ID carefully)`],
+    ['Amount', `R${amount.toFixed(2)}`],
+    ['Reference', reference],
+  ]);
 
+  if (options.dryRun) {
+    log('Dry run: account and beneficiary checked, nothing was sent.');
+    if (options.json) {
+      writeJson({ dryRun: true, accountId, beneficiaryId, amount: amount.toFixed(2), reference });
+    }
+    return;
+  }
+
+  assertCanConfirm(options.yes, 'payment');
   const confirmed = await confirmDestructiveOperation(
     'This will make a payment from your account. Continue?',
     { yes: options.yes }
   );
 
   if (!confirmed) {
-    console.log('Payment cancelled.');
+    log('Payment cancelled.');
     return;
   }
 
@@ -109,5 +121,8 @@ export async function payCommand(
       { verbose: options.verbose }
     )
   );
-  reportTransferResults(result.data.TransferResponses, 'Payment');
+  if (options.json) {
+    writeJson(result.data.TransferResponses ?? []);
+  }
+  reportTransferResults(result.data.TransferResponses, 'Payment', log);
 }

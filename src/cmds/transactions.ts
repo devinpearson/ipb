@@ -6,17 +6,28 @@ import {
   readStdin,
   runListCommand,
   validateAccountId,
+  validateIsoDate,
   withCommandSpinner,
   withRetry,
 } from '../utils.js';
-import type { CommonOptions, Transaction } from './types.js';
+import type { Transaction, TransactionFilterOptions } from './types.js';
 
 /**
  * Fetch and display transactions for a given account.
  * @param accountId - The account ID to fetch transactions for.
  * @param options - CLI options.
  */
-export async function transactionsCommand(accountId: string, options: CommonOptions) {
+export async function transactionsCommand(accountId: string, options: TransactionFilterOptions) {
+  const fromDate = options.from ? validateIsoDate(options.from, '--from') : null;
+  const toDate = options.to ? validateIsoDate(options.to, '--to') : null;
+  if (fromDate && toDate && fromDate > toDate) {
+    throw new CliError(
+      ERROR_CODES.MISSING_DATE_RANGE,
+      `--from (${fromDate}) must be on or before --to (${toDate})`
+    );
+  }
+  const transactionType = options.type?.trim() || null;
+
   const isPiped = isStdoutPiped();
 
   // If accountId is not provided and stdin has data, try to read from stdin
@@ -57,7 +68,10 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   let transactions: Transaction[] | undefined;
   await withCommandSpinner(options, isPiped, '💳 fetching transactions...', async (verbose) => {
     const api = await initializePbApi(credentials, options);
-    const result = await withRetry(() => api.getAccountTransactions(accountId), { verbose });
+    const result = await withRetry(
+      () => api.getAccountTransactions(accountId, fromDate, toDate, transactionType),
+      { verbose }
+    );
     transactions = result.data.transactions;
   });
 

@@ -142,6 +142,13 @@ Examples:
       'after',
       `
 Examples:
+  # Prompt for client ID, secret and API key (secrets are hidden as you type)
+  $ ipb config
+  $ ipb config --profile production
+
+  # Read one secret from stdin (keeps it out of shell history)
+  $ op read "op://vault/investec/secret" | ipb config --client-secret -
+
   # Save to default credentials
   $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
   $ ipb config --card-key <card-key>
@@ -611,6 +618,8 @@ Examples:
   $ ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
   $ ipb transfer acc-123 acc-456 100.50 "Payment for services"
   $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes  # Skip confirmation
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --dry-run  # Check without sending
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes --json | jq .
       `
       )
   )
@@ -618,7 +627,8 @@ Examples:
     .argument('beneficiaryAccountId', 'Beneficiary account ID to transfer to')
     .argument('amount', 'Amount to transfer in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
-    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .option('--yes', 'Skip confirmation prompt (required when not run in a terminal)')
+    .option('--dry-run', 'Check the accounts and show the summary without sending')
     .action(withCommandContext('transfer', transferCommand));
   addApiCredentialOptions(
     program
@@ -633,6 +643,8 @@ Examples:
   $ ipb pay <accountId> <beneficiaryId> <amount> <reference>
   $ ipb pay acc-123 ben-456 250.00 "Monthly subscription"
   $ ipb pay acc-123 ben-456 250.00 "Payment" --yes  # Skip confirmation
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --dry-run  # Check without sending
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --yes --json | jq .
       `
       )
   )
@@ -640,7 +652,8 @@ Examples:
     .argument('beneficiaryId', 'Beneficiary ID to pay to')
     .argument('amount', 'Amount to pay in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
-    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .option('--yes', 'Skip confirmation prompt (required when not run in a terminal)')
+    .option('--dry-run', 'Check the account and beneficiary and show the summary without sending')
     .action(withCommandContext('pay', payCommand));
   addApiCredentialOptions(
     program
@@ -657,10 +670,15 @@ Examples:
   $ ipb transactions acc-123 --json
   $ ipb transactions acc-123 --yaml
   $ ipb transactions acc-123 --output transactions.json
+  $ ipb transactions acc-123 --from 2026-10-01 --to 2026-10-31
+  $ ipb transactions acc-123 --type CardPurchases --json
       `
       )
   )
     .argument('accountId', 'Account ID to fetch transactions for')
+    .option('--from <date>', 'only transactions on or after this date (YYYY-MM-DD)')
+    .option('--to <date>', 'only transactions on or before this date (YYYY-MM-DD)')
+    .option('--type <transactionType>', 'only this transaction type (e.g. CardPurchases)')
     .action(withCommandContext('transactions', transactionsCommand));
   addApiCredentialOptions(
     program

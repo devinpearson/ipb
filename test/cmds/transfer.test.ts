@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { transferCommand } from '../../src/cmds/transfer';
 import { CliError, ERROR_CODES } from '../../src/errors';
+import { setInteractive } from '../helpers/tty';
 
 const mockInput = vi.hoisted(() => vi.fn());
 
@@ -220,15 +221,54 @@ describe('transferCommand', () => {
   it('does not call transfer API when confirmation is rejected', async () => {
     mockUtilsState.confirmed = false;
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const restoreTty = setInteractive(true);
 
-    await transferCommand('100001', '200002', '100.00', 'Test', {
-      ...baseOptions,
-      yes: false,
-    });
+    try {
+      await transferCommand('100001', '200002', '100.00', 'Test', {
+        ...baseOptions,
+        yes: false,
+      });
+    } finally {
+      restoreTty();
+    }
 
     expect(mockUtilsState.pbApi.transferMultiple).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('Transfer cancelled.');
     logSpy.mockRestore();
+  });
+
+  it('fails instead of silently cancelling when there is no terminal and no --yes', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const restoreTty = setInteractive(false);
+
+    try {
+      await expect(
+        transferCommand('100001', '200002', '5', 'ref', { ...baseOptions, yes: false })
+      ).rejects.toThrow(/--yes/);
+    } finally {
+      restoreTty();
+    }
+    expect(mockUtilsState.pbApi.transferMultiple).not.toHaveBeenCalled();
+  });
+
+  it('--dry-run with --json prints the checked transfer as JSON without sending', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    await transferCommand('100001', '200002', '5', 'ref', {
+      ...baseOptions,
+      dryRun: true,
+      json: true,
+    });
+
+    expect(JSON.parse(writeSpy.mock.calls.map((c) => String(c[0])).join(''))).toEqual({
+      dryRun: true,
+      accountId: '100001',
+      beneficiaryAccountId: '200002',
+      amount: '5.00',
+      reference: 'ref',
+    });
+    expect(mockUtilsState.pbApi.transferMultiple).not.toHaveBeenCalled();
   });
 
   it('prompts for missing args and uses prompted values', async () => {

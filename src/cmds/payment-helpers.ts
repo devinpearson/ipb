@@ -13,6 +13,40 @@ interface TransferResult {
 
 type PartyLookup = { label: string } | { label: null };
 
+export type Log = (message: string) => void;
+
+/** With --json, human-readable lines go to stderr so stdout stays parseable. */
+export function humanLog(json: boolean | undefined): Log {
+  return json ? (message) => console.error(message) : (message) => console.log(message);
+}
+
+/**
+ * Fails fast when a confirmation prompt is needed but there is no terminal to show it in.
+ * Without this, a script without --yes would print "cancelled" and exit 0.
+ */
+export function assertCanConfirm(yes: boolean | undefined, kind: 'payment' | 'transfer'): void {
+  if (yes || (process.stdin.isTTY && process.stdout.isTTY)) {
+    return;
+  }
+  throw new CliError(
+    ERROR_CODES.INVALID_INPUT,
+    `Cannot ask for confirmation without an interactive terminal. Re-run with --yes to make this ${kind}, or --dry-run to check it first.`
+  );
+}
+
+export function writeJson(data: unknown): void {
+  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+}
+
+export function printSummary(log: Log, title: string, rows: [string, string][]): void {
+  log(`\n${title}:`);
+  log('-------------------------');
+  for (const [label, value] of rows) {
+    log(`${`${label}:`.padEnd(11)}${value}`);
+  }
+  log('');
+}
+
 function bracketId(id: string): string {
   return chalk.dim(`[${id}]`);
 }
@@ -80,7 +114,8 @@ export function cleanStatus(status: string | undefined): string {
  */
 export function reportTransferResults(
   responses: TransferResult[] | undefined,
-  kind: 'Payment' | 'Transfer'
+  kind: 'Payment' | 'Transfer',
+  log: Log = (message) => console.log(message)
 ): void {
   if (!responses || responses.length === 0) {
     throw new CliError(
@@ -96,29 +131,25 @@ export function reportTransferResults(
 
     if (!r.PaymentReferenceNumber) {
       unconfirmed++;
-      console.log(chalk.red(`✖ ${kind} to ${to} was not confirmed by the bank.`));
+      log(chalk.red(`✖ ${kind} to ${to} was not confirmed by the bank.`));
       if (status) {
-        console.log(`  Status: ${status}`);
+        log(`  Status: ${status}`);
       }
       continue;
     }
 
     if (r.AuthorisationRequired) {
-      console.log(
+      log(
         chalk.yellow(
           `⚠ ${kind} to ${to} needs your approval (reference ${r.PaymentReferenceNumber}).`
         )
       );
-      console.log(
-        chalk.yellow('  Approve it in the Investec app — it will not go through until you do.')
-      );
+      log(chalk.yellow('  Approve it in the Investec app — it will not go through until you do.'));
     } else {
-      console.log(
-        chalk.green(`✔ ${kind} to ${to} accepted (reference ${r.PaymentReferenceNumber}).`)
-      );
+      log(chalk.green(`✔ ${kind} to ${to} accepted (reference ${r.PaymentReferenceNumber}).`));
     }
     if (status) {
-      console.log(`  Status: ${status}`);
+      log(`  Status: ${status}`);
     }
   }
 

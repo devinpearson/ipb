@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { payCommand } from '../../src/cmds/pay';
 import { CliError, ERROR_CODES } from '../../src/errors';
+import { setInteractive } from '../helpers/tty';
 
 const mockInput = vi.hoisted(() => vi.fn());
 
@@ -282,15 +283,91 @@ describe('payCommand', () => {
   it('does not call payment API when confirmation is rejected', async () => {
     mockUtilsState.confirmed = false;
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const restoreTty = setInteractive(true);
 
-    await payCommand('acc-001', 'benef-001', '100.00', 'Test', {
-      ...baseOptions,
-      yes: false,
-    });
+    try {
+      await payCommand('acc-001', 'benef-001', '100.00', 'Test', {
+        ...baseOptions,
+        yes: false,
+      });
+    } finally {
+      restoreTty();
+    }
 
     expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('Payment cancelled.');
     logSpy.mockRestore();
+  });
+
+  it('fails instead of silently cancelling when there is no terminal and no --yes', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const restoreTty = setInteractive(false);
+
+    try {
+      await expect(
+        payCommand('acc-001', 'benef-001', '10', 'ref', { ...baseOptions, yes: false })
+      ).rejects.toSatisfy(
+        (err: unknown) =>
+          err instanceof CliError &&
+          err.code === ERROR_CODES.INVALID_INPUT &&
+          err.message.includes('--yes')
+      );
+    } finally {
+      restoreTty();
+    }
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
+  });
+
+  it('--dry-run checks names and shows the summary without paying', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await payCommand('acc-001', 'benef-001', '10', 'ref', { ...baseOptions, dryRun: true });
+
+    const output = logSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toContain('Payment Summary (dry run)');
+    expect(output).toContain('City Power (FNB, 62000000)');
+    expect(output).toContain('nothing was sent');
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
+  });
+
+  it('--dry-run still rejects an unknown beneficiary', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(
+      payCommand('acc-001', 'benef-typo', '10', 'ref', { ...baseOptions, dryRun: true })
+    ).rejects.toThrow(/benef-typo/);
+  });
+
+  it('--json writes the bank results to stdout and human text to stderr', async () => {
+    const responses = [
+      { BeneficiaryName: 'City Power', PaymentReferenceNumber: 'p1', AuthorisationRequired: false },
+    ];
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({ data: { TransferResponses: responses } });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    await payCommand('acc-001', 'benef-001', '10', 'ref', { ...baseOptions, json: true });
+
+    const stdout = writeSpy.mock.calls.map((c) => String(c[0])).join('');
+    expect(JSON.parse(stdout)).toEqual(responses);
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(errSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('accepted');
+  });
+
+  it('--json still exits non-zero when the payment is not confirmed', async () => {
+    mockUtilsState.pbApi.payMultiple.mockResolvedValue({
+      data: { TransferResponses: [{ BeneficiaryName: 'City Power', PaymentReferenceNumber: '' }] },
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    await expect(
+      payCommand('acc-001', 'benef-001', '10', 'ref', { ...baseOptions, json: true })
+    ).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.PAYMENT_NOT_CONFIRMED
+    );
+    expect(JSON.parse(writeSpy.mock.calls.map((c) => String(c[0])).join(''))).toHaveLength(1);
   });
 
   it('prompts for missing args and uses prompted values', async () => {

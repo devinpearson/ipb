@@ -11,8 +11,15 @@ import {
   withRetry,
   withSpinnerOutcome,
 } from '../utils.js';
-import { describeOwnAccounts, reportTransferResults } from './payment-helpers.js';
-import type { CommonOptions } from './types.js';
+import {
+  assertCanConfirm,
+  describeOwnAccounts,
+  humanLog,
+  printSummary,
+  reportTransferResults,
+  writeJson,
+} from './payment-helpers.js';
+import type { PaymentOptions } from './types.js';
 
 /**
  * Transfers money between accounts.
@@ -28,7 +35,7 @@ export async function transferCommand(
   beneficiaryAccountId: string,
   amount: number | string,
   reference: string,
-  options: CommonOptions
+  options: PaymentOptions
 ) {
   // Prompt for missing arguments interactively
   if (!accountId) {
@@ -54,23 +61,42 @@ export async function transferCommand(
   }
 
   printTitleBox();
+  const log = humanLog(options.json);
   const api = await initializePbApi(credentials, options);
-  const [fromLabel, toLabel] = await describeOwnAccounts(api, [accountId, beneficiaryAccountId]);
+  const [fromLabel = accountId, toLabel = beneficiaryAccountId] = await describeOwnAccounts(api, [
+    accountId,
+    beneficiaryAccountId,
+  ]);
 
-  console.log(`\nTransfer Summary:`);
-  console.log('-------------------------');
-  console.log(`From:      ${fromLabel}`);
-  console.log(`To:        ${toLabel}`);
-  console.log(`Amount:    R${amount.toFixed(2)}`);
-  console.log(`Reference: ${reference}\n`);
+  printSummary(log, options.dryRun ? 'Transfer Summary (dry run)' : 'Transfer Summary', [
+    ['From', fromLabel],
+    ['To', toLabel],
+    ['Amount', `R${amount.toFixed(2)}`],
+    ['Reference', reference],
+  ]);
 
+  if (options.dryRun) {
+    log('Dry run: both accounts checked, nothing was sent.');
+    if (options.json) {
+      writeJson({
+        dryRun: true,
+        accountId,
+        beneficiaryAccountId,
+        amount: amount.toFixed(2),
+        reference,
+      });
+    }
+    return;
+  }
+
+  assertCanConfirm(options.yes, 'transfer');
   const confirmed = await confirmDestructiveOperation(
     'This will transfer money between your accounts. Continue?',
     { yes: options.yes }
   );
 
   if (!confirmed) {
-    console.log('Transfer cancelled.');
+    log('Transfer cancelled.');
     return;
   }
 
@@ -98,5 +124,8 @@ export async function transferCommand(
     );
   });
 
-  reportTransferResults(result.data.TransferResponses, 'Transfer');
+  if (options.json) {
+    writeJson(result.data.TransferResponses ?? []);
+  }
+  reportTransferResults(result.data.TransferResponses, 'Transfer', log);
 }
