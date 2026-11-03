@@ -2,6 +2,7 @@ import { input } from '@inquirer/prompts';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   confirmDestructiveOperation,
   createSpinner,
   getSafeText,
@@ -40,6 +41,9 @@ export async function payCommand(
   reference: string,
   options: PaymentOptions
 ) {
+  if (!options.dryRun) {
+    await assertWritable('ipb pay', options);
+  }
   // Prompt for missing arguments interactively
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });

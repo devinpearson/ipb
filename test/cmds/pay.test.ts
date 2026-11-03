@@ -92,6 +92,28 @@ describe('payCommand', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.IPB_READ_ONLY;
+  });
+
+  it('is blocked in read-only mode before prompting or calling the API', async () => {
+    process.env.IPB_READ_ONLY = '1';
+
+    await expect(payCommand('', '', 0, '', baseOptions)).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.READ_ONLY
+    );
+    expect(mockInput).not.toHaveBeenCalled();
+    expect(mockUtilsState.pbApi.getAccounts).not.toHaveBeenCalled();
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
+  });
+
+  it('still allows --dry-run in read-only mode', async () => {
+    process.env.IPB_READ_ONLY = '1';
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await payCommand('acc-001', 'benef-001', '10', 'ref', { ...baseOptions, dryRun: true });
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('nothing was sent'));
+    expect(mockUtilsState.pbApi.payMultiple).not.toHaveBeenCalled();
   });
 
   it('accepts numeric amounts', async () => {

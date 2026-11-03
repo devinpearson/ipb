@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { CommanderError } from 'commander';
 import { CliError, ERROR_CODES, ExitCode } from '../errors.js';
 import { detectRateLimit, formatRateLimitInfo } from './retry.js';
 import { isDebugEnabled } from './runtime-flags.js';
@@ -30,6 +31,7 @@ const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
   [ERROR_CODES.UNSUPPORTED_OPERATION]: ExitCode.GENERAL_ERROR,
   [ERROR_CODES.MISSING_DATE_RANGE]: ExitCode.VALIDATION_ERROR,
   [ERROR_CODES.PAYMENT_NOT_CONFIRMED]: ExitCode.API_ERROR,
+  [ERROR_CODES.READ_ONLY]: ExitCode.PERMISSION_ERROR,
 };
 
 export function determineExitCode(
@@ -91,7 +93,62 @@ export function determineExitCode(
   return ExitCode.GENERAL_ERROR;
 }
 
-export function handleCliError(error: unknown, options: { verbose?: boolean }, context: string) {
+/** Shape printed on stderr for failures when JSON errors are on (`--json` or IPB_JSON_ERRORS). */
+interface JsonError {
+  error: {
+    /** CLI error code such as "E4013", or null for usage and unexpected errors. */
+    code: string | null;
+    /** Name of the code, such as "INVALID_INPUT", or "USAGE_ERROR" for bad arguments. */
+    name: string | null;
+    message: string;
+    exitCode: ExitCode;
+    command: string;
+    hint: string | null;
+  };
+}
+
+const CLI_ERROR_PREFIX = /^Error \(E\d+\): /;
+
+function errorCodeName(code: string | undefined): string | null {
+  if (!code) {
+    return null;
+  }
+  return Object.entries(ERROR_CODES).find(([, value]) => value === code)?.[0] ?? null;
+}
+
+function handleCommanderError(error: CommanderError, options: { json?: boolean }, context: string) {
+  // Help and --version also arrive here when exitOverride is on.
+  if (error.exitCode === 0) {
+    process.exit(0);
+    return;
+  }
+  const payload: JsonError = {
+    error: {
+      code: null,
+      name: 'USAGE_ERROR',
+      message: error.message.replace(/^error: /, ''),
+      exitCode: ExitCode.VALIDATION_ERROR,
+      command: context,
+      hint: 'Run the command with --help to see its arguments and options.',
+    },
+  };
+  if (options.json) {
+    console.error(JSON.stringify(payload));
+  } else {
+    console.error(error.message);
+  }
+  process.exit(ExitCode.VALIDATION_ERROR);
+}
+
+export function handleCliError(
+  error: unknown,
+  options: { verbose?: boolean; json?: boolean },
+  context: string
+) {
+  if (error instanceof CommanderError) {
+    handleCommanderError(error, options, context);
+    return;
+  }
   const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
 
   let errorCode: string | undefined;
@@ -183,6 +240,22 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     lowerMessage.includes('access denied')
   ) {
     suggestion = '\n💡 Tip: Check file permissions or run with appropriate access rights.';
+  }
+
+  if (options.json) {
+    const payload: JsonError = {
+      error: {
+        code: errorCode ?? null,
+        name: errorCodeName(errorCode),
+        message: errorMessage.replace(CLI_ERROR_PREFIX, ''),
+        exitCode,
+        command: context,
+        hint: suggestion ? suggestion.replace(/^\n💡 Tip: /, '') : null,
+      },
+    };
+    console.error(JSON.stringify(payload));
+    process.exit(exitCode);
+    return;
   }
 
   // Everything goes to stderr so a failing `--json` command never adds text to stdout.

@@ -37,10 +37,12 @@ export {
 } from './utils/input-validation.js';
 export { confirmDestructiveOperation, openInEditor } from './utils/interaction.js';
 export { normalizeInvestecError } from './utils/investec-errors.js';
+export { assertWritable } from './utils/read-only.js';
 export { withRetry } from './utils/retry.js';
 export {
   getVerboseMode,
   isDebugEnabled,
+  isJsonErrorsFromEnv,
   isMockApisEnabled,
   isUpdateCheckDisabled,
   resolveSpinnerState,

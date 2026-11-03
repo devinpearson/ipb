@@ -132,6 +132,24 @@ export async function envListCommand(options: CommonOptions) {
       category: 'Development',
     },
     {
+      name: 'IPB_READ_ONLY',
+      description:
+        'Block payments, transfers and card code changes (pay, transfer, deploy, upload, upload-env, publish, enable, disable) with error E4022. Reads and --dry-run still work. Use when an AI agent or script runs ipb. Can also be stored with `ipb config --read-only`.',
+      required: false,
+      default: 'false',
+      example: '1',
+      category: 'Security',
+    },
+    {
+      name: 'IPB_JSON_ERRORS',
+      description:
+        'Print every failure as one JSON object on stderr ({"error":{"code","name","message","exitCode","command","hint"}}), as --json does for that command.',
+      required: false,
+      default: 'false',
+      example: '1',
+      category: 'Security',
+    },
+    {
       name: 'IPB_NO_UPDATE_CHECK',
       description:
         'Skip npm registry version checks (no network). Recommended when generating terminal recordings or running fully offline.',

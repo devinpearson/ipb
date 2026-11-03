@@ -1,6 +1,7 @@
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   confirmDestructiveOperation,
   createSpinner,
   initializeApi,
@@ -24,6 +25,7 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or publishing fails
  */
 export async function publishCommand(options: Options) {
+  await assertWritable('ipb publish', options);
   // Validate required codeId option
   if (!options.codeId || options.codeId.trim() === '') {
     throw new CliError(

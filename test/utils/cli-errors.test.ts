@@ -1,5 +1,6 @@
 /// <reference types="vitest" />
 
+import { CommanderError } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CliError, ERROR_CODES, ExitCode } from '../../src/errors.js';
 import {
@@ -240,5 +241,138 @@ describe('withCommandContext', () => {
       throw 'plain';
     });
     await expect(wrapped()).rejects.toBe('plain');
+  });
+});
+
+describe('handleCliError with JSON errors', () => {
+  let errLines: string[];
+  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    errLines = [];
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      errLines.push(args.map(String).join(' '));
+    });
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const runJson = (error: unknown, options: { verbose?: boolean } = {}) => {
+    handleCliError(error, { ...options, json: true }, 'ipb pay');
+    expect(errLines).toHaveLength(1);
+    return JSON.parse(errLines[0] as string);
+  };
+
+  it('prints exactly one JSON object on stderr with code, name, message, exit code and hint', () => {
+    const payload = runJson(
+      new CliError(ERROR_CODES.MISSING_ACCOUNT_ID, 'Account ID is required.')
+    );
+    expect(payload).toEqual({
+      error: {
+        code: 'E4012',
+        name: 'MISSING_ACCOUNT_ID',
+        message: 'Account ID is required.',
+        exitCode: ExitCode.VALIDATION_ERROR,
+        command: 'ipb pay',
+        hint: 'Use `ipb accounts` to list your accounts and get the account ID.',
+      },
+    });
+    expect(exitSpy).toHaveBeenCalledWith(ExitCode.VALIDATION_ERROR);
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it('uses null code, name and hint for an uncoded error without a tip', () => {
+    expect(runJson(new Error('boom')).error).toMatchObject({
+      code: null,
+      name: null,
+      message: 'boom',
+      exitCode: ExitCode.GENERAL_ERROR,
+      hint: null,
+    });
+  });
+
+  it('reports READ_ONLY with the permission exit code', () => {
+    const payload = runJson(new CliError(ERROR_CODES.READ_ONLY, 'ipb pay is blocked'));
+    expect(payload.error).toMatchObject({
+      code: 'E4022',
+      name: 'READ_ONLY',
+      exitCode: ExitCode.PERMISSION_ERROR,
+    });
+  });
+
+  it('gives a null name for an unknown code and only strips a leading code prefix', () => {
+    expect(runJson(new CliError('E9999', 'odd')).error).toMatchObject({
+      code: 'E9999',
+      name: null,
+      message: 'odd',
+    });
+    errLines = [];
+    expect(runJson(new Error('Wrapped: Error (E4013): inner')).error.message).toBe(
+      'Wrapped: Error (E4013): inner'
+    );
+  });
+
+  it('stays a single line even in verbose mode', () => {
+    runJson(new Error('429 retry-after: 5'), { verbose: true });
+  });
+});
+
+describe('handleCliError with Commander errors', () => {
+  let errLines: string[];
+  let exitSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    errLines = [];
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      errLines.push(args.map(String).join(' '));
+    });
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reports usage errors as USAGE_ERROR with exit code 2', () => {
+    const error = new CommanderError(1, 'commander.unknownOption', "error: unknown option '--x'");
+    handleCliError(error, { json: true }, 'ipb accounts');
+
+    expect(JSON.parse(errLines[0] as string)).toEqual({
+      error: {
+        code: null,
+        name: 'USAGE_ERROR',
+        message: "unknown option '--x'",
+        exitCode: ExitCode.VALIDATION_ERROR,
+        command: 'ipb accounts',
+        hint: 'Run the command with --help to see its arguments and options.',
+      },
+    });
+    expect(exitSpy).toHaveBeenCalledWith(ExitCode.VALIDATION_ERROR);
+  });
+
+  it('only strips a leading "error: " from usage messages', () => {
+    handleCliError(new CommanderError(1, 'x', 'bad value, error: 3'), { json: true }, 'ipb');
+    expect(JSON.parse(errLines[0] as string).error.message).toBe('bad value, error: 3');
+  });
+
+  it('prints the plain message outside JSON mode', () => {
+    const error = new CommanderError(1, 'commander.missingArgument', 'error: missing argument');
+    handleCliError(error, {}, 'ipb pay');
+    expect(errLines).toEqual(['error: missing argument']);
+  });
+
+  it('exits 0 silently for --help and --version', () => {
+    handleCliError(
+      new CommanderError(0, 'commander.helpDisplayed', '(outputHelp)'),
+      { json: true },
+      'ipb'
+    );
+    expect(errLines).toEqual([]);
+    expect(exitSpy).toHaveBeenCalledWith(0);
   });
 });

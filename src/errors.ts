@@ -47,4 +47,6 @@ export const ERROR_CODES = {
   MISSING_DATE_RANGE: 'E4020',
   /** Bank response did not confirm a payment or transfer (no reference number returned). */
   PAYMENT_NOT_CONFIRMED: 'E4021',
+  /** Command would move money or change card code, but read-only mode is on. */
+  READ_ONLY: 'E4022',
 };

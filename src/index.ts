@@ -21,6 +21,7 @@ import {
   checkForUpdates,
   getVerboseMode,
   handleCliError,
+  isJsonErrorsFromEnv,
   isUpdateCheckDisabled,
   logCommandHistory,
   shouldDisplayUpdateNotification,
@@ -50,6 +51,14 @@ const program = new Command();
 // Improve error output for missing arguments/options
 program.showHelpAfterError();
 program.showSuggestionAfterError();
+
+// Machine-readable errors for scripts and AI agents: one JSON object on stderr per failure.
+const jsonErrors = process.argv.includes('--json') || isJsonErrorsFromEnv();
+if (jsonErrors) {
+  // Commander would otherwise print usage errors as text and exit on its own.
+  program.exitOverride();
+  program.configureOutput({ writeErr: () => {} });
+}
 
 const spinnerFlagNormalization = normalizeSpinnerFlags(process.argv);
 process.argv = spinnerFlagNormalization.argv;
@@ -225,7 +234,10 @@ For more information about a specific command, use:
 
 main().catch((err) => {
   const commandContext = (err as Error & { commandContext?: string })?.commandContext;
-  const context = commandContext ? `ipb ${commandContext}` : 'ipb';
+  // Usage errors happen before any action runs, so fall back to the subcommand typed.
+  const typedCommand = process.argv[2]?.startsWith('-') ? undefined : process.argv[2];
+  const commandName = commandContext ?? typedCommand;
+  const context = commandName ? `ipb ${commandName}` : 'ipb';
   // Determine verbose mode from CLI flags (default false if not available)
   const globalOpts = program.opts();
   const verboseOption =
@@ -233,5 +245,5 @@ main().catch((err) => {
       ? globalOpts.verbose
       : process.argv.includes('--verbose') || process.argv.includes('-v');
   const verboseMode = getVerboseMode(verboseOption);
-  handleCliError(err, { verbose: verboseMode }, context);
+  handleCliError(err, { verbose: verboseMode, json: jsonErrors }, context);
 });

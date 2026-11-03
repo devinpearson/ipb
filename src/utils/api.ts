@@ -6,6 +6,7 @@ import type { IPbApi } from '../mock-pb.js';
 import { optionCredentials, optionMauCredentials } from '../runtime-credentials.js';
 import { validateCredentialsFile, validateMauCredentials } from './credentials-validation.js';
 import { normalizeInvestecError } from './investec-errors.js';
+import { CARD_WRITE_METHODS, guardWrites, PB_WRITE_METHODS } from './read-only.js';
 import { isMockApisEnabled } from './runtime-flags.js';
 
 /**
@@ -45,7 +46,7 @@ export async function initializePbApi(
     throw normalizeInvestecError(error, 'pb-api-auth');
   }
 
-  return api;
+  return guardWrites(api, PB_WRITE_METHODS, credentials);
 }
 
 /**
@@ -116,7 +117,7 @@ export async function initializeApi(
     throw normalizeInvestecError(error, 'card-api-auth');
   }
 
-  return api;
+  return guardWrites(api, CARD_WRITE_METHODS, resolvedCredentials);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { input } from '@inquirer/prompts';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   confirmDestructiveOperation,
   createSpinner,
   initializePbApi,
@@ -37,6 +38,9 @@ export async function transferCommand(
   reference: string,
   options: PaymentOptions
 ) {
+  if (!options.dryRun) {
+    await assertWritable('ipb transfer', options);
+  }
   // Prompt for missing arguments interactively
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });

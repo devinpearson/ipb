@@ -124,3 +124,28 @@ describe('loadCredentialsFile', () => {
     });
   });
 });
+
+describe('loadCredentialsFile readOnly', () => {
+  it.each([
+    [true, 'true'],
+    ['true', 'true'],
+    [false, 'false'],
+  ])('reads readOnly %j as %j', async (value, expected) => {
+    const tempDir = await createTempDir('ipb-creds-readonly');
+    const credentialsPath = path.join(tempDir, 'credentials.json');
+    await writeFile(credentialsPath, JSON.stringify({ apiKey: 'k', readOnly: value }));
+
+    const loaded = await loadCredentialsFile(getBaseCredentials(), credentialsPath);
+    expect(loaded.readOnly).toBe(expected);
+  });
+
+  it('ignores other non-string values', async () => {
+    const tempDir = await createTempDir('ipb-creds-readonly');
+    const credentialsPath = path.join(tempDir, 'credentials.json');
+    await writeFile(credentialsPath, JSON.stringify({ apiKey: 123, clientId: true }));
+
+    const loaded = await loadCredentialsFile(getBaseCredentials(), credentialsPath);
+    expect(loaded.apiKey).toBe('');
+    expect(loaded.clientId).toBe('');
+  });
+});

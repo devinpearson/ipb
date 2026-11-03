@@ -111,6 +111,18 @@ describe('transferCommand', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.IPB_READ_ONLY;
+  });
+
+  it('is blocked in read-only mode, but --dry-run still works', async () => {
+    process.env.IPB_READ_ONLY = '1';
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(transferCommand('100001', '200002', '5', 'ref', baseOptions)).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.READ_ONLY
+    );
+    await transferCommand('100001', '200002', '5', 'ref', { ...baseOptions, dryRun: true });
+    expect(mockUtilsState.pbApi.transferMultiple).not.toHaveBeenCalled();
   });
 
   it('accepts numeric amounts', async () => {

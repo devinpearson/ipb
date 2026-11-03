@@ -6,7 +6,7 @@ import { configCommand } from '../../src/cmds/set';
 import { CliError, ERROR_CODES } from '../../src/errors';
 import { setInteractive } from '../helpers/tty';
 
-const mockPrompts = vi.hoisted(() => ({ input: vi.fn(), password: vi.fn() }));
+const mockPrompts = vi.hoisted(() => ({ input: vi.fn(), password: vi.fn(), confirm: vi.fn() }));
 
 vi.mock('@inquirer/prompts', () => mockPrompts);
 
@@ -89,6 +89,8 @@ describe('configCommand', () => {
     vi.clearAllMocks();
     mockPrompts.input.mockReset();
     mockPrompts.password.mockReset();
+    mockPrompts.confirm.mockReset();
+    delete process.env.IPB_READ_ONLY;
     console.log = vi.fn();
     mockState.profiles = ['prod', 'staging'];
     mockState.activeProfile = 'prod';
@@ -388,5 +390,114 @@ describe('configCommand', () => {
         clientSecret: 'rotated-secret',
       })
     );
+  });
+
+  describe('read-only mode', () => {
+    it('--read-only stores readOnly and says what it blocks', async () => {
+      const { writeCredentialsFile } = await import('../../src/utils.ts');
+      await configCommand({ ...baseOptions(), readOnly: true });
+
+      expect(writeCredentialsFile).toHaveBeenCalledWith(
+        '/tmp/.ipb/.credentials.json',
+        expect.objectContaining({ readOnly: 'true' })
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Read-only mode is on: payments, transfers and card code changes are blocked'
+        )
+      );
+    });
+
+    it('--read-only works with a profile and other fields in one go', async () => {
+      const { writeProfile } = await import('../../src/utils.ts');
+      await configCommand({ ...baseOptions(), profile: 'agent', clientId: 'cid', readOnly: true });
+
+      expect(writeProfile).toHaveBeenCalledWith(
+        'agent',
+        expect.objectContaining({ clientId: 'cid', readOnly: 'true' })
+      );
+    });
+
+    it('refuses --no-read-only without a terminal, so an agent cannot turn it off', async () => {
+      const { writeCredentialsFile } = await import('../../src/utils.ts');
+      const restoreTty = setInteractive(false);
+      try {
+        await expect(configCommand({ ...baseOptions(), readOnly: false })).rejects.toSatisfy(
+          (err: unknown) =>
+            err instanceof CliError &&
+            err.code === ERROR_CODES.READ_ONLY &&
+            err.message.includes('needs an interactive terminal')
+        );
+      } finally {
+        restoreTty();
+      }
+      expect(writeCredentialsFile).not.toHaveBeenCalled();
+    });
+
+    it('refuses --no-read-only while IPB_READ_ONLY is set, even in a terminal', async () => {
+      process.env.IPB_READ_ONLY = '1';
+      const restoreTty = setInteractive(true);
+      try {
+        await expect(configCommand({ ...baseOptions(), readOnly: false })).rejects.toThrow(
+          /unset it to leave read-only mode/
+        );
+      } finally {
+        restoreTty();
+      }
+      expect(mockPrompts.confirm).not.toHaveBeenCalled();
+    });
+
+    it('turns it off after confirmation in a terminal', async () => {
+      const { writeCredentialsFile } = await import('../../src/utils.ts');
+      mockState.cred = { ...mockState.cred, readOnly: 'true' } as typeof mockState.cred;
+      mockPrompts.confirm.mockResolvedValueOnce(true);
+      const restoreTty = setInteractive(true);
+      try {
+        await configCommand({ ...baseOptions(), readOnly: false });
+      } finally {
+        restoreTty();
+      }
+
+      expect(mockPrompts.confirm).toHaveBeenCalledWith(expect.objectContaining({ default: false }));
+      expect(writeCredentialsFile).toHaveBeenCalledWith(
+        '/tmp/.ipb/.credentials.json',
+        expect.objectContaining({ readOnly: 'false' })
+      );
+      expect(console.log).toHaveBeenCalledWith('Read-only mode is off.');
+    });
+
+    it('leaves it on when the confirmation is declined', async () => {
+      const { writeCredentialsFile } = await import('../../src/utils.ts');
+      mockPrompts.confirm.mockResolvedValueOnce(false);
+      const restoreTty = setInteractive(true);
+      try {
+        await configCommand({ ...baseOptions(), readOnly: false });
+      } finally {
+        restoreTty();
+      }
+
+      expect(writeCredentialsFile).not.toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith('Read-only mode left on.');
+    });
+
+    it('warns when a profile is turned off but the default file still keeps it on', async () => {
+      const { writeProfile } = await import('../../src/utils.ts');
+      mockState.cred = { ...mockState.cred, readOnly: 'true' } as typeof mockState.cred;
+      mockPrompts.confirm.mockResolvedValueOnce(true);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const restoreTty = setInteractive(true);
+      try {
+        await configCommand({ ...baseOptions(), profile: 'prod', readOnly: false });
+      } finally {
+        restoreTty();
+      }
+
+      expect(writeProfile).toHaveBeenCalledWith(
+        'prod',
+        expect.objectContaining({ readOnly: 'false' })
+      );
+      expect(String(warnSpy.mock.calls[0]?.[0])).toContain('Read-only mode is still on');
+      warnSpy.mockRestore();
+    });
   });
 });
