@@ -225,7 +225,7 @@ For more information about a specific command, use:
 
 main().catch((err) => {
   const commandContext = (err as Error & { commandContext?: string })?.commandContext;
-  const context = commandContext ? `${commandContext} command` : 'run CLI';
+  const context = commandContext ? `ipb ${commandContext}` : 'ipb';
   // Determine verbose mode from CLI flags (default false if not available)
   const globalOpts = program.opts();
   const verboseOption =

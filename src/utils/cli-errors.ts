@@ -3,8 +3,10 @@ import { CliError, ERROR_CODES, ExitCode } from '../errors.js';
 import { detectRateLimit, formatRateLimitInfo } from './retry.js';
 import { isDebugEnabled } from './runtime-flags.js';
 
-/** Word boundaries stop CLI codes like `E4013` matching as HTTP 401. */
+/** Word boundaries stop CLI codes like `E4013` or amounts like `R1500` matching as HTTP statuses. */
 const HTTP_AUTH_STATUS = /\b40[13]\b/;
+const HTTP_SERVER_STATUS = /\b50[0234]\b/;
+const HTTP_RATE_LIMIT_STATUS = /\b429\b/;
 
 /** Stable exit mapping for {@link CliError} codes (avoids matching `E4016` as HTTP 401 in heuristics). */
 const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
@@ -82,12 +84,7 @@ export function determineExitCode(
     return ExitCode.NETWORK_ERROR;
   }
 
-  if (
-    lowerMessage.includes('500') ||
-    lowerMessage.includes('502') ||
-    lowerMessage.includes('503') ||
-    lowerMessage.includes('504')
-  ) {
+  if (HTTP_SERVER_STATUS.test(lowerMessage)) {
     return ExitCode.API_ERROR;
   }
 
@@ -163,7 +160,7 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   } else if (
     errorCode === ERROR_CODES.RATE_LIMIT_EXCEEDED ||
     lowerMessage.includes('rate limit') ||
-    lowerMessage.includes('429') ||
+    HTTP_RATE_LIMIT_STATUS.test(lowerMessage) ||
     lowerMessage.includes('too many requests')
   ) {
     const rateLimitInfo = detectRateLimit(error);
@@ -188,7 +185,8 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
     suggestion = '\n💡 Tip: Check file permissions or run with appropriate access rights.';
   }
 
-  console.error(chalk.redBright(`Failed to ${context}:`), errorMessage);
+  // Everything goes to stderr so a failing `--json` command never adds text to stdout.
+  console.error(chalk.redBright(`${context} failed:`), errorMessage);
   if (suggestion) {
     console.error(chalk.yellow(suggestion));
   }
@@ -197,14 +195,14 @@ export function handleCliError(error: unknown, options: { verbose?: boolean }, c
   if (shouldShowDebugDetails) {
     const rateLimitInfo = detectRateLimit(error);
     if (rateLimitInfo) {
-      console.log('');
-      console.log(chalk.blue('Rate Limit Information:'));
-      console.log(chalk.blue(`  ${formatRateLimitInfo(rateLimitInfo)}`));
+      console.error('');
+      console.error(chalk.blue('Rate Limit Information:'));
+      console.error(chalk.blue(`  ${formatRateLimitInfo(rateLimitInfo)}`));
     }
-    console.log('');
+    console.error('');
     console.error('Error details:', error);
   } else {
-    console.log('');
+    console.error('');
   }
 
   process.exit(exitCode);
