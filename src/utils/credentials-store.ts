@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import {
   access,
@@ -160,7 +161,11 @@ export async function writeFileAtomic(
 ): Promise<void> {
   const dir = path.dirname(filepath);
   const filename = path.basename(filepath);
-  const tempPath = path.join(dir, `.${filename}.tmp`);
+  // Unique per write, so two ipb processes never share a temp file.
+  const tempPath = path.join(
+    dir,
+    `.${filename}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
+  );
 
   try {
     await ensureCredentialsDirectory({ folder: dir });

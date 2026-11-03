@@ -175,12 +175,8 @@ For more information about a specific command, use:
         // Merge all options (global + command-specific)
         const allOptions = { ...globalOpts, ...commandOptions };
 
-        // Non-blocking: don't await to avoid slowing down command exit
-        logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration).catch(
-          () => {
-            // Ignore errors
-          }
-        );
+        // Awaited: the process can exit right after this, which would cut the write short.
+        await logCommandHistory(actualCommandName, actualArgs, allOptions, exitCode, duration);
       }
     } catch {
       // Ignore errors logging history
