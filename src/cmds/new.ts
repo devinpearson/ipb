@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../runtime-credentials.js';
+import { getTemplatePath } from '../utils/package-paths.js';
 import {
   createSpinner,
   getSafeText,
@@ -37,10 +37,9 @@ export async function newCommand(name: string, options: Options) {
     isPiped,
   });
 
-  const dirnameValue = path.dirname(fileURLToPath(import.meta.url));
-  const uri = path.join(dirnameValue, '/../templates/', options.template);
+  const uri = getTemplatePath(options.template);
   console.log(getSafeText(`📂 Finding template called ${chalk.green(options.template)}`));
-  if (!fs.existsSync(uri)) {
+  if (!uri || !fs.existsSync(uri)) {
     throw new CliError(ERROR_CODES.TEMPLATE_NOT_FOUND, getSafeText('💣 Template does not exist'));
   }
   // Validate project name
@@ -63,7 +62,7 @@ export async function newCommand(name: string, options: Options) {
     if (fs.existsSync(name) && options.force) {
       fs.rmSync(name, { recursive: true, force: true });
     }
-    fs.cpSync(uri, name, { recursive: true });
+    copyDirectory(uri, name);
   });
 
   console.log(getSafeText(`🚀 Created new project from template ${options.template}`));
@@ -75,4 +74,21 @@ export async function newCommand(name: string, options: Options) {
   console.log(
     getSafeText(`- 🧪 Test your code with: ${chalk.green(`ipb run -f ${name}/main.js`)}`)
   );
+}
+
+/**
+ * Recursively copies a folder using only readdir/readFile/writeFile. fs.cpSync is implemented
+ * natively and can't read from the pkg binary's built-in snapshot, so it fails on templates there.
+ */
+function copyDirectory(source: string, destination: string): void {
+  fs.mkdirSync(destination, { recursive: true });
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    const from = path.join(source, entry.name);
+    const to = path.join(destination, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectory(from, to);
+    } else {
+      fs.writeFileSync(to, fs.readFileSync(from));
+    }
+  }
 }

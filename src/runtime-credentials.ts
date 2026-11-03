@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import process from 'node:process';
 import chalk from 'chalk';
 import type { BasicOptions, Credentials, MauBasicOptions } from './cmds/types.js';
+import { CliError } from './errors.js';
 import {
   getActiveProfile,
   loadCredentialsFile,
@@ -27,7 +28,10 @@ export async function printTitleBox(): Promise<void> {
 }
 
 const cred = readCredentialsFileSync(credentialLocation, (err) => {
-  const errorText = getSafeText(`🙀 Invalid credentials file format: ${err.message}`);
+  const errorText =
+    err instanceof CliError
+      ? err.message
+      : getSafeText(`🙀 Invalid credentials file format: ${err.message}`);
   console.error(chalk.red(errorText));
   console.log('');
 });

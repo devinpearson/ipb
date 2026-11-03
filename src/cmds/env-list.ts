@@ -12,7 +12,7 @@ interface EnvVarDefinition {
   required: boolean;
   default?: string;
   example: string;
-  category: 'API Credentials' | 'AI Generation' | 'Development' | 'Security';
+  category: 'API Credentials' | 'AI Generation' | 'Development' | 'Security' | 'Test Transactions';
 }
 
 /**
@@ -148,6 +148,55 @@ export async function envListCommand(options: CommonOptions) {
       default: 'false',
       example: '1',
       category: 'Security',
+    },
+    {
+      name: 'IPB_TX_AMOUNT',
+      description: 'Default transaction amount in cents for `run` and `simulate` (--amount wins).',
+      required: false,
+      default: '10000',
+      example: '2500',
+      category: 'Test Transactions',
+    },
+    {
+      name: 'IPB_TX_CURRENCY',
+      description: 'Default currency code (ISO 4217) for `run` and `simulate` (--currency wins).',
+      required: false,
+      default: 'zar',
+      example: 'USD',
+      category: 'Test Transactions',
+    },
+    {
+      name: 'IPB_TX_MCC',
+      description: 'Default merchant category code for `run` and `simulate` (--mcc wins).',
+      required: false,
+      default: '0000',
+      example: '5411',
+      category: 'Test Transactions',
+    },
+    {
+      name: 'IPB_TX_MERCHANT',
+      description: 'Default merchant name for `run` and `simulate` (--merchant wins).',
+      required: false,
+      default: 'The Coders Bakery',
+      example: 'Corner Cafe',
+      category: 'Test Transactions',
+    },
+    {
+      name: 'IPB_TX_CITY',
+      description: 'Default merchant city for `run` and `simulate` (--city wins).',
+      required: false,
+      default: 'Cape Town',
+      example: 'Durban',
+      category: 'Test Transactions',
+    },
+    {
+      name: 'IPB_TX_COUNTRY',
+      description:
+        'Default country code (ISO 3166-1 alpha-2) for `run` and `simulate` (--country wins).',
+      required: false,
+      default: 'ZA',
+      example: 'US',
+      category: 'Test Transactions',
     },
     {
       name: 'IPB_NO_UPDATE_CHECK',

@@ -32,6 +32,7 @@ const EXIT_CODE_BY_CLI_CODE: Record<string, ExitCode> = {
   [ERROR_CODES.MISSING_DATE_RANGE]: ExitCode.VALIDATION_ERROR,
   [ERROR_CODES.PAYMENT_NOT_CONFIRMED]: ExitCode.API_ERROR,
   [ERROR_CODES.READ_ONLY]: ExitCode.PERMISSION_ERROR,
+  [ERROR_CODES.SECRET_STORE_ERROR]: ExitCode.AUTH_ERROR,
 };
 
 export function determineExitCode(
@@ -168,7 +169,8 @@ export function handleCliError(
     (lowerMessage.includes('received undefined') && lowerMessage.includes('path'))
   ) {
     if (lowerMessage.includes('received undefined') && lowerMessage.includes('path')) {
-      suggestion = '\n💡 Tip: Filename is required. Use -f or --filename to specify the file.';
+      suggestion =
+        '\n💡 Tip: A file path is missing. If the command takes -f or --filename, pass it.';
     } else {
       suggestion = '\n💡 Tip: Check the file path and ensure the file exists.';
     }

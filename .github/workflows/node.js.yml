@@ -27,9 +27,11 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
@@ -41,25 +43,28 @@ jobs:
   packaging-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - name: Use Node.js 24.x
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24.x
           cache: "npm"
       - run: npm ci
       - run: npm run bundle
+      - name: Smoke test bundle
+        run: scripts/smoke-test.sh "node dist-bundle/index.cjs"
       - name: Build Linux standalone binary
-        run: npx pkg dist-bundle/index.cjs --targets node24-linux-x64 --out-path dist --no-bytecode --public
+        # --config package.json is what pulls templates/ and assets/ into the binary.
+        run: npx pkg dist-bundle/index.cjs --config package.json --targets node24-linux-x64 --out-path dist --no-bytecode --public
       - name: Smoke test packaged binary
         run: |
-          if [ -f dist/investec-ipb-linux-x64 ]; then
-            chmod +x dist/investec-ipb-linux-x64
-            ./dist/investec-ipb-linux-x64 --version
-          elif [ -f dist/index ]; then
-            chmod +x dist/index
-            ./dist/index --version
-          else
+          binary=$(ls dist/investec-ipb* dist/index 2>/dev/null | head -n 1)
+          if [ -z "$binary" ]; then
             echo "Packaged binary not found"
+            ls -la dist || true
             exit 1
           fi
+          chmod +x "$binary"
+          scripts/smoke-test.sh "$binary"

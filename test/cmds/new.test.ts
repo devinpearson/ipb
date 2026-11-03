@@ -32,7 +32,10 @@ vi.mock('../../src/utils.ts', async () => {
 const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(),
   rmSync: vi.fn(),
-  cpSync: vi.fn(),
+  mkdirSync: vi.fn(),
+  readdirSync: vi.fn(() => []),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
 }));
 
 vi.mock('node:fs', () => ({
@@ -56,9 +59,7 @@ describe('newCommand', () => {
       force: false,
     });
 
-    expect(mockFs.cpSync).toHaveBeenCalledWith(expect.any(String), 'my-project', {
-      recursive: true,
-    });
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith('my-project', { recursive: true });
   });
 
   it('throws for invalid project names', async () => {

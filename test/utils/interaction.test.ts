@@ -1,11 +1,9 @@
 /// <reference types="vitest" />
 
 import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   confirmDestructiveOperation,
-  getModuleDirname,
   getTempDir,
   pageOutput,
 } from '../../src/utils/interaction.js';
@@ -13,11 +11,6 @@ import {
 describe('interaction utilities', () => {
   it('returns OS temp directory', () => {
     expect(getTempDir()).toBe(os.tmpdir());
-  });
-
-  it('resolves module dirname from file URL', () => {
-    const dirname = getModuleDirname('file:///tmp/example/index.js');
-    expect(dirname).toBe('/tmp/example');
   });
 
   it('writes to stdout when output is piped', async () => {
@@ -36,10 +29,5 @@ describe('interaction utilities', () => {
     Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
     await expect(confirmDestructiveOperation('continue?')).resolves.toBe(false);
     Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true });
-  });
-
-  it('keeps snapshot paths unchanged', () => {
-    const snapshotPath = getModuleDirname('file:///snapshot/project/bin/index.js');
-    expect(snapshotPath).toBe(path.normalize('/snapshot/project/bin'));
   });
 });

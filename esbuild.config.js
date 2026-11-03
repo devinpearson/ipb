@@ -81,6 +81,12 @@ async function buildApp(options = {}) {
       // Embed package.json version so standalone binaries do not need package.json on disk
       define: {
         __IPB_PACKAGE_VERSION__: JSON.stringify(packageVersion),
+        __IPB_BUNDLED__: 'true',
+        // CommonJS has no import.meta; point it at the bundle file instead.
+        'import.meta.url': '__ipbImportMetaUrl',
+      },
+      banner: {
+        js: "var __ipbImportMetaUrl = require('node:url').pathToFileURL(__filename).href;",
       },
       // Bundle all npm packages, but keep node: built-ins external (pkg will include Node.js)
       // Don't use packages: 'external' - we want to bundle everything

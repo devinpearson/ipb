@@ -18,6 +18,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+      # Signed build provenance for each binary (verify with `gh attestation verify`).
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -50,10 +53,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24.x
 
@@ -75,8 +80,13 @@ jobs:
             exit 1
           }
 
+      - name: Smoke test bundle
+        shell: bash
+        run: scripts/smoke-test.sh "node dist-bundle/index.cjs"
+
       - name: Package binary
-        run: npx pkg dist-bundle/index.cjs --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
+        # --config package.json is what pulls templates/ and assets/ into the binary.
+        run: npx pkg dist-bundle/index.cjs --config package.json --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
 
       - name: Rename binary (macOS/Linux)
         if: matrix.platform != 'win'
@@ -90,6 +100,11 @@ jobs:
             mv index ${{ matrix.binary-name }}
           fi
           chmod +x ${{ matrix.binary-name }}
+
+      - name: Smoke test binary
+        # Only run binaries built for the runner's own CPU.
+        if: matrix.platform != 'win' && ((runner.arch == 'X64' && matrix.arch == 'x64') || (runner.arch == 'ARM64' && matrix.arch == 'arm64'))
+        run: scripts/smoke-test.sh "dist/${{ matrix.binary-name }}"
 
       - name: Rename binary (Windows)
         if: matrix.platform == 'win'
@@ -121,8 +136,13 @@ jobs:
           cd dist
           sha256sum ${{ matrix.binary-name }} > ${{ matrix.binary-name }}.sha256
 
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-path: dist/${{ matrix.binary-name }}
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ${{ matrix.binary-name }}
           path: |
@@ -138,10 +158,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: artifacts
 
@@ -260,7 +282,7 @@ jobs:
           VERSION: ${{ steps.tag_version.outputs.version }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: release-assets/*
           name: Release v${{ steps.tag_version.outputs.version }}
@@ -285,11 +307,13 @@ jobs:
             npm install -g investec-ipb
             ```
 
-            ### Checksums
-            See checksums.txt for SHA256 checksums of all binaries.
-
-            ### Changes
-            See [CHANGELOG.md](https://github.com/devinpearson/ipb/blob/main/CHANGELOG.md) for full changelog.
+            ### Verify your download
+            See checksums.txt for SHA256 checksums of all binaries. Each binary also has a signed build attestation:
+            ```bash
+            gh attestation verify ipb-macos-arm64 --repo devinpearson/ipb
+            ```
+          # Lists merged pull requests below the body.
+          generate_release_notes: true
           draft: false
           prerelease: false
         env:

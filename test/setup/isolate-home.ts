@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, vi } from 'vitest';
 
-// Every test file gets its own throwaway home folder, so nothing can read or
+// Every test file gets its own throwaway home folder and keychain, so nothing can read or
 // delete the real ~/.ipb (credentials, profiles, history).
 //
 // os.homedir() ignores process.env.HOME changes made inside a worker thread,
@@ -31,4 +31,22 @@ vi.mock('node:os', async (importOriginal) => {
 
 afterAll(() => {
   fs.rmSync(testHome, { recursive: true, force: true });
+});
+
+// Tests must never read or write the real OS keychain, so it is replaced with an in-memory one.
+const keychain = new Map<string, string>();
+
+vi.mock('../../src/utils/os-keychain.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/utils/os-keychain.js')>();
+  return {
+    ...actual,
+    isKeychainSupported: () => true,
+    readKeychainSecret: (account: string) => keychain.get(account) ?? null,
+    writeKeychainSecret: (account: string, value: string) => {
+      keychain.set(account, value);
+    },
+    deleteKeychainSecret: (account: string) => {
+      keychain.delete(account);
+    },
+  };
 });

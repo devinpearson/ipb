@@ -379,4 +379,107 @@ describe('deployCommand', () => {
 
     await expect(deployCommand(options)).rejects.toThrow('API connection failed');
   });
+
+  describe('exact calls', () => {
+    const utils = () => import('../../src/utils.ts');
+    const okUpload = { data: { result: { codeId: 'code-1' } } };
+    const base = { filename: 'main.js', cardKey: 42, verbose: true, yes: true } as never;
+
+    it('stops without touching the card when the user cancels', async () => {
+      const { confirmDestructiveOperation } = await utils();
+      (confirmDestructiveOperation as vi.Mock).mockResolvedValueOnce(false);
+
+      await deployCommand(base);
+
+      expect(console.log).toHaveBeenCalledWith('Deployment cancelled.');
+      expect(initializeApi).not.toHaveBeenCalled();
+      expect(mockFsPromises.readFile).not.toHaveBeenCalled();
+    });
+
+    it('checks the file, asks before overwriting and names the command when read-only', async () => {
+      const { validateFilePath, confirmDestructiveOperation } = await utils();
+      mockApi.uploadCode.mockResolvedValue(okUpload);
+      mockFsPromises.readFile.mockResolvedValue('code');
+
+      await deployCommand(base);
+
+      expect(validateFilePath).toHaveBeenCalledWith('main.js', ['.js']);
+      expect(confirmDestructiveOperation).toHaveBeenCalledWith(
+        'This will deploy code to card 42 and overwrite any existing code. Continue?',
+        { yes: true }
+      );
+
+      process.env.IPB_READ_ONLY = '1';
+      await expect(deployCommand(base)).rejects.toThrow(/ipb deploy is blocked/);
+    });
+
+    it('sends the code, env and publish calls with retries and reports progress', async () => {
+      const { withRetry, createSpinner } = await utils();
+      mockApi.uploadCode.mockResolvedValue(okUpload);
+      mockApi.uploadEnv.mockResolvedValue({});
+      mockApi.uploadPublishedCode.mockResolvedValue({});
+      mockFsPromises.readFile.mockResolvedValueOnce('A=1').mockResolvedValueOnce('let x;');
+
+      await deployCommand({ ...(base as object), env: 'prod' } as never);
+
+      const { validateFilePath } = await utils();
+      expect(validateFilePath).toHaveBeenCalledWith('.env.prod');
+      expect(mockApi.uploadCode).toHaveBeenCalledWith(42, { code: 'let x;' });
+      expect(mockApi.getEnv).toHaveBeenCalledWith(42);
+      expect(mockApi.uploadEnv).toHaveBeenCalledWith(42, { variables: { A: '1' } });
+      expect(mockApi.uploadPublishedCode).toHaveBeenCalledWith(42, 'code-1', 'let x;');
+      for (const call of (withRetry as vi.Mock).mock.calls) {
+        expect(call[1]).toEqual({ verbose: true });
+      }
+      expect(createSpinner).toHaveBeenCalledWith(expect.any(Boolean), '💳 starting deployment...');
+      const spinner = (createSpinner as vi.Mock).mock.results.at(-1)?.value;
+      expect(spinner.update.mock.calls.map((c: string[]) => c[0])).toEqual([
+        expect.stringMatching(/^🚀 reading code from .+ \(1\.0 KB\)\.\.\.$/),
+        '🚀 saving code (6 B)...',
+        '📦 uploading env from .env.prod...',
+        '🚀 publishing code...',
+      ]);
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('code deployed with codeId: code-1')
+      );
+    });
+
+    it('restores an empty env when the card had no variables before', async () => {
+      mockApi.uploadCode.mockResolvedValue(okUpload);
+      mockApi.getEnv.mockResolvedValue({ data: { result: {} } });
+      mockApi.uploadEnv.mockResolvedValue({});
+      mockApi.uploadPublishedCode.mockRejectedValue(new Error('publish down'));
+      mockFsPromises.readFile.mockResolvedValueOnce('A=1').mockResolvedValueOnce('code');
+
+      await expect(deployCommand({ ...(base as object), env: 'prod' } as never)).rejects.toThrow(
+        /previous environment variables were restored/
+      );
+      expect(mockApi.uploadEnv).toHaveBeenLastCalledWith(42, { variables: {} });
+    });
+
+    it('does not report success when the API returns no code id', async () => {
+      mockApi.uploadCode.mockResolvedValue({ data: { result: {} } });
+      mockApi.uploadPublishedCode.mockResolvedValue({});
+      mockFsPromises.readFile.mockResolvedValue('code');
+
+      await deployCommand(base);
+
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('code deployed'));
+    });
+
+    it.each([
+      ['a different CliError', new CliError(ERROR_CODES.PERMISSION_DENIED, 'no access')],
+      ['a plain error', new Error('disk on fire')],
+    ])('passes %s from the env file through unchanged', async (_label, failure) => {
+      const { validateFilePath } = await utils();
+      (validateFilePath as vi.Mock)
+        .mockResolvedValueOnce('/abs/main.js')
+        .mockRejectedValueOnce(failure);
+
+      await expect(deployCommand({ ...(base as object), env: 'prod' } as never)).rejects.toBe(
+        failure
+      );
+      expect(mockApi.uploadCode).not.toHaveBeenCalled();
+    });
+  });
 });

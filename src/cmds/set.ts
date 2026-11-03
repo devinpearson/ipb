@@ -1,8 +1,16 @@
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../runtime-credentials.js';
+import { isKeychainSupported } from '../utils/os-keychain.js';
 import { isReadOnlyValue } from '../utils/read-only.js';
 import { isReadOnlyFromEnv } from '../utils/runtime-flags.js';
+import {
+  forgetSecrets,
+  KEYCHAIN_STORE,
+  keychainAccount,
+  SECRET_FIELDS as SECRET_STORE_FIELDS,
+  usesKeychain,
+} from '../utils/secret-store.js';
 import {
   createSpinner,
   deleteProfile,
@@ -38,14 +46,7 @@ const CONFIG_FIELDS = [
 
 type ConfigField = (typeof CONFIG_FIELDS)[number];
 
-const SECRET_FIELDS: ReadonlySet<ConfigField> = new Set([
-  'clientSecret',
-  'apiKey',
-  'openaiKey',
-  'sandboxKey',
-  'mauClientSecret',
-  'mauApiKey',
-]);
+const SECRET_FIELDS: ReadonlySet<ConfigField> = new Set<ConfigField>(SECRET_STORE_FIELDS);
 
 const FLAG_NAMES: Record<ConfigField, string> = {
   clientId: '--client-id',
@@ -69,6 +70,8 @@ type Options = Partial<Record<ConfigField, string>> & {
   spinner?: boolean;
   /** true from --read-only, false from --no-read-only, undefined when neither is passed. */
   readOnly?: boolean;
+  /** true from --keychain, false from --no-keychain, undefined when neither is passed. */
+  keychain?: boolean;
 };
 
 interface ProfileOptions {
@@ -130,12 +133,18 @@ export async function configCommand(options: Options & ProfileOptions) {
   let existing: Record<string, string>;
   if (profileName) {
     try {
-      existing = { ...(await readProfile(profileName)) };
-    } catch {
+      existing = { ...(await readProfile(profileName, { allowMissingSecrets: true })) };
+    } catch (error) {
+      // A new profile is fine; anything else (bad JSON, locked keychain) must not be overwritten.
+      if (!(error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND)) {
+        throw error;
+      }
       existing = {};
     }
   } else {
-    existing = { ...(await readCredentialsFile(credentialLocation)) } as Record<string, string>;
+    existing = {
+      ...(await readCredentialsFile(credentialLocation, { allowMissingSecrets: true })),
+    } as Record<string, string>;
   }
 
   let updates: Record<string, string> = await readFlagValues(options);
@@ -147,7 +156,23 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
     updates = { ...updates, readOnly };
   }
-  if (Object.keys(updates).length === 0) {
+  const movingOutOfKeychain = options.keychain === false && usesKeychain(existing);
+  if (options.keychain === true && !usesKeychain(existing)) {
+    if (!isKeychainSupported()) {
+      throw new CliError(
+        ERROR_CODES.UNSUPPORTED_OPERATION,
+        `The OS keychain isn't supported on ${process.platform} yet.`
+      );
+    }
+    updates = { ...updates, secretStore: KEYCHAIN_STORE };
+  }
+  if (Object.keys(updates).length === 0 && !movingOutOfKeychain) {
+    if (options.keychain !== undefined) {
+      console.log(
+        `Secrets are already ${options.keychain ? 'in the OS keychain' : 'in the file'}.`
+      );
+      return;
+    }
     if (!(process.stdin.isTTY && process.stdout.isTTY)) {
       throw new CliError(
         ERROR_CODES.INVALID_INPUT,
@@ -161,7 +186,10 @@ export async function configCommand(options: Options & ProfileOptions) {
     }
   }
 
-  const merged = { ...existing, ...updates };
+  const merged: Record<string, string> = { ...existing, ...updates };
+  if (movingOutOfKeychain) {
+    delete merged.secretStore;
+  }
   if (profileName) {
     await runWithConfigSpinner(options, `Saving profile "${profileName}"...`, () =>
       writeProfile(profileName, merged)
@@ -175,6 +203,16 @@ export async function configCommand(options: Options & ProfileOptions) {
       writeCredentialsFile(credentialLocation.filename, merged)
     );
     console.log('🔑 credentials saved');
+  }
+
+  if (updates.secretStore === KEYCHAIN_STORE) {
+    console.log(
+      `🔐 Secrets moved to the OS keychain (item "${keychainAccount(profileName)}"); the file keeps only non-secret settings.`
+    );
+  } else if (movingOutOfKeychain) {
+    // The file now holds the secrets, so the keychain copy can go.
+    forgetSecrets(keychainAccount(profileName));
+    console.log('Secrets moved back into the credentials file and removed from the OS keychain.');
   }
 
   if (updates.readOnly === 'true') {

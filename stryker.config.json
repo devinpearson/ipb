@@ -3,20 +3,35 @@
   "packageManager": "npm",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
-  "vitest": { "pool": "forks" },
+  "vitest": {
+    "pool": "forks"
+  },
   "mutate": [
     "src/cmds/payment-helpers.ts",
     "src/utils/input-validation.ts",
     "src/utils/cli-errors.ts",
     "src/utils/retry.ts",
-    "src/utils/read-only.ts"
+    "src/utils/read-only.ts",
+    "src/utils/credentials-store.ts",
+    "src/utils/history.ts",
+    "src/utils/secret-store.ts",
+    "src/utils/os-keychain.ts",
+    "src/utils/package-paths.ts",
+    "src/cmds/config-subcommands.ts",
+    "src/cmds/deploy.ts"
   ],
   "ignorePatterns": [".cursor", ".claude", "bin", "dist", "dist-bundle", "reports", "assets"],
   "coverageAnalysis": "perTest",
   "reporters": ["clear-text", "progress", "html"],
-  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
-  "thresholds": { "high": 95, "low": 90, "break": 90 },
+  "thresholds": {
+    "high": 95,
+    "low": 90,
+    "break": 90
+  },
   "tempDirName": ".stryker-tmp"
 }

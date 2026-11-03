@@ -59,71 +59,54 @@ async function writeCommandHistory(history: CommandHistoryEntry[]): Promise<void
   }
 }
 
+const MASK = '***';
+
+/** Option and setting names whose values must never reach the history file. */
+const SENSITIVE_NAME =
+  /(client[-_]?id|secret|api[-_]?key|openai[-_]?key|sandbox[-_]?key|card[-_]?key|password|token|auth|credential|key)/i;
+
+function isSensitiveName(name: string): boolean {
+  // Earlier versions stored flags half-masked (e.g. "--cl***cret"); treat those as sensitive too.
+  return SENSITIVE_NAME.test(name) || name.includes(MASK);
+}
+
 function sanitizeOptions(options: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
-  const sensitiveKeys = [
-    'clientId',
-    'clientSecret',
-    'apiKey',
-    'openaiKey',
-    'sandboxKey',
-    'cardKey',
-    'password',
-    'token',
-    'secret',
-    'key',
-    'auth',
-    'credential',
-  ];
-
   for (const [key, value] of Object.entries(options)) {
-    const lowerKey = key.toLowerCase();
-    const isSensitive = sensitiveKeys.some((sensitiveKey) =>
-      lowerKey.includes(sensitiveKey.toLowerCase())
-    );
+    const hasValue =
+      value !== undefined && value !== null && value !== '' && typeof value !== 'boolean';
+    sanitized[key] = hasValue && isSensitiveName(key) ? MASK : value;
+  }
+  return sanitized;
+}
 
-    if (isSensitive && typeof value === 'string' && value.length > 0) {
-      if (value.length > 8) {
-        sanitized[key] = `${value.substring(0, 4)}***${value.substring(value.length - 4)}`;
-      } else {
-        sanitized[key] = '***';
-      }
+/**
+ * Masks secret values in raw command-line args: the value after a sensitive flag
+ * (`--client-secret abc`), and the value part of `--client-secret=abc` or `API_KEY=abc`.
+ */
+function sanitizeArgs(args: string[]): string[] {
+  const sanitized: string[] = [];
+  let maskNext = false;
+
+  for (const arg of args) {
+    if (maskNext && !arg.startsWith('-')) {
+      sanitized.push(MASK);
+      maskNext = false;
+      continue;
+    }
+    maskNext = false;
+
+    const equalsIndex = arg.indexOf('=');
+    const name = equalsIndex > 0 ? arg.slice(0, equalsIndex) : arg;
+    if (equalsIndex > 0 && isSensitiveName(name)) {
+      sanitized.push(`${name}=${MASK}`);
     } else {
-      sanitized[key] = value;
+      sanitized.push(arg);
+      maskNext = arg.startsWith('-') && isSensitiveName(name);
     }
   }
 
   return sanitized;
-}
-
-function sanitizeArgs(args: string[]): string[] {
-  const sensitivePattern =
-    /(client[-_]?id|client[-_]?secret|api[-_]?key|openai[-_]?key|sandbox[-_]?key|card[-_]?key|password|token|secret|auth|credential|key)/i;
-
-  const maskValue = (value: string): string => {
-    if (value.length > 8) {
-      return `${value.substring(0, 4)}***${value.substring(value.length - 4)}`;
-    }
-    return '***';
-  };
-
-  return args.map((arg) => {
-    if (!sensitivePattern.test(arg)) {
-      return arg;
-    }
-
-    const equalsIndex = arg.indexOf('=');
-    if (equalsIndex > 0) {
-      const key = arg.slice(0, equalsIndex);
-      const value = arg.slice(equalsIndex + 1);
-      if (value.length === 0) {
-        return `${key}=***`;
-      }
-      return `${key}=${maskValue(value)}`;
-    }
-
-    return maskValue(arg);
-  });
 }
 
 /**
@@ -142,7 +125,12 @@ export async function logCommandHistory(
   duration?: number
 ): Promise<void> {
   try {
-    const history = readCommandHistory();
+    // Re-mask older entries too, so secrets logged by earlier versions are scrubbed.
+    const history = readCommandHistory().map((old) => ({
+      ...old,
+      args: sanitizeArgs(Array.isArray(old.args) ? old.args : []),
+      options: sanitizeOptions(old.options ?? {}),
+    }));
     const entry: CommandHistoryEntry = {
       timestamp: Date.now(),
       command,

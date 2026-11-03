@@ -96,13 +96,14 @@ export function warnAboutSecretUsage(
     chalk.yellow('\n   For better security, store secrets in credential files instead:')
   );
   console.warn(
-    chalk.yellow('   - Run: ipb config --client-id <id> --client-secret <secret> --api-key <key>')
+    chalk.yellow('   - Run: ipb config            (prompts, with secrets hidden as you type)')
   );
   console.warn(
     chalk.yellow(
-      '   - Or use profiles: ipb config --profile <name> --client-id <id> --client-secret <secret> --api-key <key>'
+      '   - Or pipe one in: op read "op://vault/investec/secret" | ipb config --client-secret -'
     )
   );
+  console.warn(chalk.yellow('   - Add --profile <name> to either to save a named profile'));
   console.warn(chalk.yellow('\n   Environment variables can be leaked in:'));
   console.warn(chalk.yellow('   - Process lists (ps, top)'));
   console.warn(chalk.yellow('   - System logs'));

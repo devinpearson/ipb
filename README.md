@@ -136,33 +136,31 @@ brew install ipb
 macOS:
 
 ```sh
-# Apple Silicon
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-macos-arm64 -o ipb
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
-
-# Intel
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-macos-x64 -o ipb
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
+# Apple Silicon (use ipb-macos-x64 on Intel)
+curl -LO https://github.com/devinpearson/ipb/releases/latest/download/ipb-macos-arm64
+chmod +x ipb-macos-arm64
+sudo mv ipb-macos-arm64 /usr/local/bin/ipb
 ```
 
-Linux (.deb):
+Linux:
 
 ```sh
-wget https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb_0.9.3_amd64.deb
-sudo dpkg -i ipb_0.9.3_amd64.deb
-sudo apt-get install -f
+# x64 (use ipb-linux-arm64 on ARM)
+curl -LO https://github.com/devinpearson/ipb/releases/latest/download/ipb-linux-x64
+chmod +x ipb-linux-x64
+sudo mv ipb-linux-x64 /usr/local/bin/ipb
 ```
 
-Linux binary:
+A `.snap` package is also attached to each release.
+
+**Verify a download** before you run it (this is a banking tool). Each release lists SHA-256 checksums in `checksums.txt`, and every binary from releases after v0.10.1 has a signed GitHub build attestation proving it was built from this repository by the release workflow:
 
 ```sh
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-linux-x64 -o ipb
-# or: ipb-linux-arm64
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
+shasum -a 256 ipb-macos-arm64          # compare with checksums.txt
+gh attestation verify ipb-macos-arm64 --repo devinpearson/ipb
 ```
+
+The npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements); check it with `npm audit signatures` after installing.
 
 Windows: download `ipb-win-x64.exe`, rename to `ipb.exe`, add to `PATH`.
 
@@ -197,6 +195,18 @@ ipb config profile show
 ipb config delete
 ipb config delete --all
 ```
+
+#### Keep secrets in the OS keychain
+
+On macOS (Keychain) and Linux (any libsecret keyring, e.g. GNOME Keyring, via `secret-tool`), `--keychain` moves the client secret and API keys out of the file:
+
+```sh
+ipb config --keychain                       # default credentials
+ipb config --profile production --keychain  # one profile
+ipb config --no-keychain                    # move them back into the file
+```
+
+The file keeps the client ID, card key and other settings plus `"secretStore": "keychain"`; the secrets are one keychain item per credential set (service `investec-ipb`, account `default` or `profile:<name>`). Later `ipb config` changes update the keychain, and `ipb config delete` and `ipb config profile delete` remove the item too. Secrets are passed to `security` / `secret-tool` on stdin, never as arguments. Windows isn't supported yet. On Linux servers without a running keyring, keep the file (or use env vars in CI).
 
 Use a profile on any command:
 
@@ -269,6 +279,13 @@ ipb run -f main.js -e prod --amount 60000 --currency ZAR --mcc 0000 \
 ```sh
 ipb simulate -f main.js -c <card-key> --amount 60000 --currency ZAR --mcc 0000 \
   --merchant "Test Merchant" --city "Cape Town" --country ZA
+```
+
+To change the defaults for a project, set `IPB_TX_*` variables (for example in a `.envrc` with [direnv](https://direnv.net/), or your shell profile). Flags still win:
+
+```sh
+export IPB_TX_CURRENCY=USD IPB_TX_AMOUNT=2500 IPB_TX_MERCHANT="Corner Cafe"
+ipb run -f main.js
 ```
 
 Reference data for MCC / country / currency values:
@@ -447,6 +464,7 @@ Common categories:
 - **MAU API:** `INVESTEC_MAU_HOST`, `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`
 - **Behaviour:** `DEBUG`, `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
 - **Agents and scripts:** `IPB_READ_ONLY` (block payments and card changes), `IPB_JSON_ERRORS` (print errors as JSON)
+- **Test transactions:** `IPB_TX_AMOUNT`, `IPB_TX_CURRENCY`, `IPB_TX_MCC`, `IPB_TX_MERCHANT`, `IPB_TX_CITY`, `IPB_TX_COUNTRY` change the defaults for `run` and `simulate`; a flag still wins
 
 ### Exit codes
 
@@ -482,6 +500,7 @@ Messages look like `Error (E####): …`.
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
 | `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
 | `E4022` | Blocked by read-only mode (`IPB_READ_ONLY` or `ipb config --read-only`) |
+| `E4023` | The OS keychain could not be read or written (missing item, locked keyring, `secret-tool` not installed) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.
@@ -494,7 +513,7 @@ Understanding-oriented background. Skip this until you care about the “why”.
 
 ### Credentials and secrets
 
-Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic writes. Environment variables are convenient but can leak via process lists, CI logs, and shell history. The CLI may warn when secrets appear in the environment (especially with `--verbose` / `DEBUG` or in CI). Prefer `ipb config` and profiles for day-to-day use.
+Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic writes; with `ipb config --keychain` the secrets live in the OS keychain instead. Command history (`~/.ipb/history.json`) never records secret values. Environment variables are convenient but can leak via process lists, CI logs, and shell history. The CLI may warn when secrets appear in the environment (especially with `--verbose` / `DEBUG` or in CI). Prefer `ipb config` and profiles for day-to-day use.
 
 **Resolution order** (highest wins):
 

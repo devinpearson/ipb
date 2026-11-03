@@ -137,7 +137,7 @@ describe('handleCliError', () => {
     [new Error('No such file or directory'), 'Check the file path'],
     [
       new Error('The "path" argument must be of type string. Received undefined'),
-      'Filename is required',
+      'A file path is missing',
     ],
     [new CliError(ERROR_CODES.MISSING_CARD_KEY, 'x'), 'ipb cards'],
     [new Error('Card key is required'), 'ipb cards'],
