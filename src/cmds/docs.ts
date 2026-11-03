@@ -119,11 +119,9 @@ function extractCommandInfo(
     }
 
     const desc = option.description || '';
-    // Check if option is required by looking at the flag pattern (<value> vs [value])
-    // Also check option.required property, but note that Commander.js doesn't always set this correctly
-    const hasRequiredPattern = flags.includes('<');
-    const required = option.required === true || hasRequiredPattern;
-    options.push({ flags, description: desc, required });
+    // `mandatory` means the option must be passed (`requiredOption`). Commander's `required` and a
+    // `<value>` in the flags only mean the option takes a value when it is used.
+    options.push({ flags, description: desc, required: option.mandatory });
   }
 
   // Extract examples from help text
