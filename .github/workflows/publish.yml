@@ -23,20 +23,26 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Allow re-publishing a tag after trusted publishing is configured.
           ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
 
       - name: Use Node.js 24.x
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24.x
           registry-url: https://registry.npmjs.org/
           package-manager-cache: false
 
       - run: npm ci
+      # Fails if any installed package's registry signature or provenance doesn't check out.
+      - run: npm audit signatures
       - run: npm run build --if-present
+      - run: npm run test:run
+      - name: Smoke test the built CLI
+        run: scripts/smoke-test.sh "node bin/index.js"
       - name: Verify package contents
         run: npm pack --dry-run
 

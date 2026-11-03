@@ -136,33 +136,31 @@ brew install ipb
 macOS:
 
 ```sh
-# Apple Silicon
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-macos-arm64 -o ipb
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
-
-# Intel
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-macos-x64 -o ipb
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
+# Apple Silicon (use ipb-macos-x64 on Intel)
+curl -LO https://github.com/devinpearson/ipb/releases/latest/download/ipb-macos-arm64
+chmod +x ipb-macos-arm64
+sudo mv ipb-macos-arm64 /usr/local/bin/ipb
 ```
 
-Linux (.deb):
+Linux:
 
 ```sh
-wget https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb_0.9.3_amd64.deb
-sudo dpkg -i ipb_0.9.3_amd64.deb
-sudo apt-get install -f
+# x64 (use ipb-linux-arm64 on ARM)
+curl -LO https://github.com/devinpearson/ipb/releases/latest/download/ipb-linux-x64
+chmod +x ipb-linux-x64
+sudo mv ipb-linux-x64 /usr/local/bin/ipb
 ```
 
-Linux binary:
+A `.snap` package is also attached to each release.
+
+**Verify a download** before you run it (this is a banking tool). Each release lists SHA-256 checksums in `checksums.txt`, and every binary from releases after v0.10.1 has a signed GitHub build attestation proving it was built from this repository by the release workflow:
 
 ```sh
-curl -L https://github.com/devinpearson/ipb/releases/download/v0.9.3/ipb-linux-x64 -o ipb
-# or: ipb-linux-arm64
-chmod +x ipb
-sudo mv ipb /usr/local/bin/
+shasum -a 256 ipb-macos-arm64          # compare with checksums.txt
+gh attestation verify ipb-macos-arm64 --repo devinpearson/ipb
 ```
+
+The npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements); check it with `npm audit signatures` after installing.
 
 Windows: download `ipb-win-x64.exe`, rename to `ipb.exe`, add to `PATH`.
 
