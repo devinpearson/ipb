@@ -26,7 +26,7 @@
     "tapes": "npm run build && chmod +x ./bin/index.js && npm link && ./scripts/tapes.sh",
     "docs": "npm run build && node bin/index.js docs",
     "docs:source": "node --loader tsx src/cmds/docs.ts",
-    "prepublishOnly": "npm run build && npm run docs",
+    "prepublishOnly": "npm run build",
     "bundle": "npm run build && node esbuild.config.js",
     "bundle:minify": "npm run build && node esbuild.config.js --minify",
     "pkg:build": "npm run bundle && pkg dist-bundle/index.cjs --config package.json --out-path dist --no-bytecode --public",
