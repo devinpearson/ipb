@@ -192,6 +192,10 @@ ipb config --profile staging --client-id <id> --client-secret <secret> --api-key
 ipb config profile set production
 ipb config profile list
 ipb config profile show
+
+# Remove saved keys (asks first; --all also removes every profile)
+ipb config delete
+ipb config delete --all
 ```
 
 Use a profile on any command:

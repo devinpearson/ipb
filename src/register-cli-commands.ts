@@ -8,6 +8,7 @@ import { accountsCommand } from './cmds/accounts.js';
 import { balancesCommand } from './cmds/balances.js';
 import { beneficiariesCommand } from './cmds/beneficiaries.js';
 import {
+  runConfigDelete,
   runConfigEdit,
   runConfigProfileDelete,
   runConfigProfileList,
@@ -222,6 +223,15 @@ Examples:
         runConfigProfileDelete(profileName)
       )
     );
+
+  configCmd
+    .command('delete')
+    .description(
+      'Delete stored credentials (~/.ipb/.credentials.json). Use --all to delete every profile too. Asks for confirmation.'
+    )
+    .option('--all', 'Also delete all profiles and the active profile setting')
+    .option('--yes', 'Skip the confirmation prompt (not allowed while read-only mode is on)')
+    .action(withCommandContext('config delete', runConfigDelete));
 
   // Edit command - opens credentials file in editor
   configCmd

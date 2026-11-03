@@ -8,10 +8,12 @@ export {
 } from './utils/command-runners.js';
 export {
   deleteProfile,
+  deleteStoredCredentials,
   ensureCredentialsDirectory,
   getActiveProfile,
   getProfilePath,
   listProfiles,
+  listStoredCredentialPaths,
   readCredentialsFile,
   readProfile,
   setActiveProfile,
