@@ -66,7 +66,7 @@
     "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
     "dotenv": "^18.0.9",
-    "investec-card-api": "^0.2.3",
+    "investec-card-api": "^0.3.0",
     "investec-mau-api": "^0.1.1",
     "investec-pb-api": "^0.3.12",
     "js-yaml": "^4.3.1",
