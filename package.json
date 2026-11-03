@@ -61,7 +61,7 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.9.0",
+    "@inquirer/prompts": "^8.7.5",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
