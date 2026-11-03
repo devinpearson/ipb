@@ -22,17 +22,6 @@ export function getTempDir(): string {
   return tmpdir();
 }
 
-export function getModuleDirname(metaUrl: string = import.meta.url): string {
-  const fileUrl = new URL(metaUrl);
-  const dirPath = path.dirname(fileUrl.pathname);
-
-  if (dirPath.startsWith('/snapshot/')) {
-    return dirPath;
-  }
-
-  return dirPath;
-}
-
 function getDefaultEditor(): string | null {
   if (process.platform === 'win32') {
     return 'notepad.exe';

@@ -168,7 +168,8 @@ export function handleCliError(
     (lowerMessage.includes('received undefined') && lowerMessage.includes('path'))
   ) {
     if (lowerMessage.includes('received undefined') && lowerMessage.includes('path')) {
-      suggestion = '\n💡 Tip: Filename is required. Use -f or --filename to specify the file.';
+      suggestion =
+        '\n💡 Tip: A file path is missing. If the command takes -f or --filename, pass it.';
     } else {
       suggestion = '\n💡 Tip: Check the file path and ensure the file exists.';
     }

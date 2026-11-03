@@ -49,17 +49,18 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run bundle
+      - name: Smoke test bundle
+        run: scripts/smoke-test.sh "node dist-bundle/index.cjs"
       - name: Build Linux standalone binary
-        run: npx pkg dist-bundle/index.cjs --targets node24-linux-x64 --out-path dist --no-bytecode --public
+        # --config package.json is what pulls templates/ and assets/ into the binary.
+        run: npx pkg dist-bundle/index.cjs --config package.json --targets node24-linux-x64 --out-path dist --no-bytecode --public
       - name: Smoke test packaged binary
         run: |
-          if [ -f dist/investec-ipb-linux-x64 ]; then
-            chmod +x dist/investec-ipb-linux-x64
-            ./dist/investec-ipb-linux-x64 --version
-          elif [ -f dist/index ]; then
-            chmod +x dist/index
-            ./dist/index --version
-          else
+          binary=$(ls dist/investec-ipb* dist/index 2>/dev/null | head -n 1)
+          if [ -z "$binary" ]; then
             echo "Packaged binary not found"
+            ls -la dist || true
             exit 1
           fi
+          chmod +x "$binary"
+          scripts/smoke-test.sh "$binary"

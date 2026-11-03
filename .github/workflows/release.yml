@@ -75,8 +75,13 @@ jobs:
             exit 1
           }
 
+      - name: Smoke test bundle
+        shell: bash
+        run: scripts/smoke-test.sh "node dist-bundle/index.cjs"
+
       - name: Package binary
-        run: npx pkg dist-bundle/index.cjs --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
+        # --config package.json is what pulls templates/ and assets/ into the binary.
+        run: npx pkg dist-bundle/index.cjs --config package.json --targets ${{ matrix.target }} --out-path dist --no-bytecode --public
 
       - name: Rename binary (macOS/Linux)
         if: matrix.platform != 'win'
@@ -90,6 +95,11 @@ jobs:
             mv index ${{ matrix.binary-name }}
           fi
           chmod +x ${{ matrix.binary-name }}
+
+      - name: Smoke test binary
+        # Only run binaries built for the runner's own CPU.
+        if: matrix.platform != 'win' && ((runner.arch == 'X64' && matrix.arch == 'x64') || (runner.arch == 'ARM64' && matrix.arch == 'arm64'))
+        run: scripts/smoke-test.sh "dist/${{ matrix.binary-name }}"
 
       - name: Rename binary (Windows)
         if: matrix.platform == 'win'

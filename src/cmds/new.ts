@@ -1,9 +1,8 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { printTitleBox } from '../runtime-credentials.js';
+import { getTemplatePath } from '../utils/package-paths.js';
 import {
   createSpinner,
   getSafeText,
@@ -37,10 +36,9 @@ export async function newCommand(name: string, options: Options) {
     isPiped,
   });
 
-  const dirnameValue = path.dirname(fileURLToPath(import.meta.url));
-  const uri = path.join(dirnameValue, '/../templates/', options.template);
+  const uri = getTemplatePath(options.template);
   console.log(getSafeText(`📂 Finding template called ${chalk.green(options.template)}`));
-  if (!fs.existsSync(uri)) {
+  if (!uri || !fs.existsSync(uri)) {
     throw new CliError(ERROR_CODES.TEMPLATE_NOT_FOUND, getSafeText('💣 Template does not exist'));
   }
   // Validate project name
