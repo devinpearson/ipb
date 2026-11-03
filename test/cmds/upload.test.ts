@@ -20,6 +20,7 @@ vi.mock('../../src/utils.ts', async () => {
         return this;
       }),
       stop: vi.fn(),
+      update: vi.fn(),
       text: '',
     })),
     normalizeCardKey: vi.fn((key, defaultKey) => key || defaultKey),
@@ -37,11 +38,6 @@ vi.mock('../../src/utils.ts', async () => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
-    getTerminalCapabilities: vi.fn(() => ({
-      supportsUnicode: true,
-      supportsEmoji: true,
-      termType: 'xterm-256color',
-    })),
   };
 });
 

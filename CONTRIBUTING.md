@@ -142,14 +142,17 @@ npm run format:check
 npm run lint:md        # markdownlint-cli2
 npm run lint:md:fix
 npm run type-check
+npm run knip           # unused files, exports and dependencies (also runs in CI)
 ```
 
 Full gate used before publish / CI-style checks:
 
 ```sh
 npm run ci
-# build + type-check + lint + lint:md + format:check + test:run + npm audit
+# build + type-check + lint + lint:md + format:check + knip + test:run + npm audit
 ```
+
+If Knip flags an export, drop the `export` when it's only used in its own file, or delete it when nothing uses it. Config: `knip.json`.
 
 Style notes (Biome): single quotes, semicolons, 2-space indent, line width 100. ESM imports use `.js` extensions.
 
@@ -167,6 +170,16 @@ Focused runs:
 npm run test:run -- test/cmds/deploy.test.ts
 npm run test:run -- test/utils/cli-errors.test.ts
 ```
+
+### Mutation testing
+
+[Stryker](https://stryker-mutator.io/) changes the code in small ways (flips a condition, removes a call) and checks that a test fails each time. It covers the modules where a weak test would be costly: payment result handling, input validation, error mapping and retry (`mutate` in `stryker.config.json`).
+
+```sh
+npm run test:mutation   # a few minutes; report at reports/mutation/index.html
+```
+
+It runs incrementally, so later runs only retest what changed. CI runs it weekly and on demand (`.github/workflows/mutation.yml`) and uploads the HTML report as an artifact. A surviving mutant means no test notices that change: add an assertion, or note why the behaviour doesn't matter.
 
 ### Conventions
 

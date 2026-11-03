@@ -137,9 +137,9 @@ describe('resolveSpinnerState', () => {
     expect(state.verbose).toBe(true);
   });
 
-  it('respects explicit spinner disable flag', () => {
+  it('respects explicit spinner disable flag (--no-spinner sets flag to false)', () => {
     const state = resolveSpinnerState({
-      spinnerFlag: true,
+      spinnerFlag: false,
       verboseFlag: false,
       isPiped: false,
     });
@@ -148,7 +148,7 @@ describe('resolveSpinnerState', () => {
 
   it('enables spinner when output is interactive and flags allow', () => {
     const state = resolveSpinnerState({
-      spinnerFlag: false,
+      spinnerFlag: undefined,
       verboseFlag: false,
       isPiped: false,
     });
@@ -170,7 +170,7 @@ describe('resolveSpinnerState', () => {
   it('does not enable verbose when only IPB_MOCK_APIS is set', () => {
     process.env.IPB_MOCK_APIS = '1';
     const state = resolveSpinnerState({
-      spinnerFlag: false,
+      spinnerFlag: undefined,
       verboseFlag: undefined,
       isPiped: false,
     });
@@ -285,6 +285,7 @@ describe('runReadUploadCommand', () => {
       clear: vi.fn(() => spinner),
       succeed: vi.fn(() => spinner),
       fail: vi.fn(() => spinner),
+      update: vi.fn(),
       text: '',
     };
     const uploadSpy = vi.fn(async (_content: string) => ({ ok: true }));
@@ -305,7 +306,7 @@ describe('runReadUploadCommand', () => {
     expect(uploadSpy).toHaveBeenCalledWith('const x = 1;');
     expect(spinner.start).toHaveBeenCalled();
     expect(spinner.stop).toHaveBeenCalled();
-    expect(spinner.text).toContain('uploading');
+    expect(spinner.update).toHaveBeenCalledWith(expect.stringContaining('uploading'));
 
     await fsPromises.rm(tempFile, { force: true });
   });

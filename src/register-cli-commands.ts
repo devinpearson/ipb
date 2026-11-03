@@ -72,10 +72,7 @@ function addApiCredentialOptions(cmd: Command) {
     .option('--host <host>', 'Set a custom host for the Investec Sandbox API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
@@ -94,10 +91,7 @@ function addMauCredentialOptions(cmd: Command) {
     .option('--mau-host <mauHost>', 'Custom host for the Investec Mauritius (MAU) API')
     .option('--credentials-file <credentialsFile>', 'Set a custom credentials file')
     .option('--profile <profile>', 'Use a configuration profile (e.g., production, staging)')
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information')
     .option('--json', 'Output raw JSON instead of formatted table')
     .option('--yaml', 'Output raw YAML instead of formatted table')
@@ -107,10 +101,7 @@ function addMauCredentialOptions(cmd: Command) {
 /** Spinner + verbose only (for commands that do not use Investec API credential flags). */
 function addSpinnerVerboseOptions(cmd: Command) {
   return cmd
-    .option(
-      '-s,--spinner',
-      'disable spinner during command execution (deprecated: use --no-spinner)'
-    )
+    .option('--no-spinner', 'disable spinner during command execution')
     .option('-v,--verbose', 'additional debugging information');
 }
 
@@ -151,6 +142,13 @@ Examples:
       'after',
       `
 Examples:
+  # Prompt for client ID, secret and API key (secrets are hidden as you type)
+  $ ipb config
+  $ ipb config --profile production
+
+  # Read one secret from stdin (keeps it out of shell history)
+  $ op read "op://vault/investec/secret" | ipb config --client-secret -
+
   # Save to default credentials
   $ ipb config --client-id <id> --client-secret <secret> --api-key <key>
   $ ipb config --card-key <card-key>
@@ -620,6 +618,8 @@ Examples:
   $ ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
   $ ipb transfer acc-123 acc-456 100.50 "Payment for services"
   $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes  # Skip confirmation
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --dry-run  # Check without sending
+  $ ipb transfer acc-123 acc-456 100.50 "Payment" --yes --json | jq .
       `
       )
   )
@@ -627,7 +627,8 @@ Examples:
     .argument('beneficiaryAccountId', 'Beneficiary account ID to transfer to')
     .argument('amount', 'Amount to transfer in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
-    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .option('--yes', 'Skip confirmation prompt (required when not run in a terminal)')
+    .option('--dry-run', 'Check the accounts and show the summary without sending')
     .action(withCommandContext('transfer', transferCommand));
   addApiCredentialOptions(
     program
@@ -642,6 +643,8 @@ Examples:
   $ ipb pay <accountId> <beneficiaryId> <amount> <reference>
   $ ipb pay acc-123 ben-456 250.00 "Monthly subscription"
   $ ipb pay acc-123 ben-456 250.00 "Payment" --yes  # Skip confirmation
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --dry-run  # Check without sending
+  $ ipb pay acc-123 ben-456 250.00 "Payment" --yes --json | jq .
       `
       )
   )
@@ -649,7 +652,8 @@ Examples:
     .argument('beneficiaryId', 'Beneficiary ID to pay to')
     .argument('amount', 'Amount to pay in rands (e.g. 100.00)')
     .argument('reference', 'Payment reference message')
-    .option('--yes', 'Skip confirmation prompt for destructive operations')
+    .option('--yes', 'Skip confirmation prompt (required when not run in a terminal)')
+    .option('--dry-run', 'Check the account and beneficiary and show the summary without sending')
     .action(withCommandContext('pay', payCommand));
   addApiCredentialOptions(
     program
@@ -666,10 +670,15 @@ Examples:
   $ ipb transactions acc-123 --json
   $ ipb transactions acc-123 --yaml
   $ ipb transactions acc-123 --output transactions.json
+  $ ipb transactions acc-123 --from 2026-10-01 --to 2026-10-31
+  $ ipb transactions acc-123 --type CardPurchases --json
       `
       )
   )
     .argument('accountId', 'Account ID to fetch transactions for')
+    .option('--from <date>', 'only transactions on or after this date (YYYY-MM-DD)')
+    .option('--to <date>', 'only transactions on or before this date (YYYY-MM-DD)')
+    .option('--type <transactionType>', 'only this transaction type (e.g. CardPurchases)')
     .action(withCommandContext('transactions', transactionsCommand));
   addApiCredentialOptions(
     program
@@ -701,7 +710,7 @@ Examples:
 Examples:
   $ ipb mau accounts
   $ ipb mau balances 5331
-  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
+  $ ipb mau transactions 5331
   $ ipb mau documents 5331 --from 2025-01-01 --to 2025-01-31
   $ ipb mau statement 5331 2025-01-31 -o statement.pdf
   $ ipb config --mau-client-id <id> --mau-client-secret <secret> --mau-api-key <key>
@@ -747,20 +756,21 @@ Examples:
     mauCmd
       .command('transactions')
       .description(
-        'Get Mauritius account transactions for a required date range (--from / --to, YYYY-MM-DD).'
+        'Get Mauritius account transactions. Defaults to the last 3 months; override with --from / --to (YYYY-MM-DD).'
       )
       .addHelpText(
         'after',
         `
 Examples:
+  $ ipb mau transactions 5331
   $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31
-  $ ipb mau transactions 5331 --from 2024-01-01 --to 2024-01-31 --json
+  $ ipb mau transactions 5331 --json
       `
       )
   )
     .argument('<accountId>', 'Numeric Mauritius account ID')
-    .requiredOption('--from <fromDate>', 'Start date (YYYY-MM-DD)')
-    .requiredOption('--to <toDate>', 'End date (YYYY-MM-DD)')
+    .option('--from <fromDate>', 'Start date (YYYY-MM-DD). Defaults to 3 months before today.')
+    .option('--to <toDate>', 'End date (YYYY-MM-DD). Defaults to today.')
     .action(withCommandContext('mau transactions', mauTransactionsCommand));
 
   addMauCredentialOptions(

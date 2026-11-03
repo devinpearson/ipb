@@ -1,8 +1,27 @@
 /// <reference types="vitest" />
 
+import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { configCommand } from '../../src/cmds/set';
 import { CliError, ERROR_CODES } from '../../src/errors';
+import { setInteractive } from '../helpers/tty';
+
+const mockPrompts = vi.hoisted(() => ({ input: vi.fn(), password: vi.fn() }));
+
+vi.mock('@inquirer/prompts', () => mockPrompts);
+
+function replaceStdin(chunks: string[]): () => void {
+  const original = Object.getOwnPropertyDescriptor(process, 'stdin');
+  Object.defineProperty(process, 'stdin', {
+    value: Readable.from(chunks.map((c) => Buffer.from(c))),
+    configurable: true,
+  });
+  return () => {
+    if (original) {
+      Object.defineProperty(process, 'stdin', original);
+    }
+  };
+}
 
 vi.mock('../../src/runtime-credentials.ts', () => ({
   credentialLocation: {
@@ -68,6 +87,8 @@ function baseOptions() {
 describe('configCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrompts.input.mockReset();
+    mockPrompts.password.mockReset();
     console.log = vi.fn();
     mockState.profiles = ['prod', 'staging'];
     mockState.activeProfile = 'prod';
@@ -227,6 +248,122 @@ describe('configCommand', () => {
 
     expect(deleteProfile).toHaveBeenCalledWith('prod');
     expect(setActiveProfile).not.toHaveBeenCalled();
+  });
+
+  it('refuses to save nothing when not in a terminal', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    const restoreTty = setInteractive(false);
+    try {
+      await expect(configCommand(baseOptions())).rejects.toThrow(/Nothing to save/);
+    } finally {
+      restoreTty();
+    }
+    expect(writeCredentialsFile).not.toHaveBeenCalled();
+  });
+
+  it('prompts for credentials, hiding secrets, when run with no options in a terminal', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    mockPrompts.input.mockResolvedValueOnce(' typed-id ');
+    mockPrompts.password.mockResolvedValueOnce('typed-secret').mockResolvedValueOnce('typed-key');
+    const restoreTty = setInteractive(true);
+    try {
+      await configCommand(baseOptions());
+    } finally {
+      restoreTty();
+    }
+
+    expect(mockPrompts.password).toHaveBeenCalledTimes(2);
+    expect(writeCredentialsFile).toHaveBeenCalledWith(
+      '/tmp/.ipb/.credentials.json',
+      expect.objectContaining({
+        clientId: 'typed-id',
+        clientSecret: 'typed-secret',
+        apiKey: 'typed-key',
+      })
+    );
+  });
+
+  it('keeps saved values for prompts left blank', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    mockState.cred = { ...mockState.cred, clientId: 'old-id', clientSecret: 'old-secret' };
+    mockPrompts.input.mockResolvedValueOnce('');
+    mockPrompts.password.mockResolvedValueOnce('').mockResolvedValueOnce('new-key');
+    const restoreTty = setInteractive(true);
+    try {
+      await configCommand(baseOptions());
+    } finally {
+      restoreTty();
+    }
+
+    expect(mockPrompts.input).toHaveBeenCalledWith({
+      message: 'Client ID (leave blank to keep current):',
+    });
+    expect(writeCredentialsFile).toHaveBeenCalledWith(
+      '/tmp/.ipb/.credentials.json',
+      expect.objectContaining({ clientId: 'old-id', clientSecret: 'old-secret', apiKey: 'new-key' })
+    );
+  });
+
+  it('does not write anything when every prompt is left blank', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    mockPrompts.input.mockResolvedValueOnce('');
+    mockPrompts.password.mockResolvedValue('');
+    const restoreTty = setInteractive(true);
+    try {
+      await configCommand(baseOptions());
+    } finally {
+      restoreTty();
+    }
+
+    expect(console.log).toHaveBeenCalledWith('Nothing changed.');
+    expect(writeCredentialsFile).not.toHaveBeenCalled();
+  });
+
+  it('reads a secret from stdin when its value is "-"', async () => {
+    const { writeCredentialsFile } = await import('../../src/utils.ts');
+    const restoreStdin = replaceStdin(['piped-', 'secret\n']);
+    try {
+      await configCommand({ ...baseOptions(), clientId: 'cid', clientSecret: '-' });
+    } finally {
+      restoreStdin();
+    }
+
+    expect(writeCredentialsFile).toHaveBeenCalledWith(
+      '/tmp/.ipb/.credentials.json',
+      expect.objectContaining({ clientId: 'cid', clientSecret: 'piped-secret' })
+    );
+  });
+
+  it('rejects more than one option reading from stdin', async () => {
+    await expect(
+      configCommand({ ...baseOptions(), clientSecret: '-', apiKey: '-' })
+    ).rejects.toThrow(/Only one option can read from stdin/);
+  });
+
+  it('rejects "-" when nothing is piped in', async () => {
+    const restoreTty = setInteractive(true);
+    try {
+      await expect(configCommand({ ...baseOptions(), clientSecret: '-' })).rejects.toThrow(
+        /nothing was piped in/
+      );
+    } finally {
+      restoreTty();
+    }
+  });
+
+  it('warns that secrets passed as flags end up in shell history', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const restoreTty = setInteractive(true);
+    try {
+      await configCommand({ ...baseOptions(), clientId: 'cid', clientSecret: 'literal' });
+    } finally {
+      restoreTty();
+    }
+
+    const warning = String(warnSpy.mock.calls[0]?.[0]);
+    expect(warning).toContain('--client-secret');
+    expect(warning).not.toContain('--client-id');
+    warnSpy.mockRestore();
   });
 
   it('merges new fields into existing profile data', async () => {

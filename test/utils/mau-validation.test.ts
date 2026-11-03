@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import { CliError, ERROR_CODES } from '../../src/errors';
 import {
+  defaultMauTransactionDateRange,
+  formatLocalIsoDate,
   validateDateRange,
   validateIsoDate,
   validateMauAccountId,
@@ -25,13 +27,31 @@ describe('MAU validation helpers', () => {
     expect(validateIsoDate('2024-01-31', '--from')).toBe('2024-01-31');
   });
 
-  it('validateDateRange requires from and to', () => {
+  it('validateDateRange requires from and to without defaults', () => {
     expect(() => validateDateRange(undefined, '2024-01-31')).toThrow(
       expect.objectContaining({ code: ERROR_CODES.MISSING_DATE_RANGE })
     );
     expect(() => validateDateRange('2024-01-01', undefined)).toThrow(
       expect.objectContaining({ code: ERROR_CODES.MISSING_DATE_RANGE })
     );
+  });
+
+  it('validateDateRange applies defaults when provided', () => {
+    expect(
+      validateDateRange(undefined, undefined, {
+        fromDate: '2024-01-01',
+        toDate: '2024-03-31',
+      })
+    ).toEqual({ fromDate: '2024-01-01', toDate: '2024-03-31' });
+  });
+
+  it('defaultMauTransactionDateRange uses today and three months earlier', () => {
+    const now = new Date(2024, 5, 15); // 15 Jun 2024 local
+    expect(defaultMauTransactionDateRange(now)).toEqual({
+      fromDate: '2024-03-15',
+      toDate: '2024-06-15',
+    });
+    expect(formatLocalIsoDate(now)).toBe('2024-06-15');
   });
 
   it('validateDateRange rejects inverted ranges', () => {

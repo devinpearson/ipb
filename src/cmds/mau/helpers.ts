@@ -1,5 +1,5 @@
 import { CliError, ERROR_CODES } from '../../errors.js';
-import { readStdin } from '../../utils.js';
+import { isDebugEnabled, readStdin } from '../../utils.js';
 
 /**
  * Coerces API list payloads into a real array.
@@ -19,6 +19,11 @@ export function normalizeToArray<T extends object>(value: unknown): T[] {
       }
     }
     return [value as T];
+  }
+  if (value !== undefined && isDebugEnabled()) {
+    process.stderr.write(
+      `[debug] normalizeToArray: unexpected falsy value from API: ${JSON.stringify(value)}\n`
+    );
   }
   return [];
 }
@@ -150,12 +155,23 @@ export function extractMauBalance<T extends object>(result: unknown): T | undefi
 }
 
 /**
- * Extracts a single MAU record (generic) from `{ data: {...} }` or a bare object.
+ * Extracts a single MAU record from `{ data: {...} }` or a bare object.
+ * Unlike {@link extractMauBalance}, this does not apply balance-field heuristics.
  * Prefer {@link extractMauBalance} for balance endpoints.
  * @param result - Raw API response
  */
 export function extractMauRecord<T extends object>(result: unknown): T | undefined {
-  return extractMauBalance<T>(result);
+  if (!result || typeof result !== 'object') {
+    return undefined;
+  }
+  const data = (result as { data?: unknown }).data;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return data as T;
+  }
+  if (!Array.isArray(result)) {
+    return result as T;
+  }
+  return undefined;
 }
 
 /**

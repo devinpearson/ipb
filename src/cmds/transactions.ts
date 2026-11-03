@@ -1,34 +1,33 @@
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializePbApi,
   isStdoutPiped,
   readStdin,
-  resolveSpinnerState,
   runListCommand,
   validateAccountId,
+  validateIsoDate,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
-
-/**
- * Minimal transaction type for CLI display.
- */
-type Transaction = {
-  uuid: string;
-  amount: number;
-  transactionDate: string;
-  description: string;
-  // ...other fields can be added as needed
-};
+import type { Transaction, TransactionFilterOptions } from './types.js';
 
 /**
  * Fetch and display transactions for a given account.
  * @param accountId - The account ID to fetch transactions for.
  * @param options - CLI options.
  */
-export async function transactionsCommand(accountId: string, options: CommonOptions) {
+export async function transactionsCommand(accountId: string, options: TransactionFilterOptions) {
+  const fromDate = options.from ? validateIsoDate(options.from, '--from') : null;
+  const toDate = options.to ? validateIsoDate(options.to, '--to') : null;
+  if (fromDate && toDate && fromDate > toDate) {
+    throw new CliError(
+      ERROR_CODES.MISSING_DATE_RANGE,
+      `--from (${fromDate}) must be on or before --to (${toDate})`
+    );
+  }
+  const transactionType = options.type?.trim() || null;
+
   const isPiped = isStdoutPiped();
 
   // If accountId is not provided and stdin has data, try to read from stdin
@@ -53,7 +52,6 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   }
 
   if (!accountId || accountId.trim() === '') {
-    const { CliError, ERROR_CODES } = await import('../errors.js');
     throw new CliError(
       ERROR_CODES.MISSING_ACCOUNT_ID,
       'Account ID is required. Provide it as an argument or via stdin.'
@@ -61,26 +59,19 @@ export async function transactionsCommand(accountId: string, options: CommonOpti
   }
 
   // Validate account ID format
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching transactions...');
-  let transactions: Transaction[] | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializePbApi(credentials, options);
 
-    // Use retry logic with rate limit handling
-    const result = await withRetry(() => api.getAccountTransactions(accountId), {
-      maxRetries: 3,
-      verbose,
-    });
+  let transactions: Transaction[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching transactions...', async (verbose) => {
+    const api = await initializePbApi(credentials, options);
+    const result = await withRetry(
+      () => api.getAccountTransactions(accountId, fromDate, toDate, transactionType),
+      { verbose }
+    );
     transactions = result.data.transactions;
   });
 

@@ -47,7 +47,7 @@ async function setLastUpdateCheck(): Promise<void> {
  * Checks latest CLI version from npm registry.
  * @returns Latest version or null on failure
  */
-export async function checkLatestVersion() {
+async function checkLatestVersion() {
   try {
     const response = await fetch('https://registry.npmjs.org/investec-ipb', {
       method: 'GET',

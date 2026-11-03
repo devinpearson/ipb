@@ -1,12 +1,10 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializeApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -21,25 +19,11 @@ export async function currenciesCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching currencies...');
-  let currencies:
-    | Array<{
-        Code: string;
-        Name: string;
-      }>
-    | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializeApi(credentials, options);
 
-    const result = await withRetry(() => api.getCurrencies(), {
-      maxRetries: 3,
-      verbose,
-    });
+  let currencies: Array<{ Code: string; Name: string }> | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching currencies...', async (verbose) => {
+    const api = await initializeApi(credentials, options);
+    const result = await withRetry(() => api.getCurrencies(), { verbose });
     currencies = result.data.result;
   });
 

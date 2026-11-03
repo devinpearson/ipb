@@ -41,7 +41,7 @@ export function validateFileExtension(
   }
 }
 
-export async function checkFilePermissions(
+async function checkFilePermissions(
   filePath: string,
   operation: 'read' | 'write' = 'read'
 ): Promise<void> {

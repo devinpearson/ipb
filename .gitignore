@@ -12,3 +12,5 @@ gen.js
 ai-generated.js
 /dist
 /dist-bundle
+/reports
+.stryker-tmp

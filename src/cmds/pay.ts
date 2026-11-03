@@ -13,7 +13,16 @@ import {
   withRetry,
   withSpinner,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
+import {
+  assertCanConfirm,
+  describeBeneficiary,
+  describeOwnAccounts,
+  humanLog,
+  printSummary,
+  reportTransferResults,
+  writeJson,
+} from './payment-helpers.js';
+import type { PaymentOptions } from './types.js';
 
 /**
  * Pays a beneficiary from an account.
@@ -29,19 +38,19 @@ export async function payCommand(
   beneficiaryId: string,
   amount: number | string,
   reference: string,
-  options: CommonOptions
+  options: PaymentOptions
 ) {
   // Prompt for missing arguments interactively
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!beneficiaryId) {
     beneficiaryId = await input({ message: 'Enter beneficiary ID:' });
   }
-  // Beneficiary ID validation (similar format to account ID)
-  if (!beneficiaryId || beneficiaryId.trim().length === 0) {
+  beneficiaryId = beneficiaryId?.trim() ?? '';
+  if (!beneficiaryId) {
     throw new CliError(ERROR_CODES.INVALID_INPUT, 'Beneficiary ID is required');
   }
 
@@ -56,27 +65,38 @@ export async function payCommand(
   }
 
   const isPiped = isStdoutPiped();
+  const log = humanLog(options.json);
   if (!isPiped) {
     printTitleBox();
   }
 
   const api = await initializePbApi(credentials, options);
+  const [fromLabel = accountId] = await describeOwnAccounts(api, [accountId]);
+  const beneficiary = await describeBeneficiary(api, beneficiaryId);
 
-  // Show transaction summary and require confirmation
-  console.log(`\nTransaction Summary:`);
-  console.log('-------------------------');
-  console.log(`Account: ${accountId}`);
-  console.log(`Beneficiary: ${beneficiaryId}`);
-  console.log(`Amount: R${amount.toFixed(2)}`);
-  console.log(`Reference: ${reference}\n`);
+  printSummary(log, options.dryRun ? 'Payment Summary (dry run)' : 'Payment Summary', [
+    ['From', fromLabel],
+    ['To', beneficiary.label ?? `${beneficiaryId} (name not found — check this ID carefully)`],
+    ['Amount', `R${amount.toFixed(2)}`],
+    ['Reference', reference],
+  ]);
 
+  if (options.dryRun) {
+    log('Dry run: account and beneficiary checked, nothing was sent.');
+    if (options.json) {
+      writeJson({ dryRun: true, accountId, beneficiaryId, amount: amount.toFixed(2), reference });
+    }
+    return;
+  }
+
+  assertCanConfirm(options.yes, 'payment');
   const confirmed = await confirmDestructiveOperation(
     'This will make a payment from your account. Continue?',
     { yes: options.yes }
   );
 
   if (!confirmed) {
-    console.log('Payment cancelled.');
+    log('Payment cancelled.');
     return;
   }
 
@@ -98,15 +118,11 @@ export async function payCommand(
             theirReference: reference,
           },
         ]),
-      {
-        maxRetries: 3,
-        verbose: options.verbose,
-      }
+      { verbose: options.verbose }
     )
   );
-  for (const transfer of result.data.TransferResponses) {
-    console.log(
-      `Transfer to ${transfer.BeneficiaryAccountId}, reference ${transfer.PaymentReferenceNumber} was successful.`
-    );
+  if (options.json) {
+    writeJson(result.data.TransferResponses ?? []);
   }
+  reportTransferResults(result.data.TransferResponses, 'Payment', log);
 }

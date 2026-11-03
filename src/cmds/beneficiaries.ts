@@ -1,12 +1,10 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
-  createSpinner,
   initializePbApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../utils.js';
 import type { CommonOptions } from './types.js';
 
@@ -30,20 +28,11 @@ export async function beneficiariesCommand(options: CommonOptions) {
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching beneficiaries...');
-  let beneficiaries: BeneficiarySummary[] | undefined;
-  await withSpinner(spinner, spinnerEnabled, async () => {
-    const api = await initializePbApi(credentials, options);
 
-    const result = await withRetry(() => api.getBeneficiaries(), {
-      maxRetries: 3,
-      verbose,
-    });
+  let beneficiaries: BeneficiarySummary[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching beneficiaries...', async (verbose) => {
+    const api = await initializePbApi(credentials, options);
+    const result = await withRetry(() => api.getBeneficiaries(), { verbose });
     beneficiaries = result.data as BeneficiarySummary[];
   });
 

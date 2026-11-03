@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchCommand } from '../../src/cmds/fetch';
 import { CliError, ERROR_CODES } from '../../src/errors';
 
-
 vi.mock('../../src/runtime-credentials.ts', () => ({
   credentials: { cardKey: 'default-card-key' },
   printTitleBox: vi.fn(),
@@ -37,11 +36,6 @@ vi.mock('../../src/utils.ts', async () => {
       // Mock file size - return size based on path
       return 1024; // 1 KB
     }),
-    getTerminalCapabilities: vi.fn(() => ({
-      supportsUnicode: true,
-      supportsEmoji: true,
-      termType: 'xterm-256color',
-    })),
   };
 });
 
@@ -103,7 +97,10 @@ describe('fetchCommand', () => {
     expect(mockApi.getCode).toHaveBeenCalledWith('test-card-key');
     const { resolve } = await import('node:path');
     const expectedPath = resolve('fetched.js');
-    expect(mockFsPromises.writeFile).toHaveBeenCalledWith(expectedPath, mockCode, 'utf8');
+    expect(mockFsPromises.writeFile).toHaveBeenCalledWith(expectedPath, mockCode, {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('code saved to file'));
   });
 

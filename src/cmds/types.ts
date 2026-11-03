@@ -14,6 +14,16 @@ export interface CommonOptions {
   yes?: boolean; // skip confirmation prompts for destructive operations
 }
 
+export interface TransactionFilterOptions extends CommonOptions {
+  from?: string;
+  to?: string;
+  type?: string;
+}
+
+export interface PaymentOptions extends CommonOptions {
+  dryRun?: boolean;
+}
+
 export interface Credentials {
   host: string;
   clientId: string;
@@ -60,4 +70,71 @@ export interface MauBasicOptions {
   mauClientSecret?: string;
   credentialsFile?: string;
   profile?: string;
+}
+
+// --- Response shape types ---
+
+export interface Account {
+  accountId: string;
+  accountNumber: string;
+  referenceName: string;
+  productName: string;
+}
+
+export interface AccountBalance {
+  accountId: string;
+  currency: string;
+  currentBalance: number;
+  availableBalance: number;
+  budgetBalance: number;
+  straightBalance: number;
+  cashBalance: number;
+}
+
+export interface Transaction {
+  uuid: string;
+  amount: number;
+  transactionDate: string;
+  description: string;
+}
+
+export interface MauAccount {
+  accountId: number;
+  accountNumber: string;
+  accountName?: string;
+  accountCurrency: string;
+  profileId: number;
+  profileName: string;
+}
+
+export interface MauBalance {
+  accountNumber: string;
+  accountType: string;
+  accountShortName: string;
+  balance: number;
+  availableBalance: number;
+  encumbrances: number;
+  currency: string;
+  debitInterestRate: number;
+  creditInterestRate: number;
+  creditInterestAccrued: number;
+  debitInterestAccrued: number;
+  overDraftLimit?: number;
+}
+
+export interface MauTransaction {
+  description: string;
+  creditAmount: number;
+  debitAmount: number;
+  transactionDate: string;
+  bankReference: string;
+  amount: number;
+  runningBalance: number;
+  postDate?: string;
+}
+
+export interface MauDocument {
+  documentDate: string;
+  documentType: string;
+  accountNumber: string;
 }

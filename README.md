@@ -47,10 +47,10 @@ Other install methods: [How to install](#how-to-install).
 Get your client ID, client secret, and API key from the [API quick start guide](https://investec.gitbook.io/programmable-banking-community-wiki/get-started/api-quick-start-guide/how-to-get-your-api-keys).
 
 ```sh
-ipb config --client-id <client-id> --client-secret <client-secret> --api-key <api-key>
+ipb config
 ```
 
-Prefer credential files over putting secrets in environment variables. See [Explanation: credentials and secrets](#credentials-and-secrets).
+You'll be prompted for each value; the secret and API key are hidden as you type, so they never land in your shell history. Prefer credential files over putting secrets in environment variables. See [Explanation: credentials and secrets](#credentials-and-secrets).
 
 #### 3. List your cards
 
@@ -171,7 +171,13 @@ More packaging options: [DISTRIBUTION.md](./DISTRIBUTION.md).
 ### How to configure credentials and profiles
 
 ```sh
-# Default credentials (~/.ipb/.credentials.json, mode 600)
+# Default credentials (~/.ipb/.credentials.json, mode 600): prompts, secrets hidden
+ipb config
+
+# Non-interactive: pipe one secret in with "-" (e.g. from a password manager)
+op read "op://vault/investec/client-secret" | ipb config --client-id <id> --client-secret -
+
+# Or pass everything as flags (secrets end up in shell history)
 ipb config --client-id <id> --client-secret <secret> --api-key <key>
 
 # Optional card key / host — see ipb config --help
@@ -285,15 +291,24 @@ ipb disable -c <card-key> --yes
 ipb accounts
 ipb balances <accountId>
 ipb transactions <accountId>
+ipb transactions <accountId> --from 2026-10-01 --to 2026-10-31 --type CardPurchases
 ipb beneficiaries
 ```
 
-Money movement **requires confirmation** (or `--yes` for automation):
+Money movement **requires confirmation** (or `--yes` for automation). The summary shows the account and beneficiary names, and IDs that aren't on your profile are refused:
 
 ```sh
 ipb transfer <accountId> <beneficiaryAccountId> <amount> <reference>
 ipb pay <accountId> <beneficiaryId> <amount> <reference>
+
+# Check everything without sending
+ipb pay <accountId> <beneficiaryId> <amount> <reference> --dry-run
+
+# Scripts: --yes is required without a terminal; --json prints the bank's response on stdout
+ipb pay <accountId> <beneficiaryId> <amount> <reference> --yes --json | jq '.[0].PaymentReferenceNumber'
 ```
+
+A payment the bank doesn't confirm exits with code 5 (`E4021`). One that needs approval prints a warning; approve it in the Investec app.
 
 Amounts for transfer/pay are in **rands** (for example `100.50`), not cents.
 
@@ -430,6 +445,7 @@ Messages look like `Error (E####): …`.
 | `E4014` | Rate limit exceeded |
 | `E4019` | Unsupported operation |
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
+| `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.

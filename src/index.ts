@@ -19,7 +19,6 @@ import {
 import { normalizeSpinnerFlags } from './utils/spinner-flags.js';
 import {
   checkForUpdates,
-  configureChalk,
   getVerboseMode,
   handleCliError,
   isUpdateCheckDisabled,
@@ -45,9 +44,6 @@ function getCliVersion(): string {
   return (require('../package.json') as { version: string }).version;
 }
 
-// Configure chalk to respect NO_COLOR and FORCE_COLOR at startup
-configureChalk();
-
 const version = getCliVersion();
 const program = new Command();
 
@@ -68,9 +64,7 @@ async function main() {
   program.name('ipb').description('CLI to manage Investec Programmable Banking').version(version);
 
   if (spinnerFlagNormalization.usedDeprecatedSpinnerFlag) {
-    console.warn(
-      chalk.yellow('Warning: `--spinner` / `-s` is deprecated. Use `--no-spinner` instead.')
-    );
+    console.warn(chalk.yellow('Warning: `-s` is deprecated. Use `--no-spinner` instead.'));
   }
 
   // Add global options
@@ -231,7 +225,7 @@ For more information about a specific command, use:
 
 main().catch((err) => {
   const commandContext = (err as Error & { commandContext?: string })?.commandContext;
-  const context = commandContext ? `${commandContext} command` : 'run CLI';
+  const context = commandContext ? `ipb ${commandContext}` : 'ipb';
   // Determine verbose mode from CLI flags (default false if not available)
   const globalOpts = program.opts();
   const verboseOption =

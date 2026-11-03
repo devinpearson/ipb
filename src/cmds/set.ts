@@ -1,3 +1,5 @@
+import chalk from 'chalk';
+import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../runtime-credentials.js';
 import {
   createSpinner,
@@ -19,21 +21,51 @@ import {
   runConfigProfileShow,
 } from './config-subcommands.js';
 
-interface Options {
-  clientId: string;
-  clientSecret: string;
-  apiKey: string;
-  cardKey: string;
-  openaiKey: string;
-  sandboxKey: string;
-  mauHost?: string;
-  mauClientId?: string;
-  mauClientSecret?: string;
-  mauApiKey?: string;
+const CONFIG_FIELDS = [
+  'clientId',
+  'clientSecret',
+  'apiKey',
+  'cardKey',
+  'openaiKey',
+  'sandboxKey',
+  'mauHost',
+  'mauClientId',
+  'mauClientSecret',
+  'mauApiKey',
+] as const;
+
+type ConfigField = (typeof CONFIG_FIELDS)[number];
+
+const SECRET_FIELDS: ReadonlySet<ConfigField> = new Set([
+  'clientSecret',
+  'apiKey',
+  'openaiKey',
+  'sandboxKey',
+  'mauClientSecret',
+  'mauApiKey',
+]);
+
+const FLAG_NAMES: Record<ConfigField, string> = {
+  clientId: '--client-id',
+  clientSecret: '--client-secret',
+  apiKey: '--api-key',
+  cardKey: '--card-key',
+  openaiKey: '--openai-key',
+  sandboxKey: '--sandbox-key',
+  mauHost: '--mau-host',
+  mauClientId: '--mau-client-id',
+  mauClientSecret: '--mau-client-secret',
+  mauApiKey: '--mau-api-key',
+};
+
+/** Value that tells an option to read from stdin, e.g. `op read ... | ipb config --client-secret -`. */
+const STDIN_VALUE = '-';
+
+type Options = Partial<Record<ConfigField, string>> & {
   profile?: string;
   verbose: boolean;
   spinner?: boolean;
-}
+};
 
 interface ProfileOptions {
   list?: boolean;
@@ -90,96 +122,131 @@ export async function configCommand(options: Options & ProfileOptions) {
   }
 
   // Regular config command - save to profile or default credentials
-  if (options.profile) {
-    const profileName = options.profile;
-    // Save to profile
-    const profileData: Record<string, string> = {};
-
-    // Read existing profile if it exists
+  const profileName = options.profile;
+  let existing: Record<string, string>;
+  if (profileName) {
     try {
-      const existing = await readProfile(profileName);
-      Object.assign(profileData, existing);
+      existing = { ...(await readProfile(profileName)) };
     } catch {
-      // Profile doesn't exist yet, start with defaults
+      existing = {};
     }
+  } else {
+    existing = { ...(await readCredentialsFile(credentialLocation)) } as Record<string, string>;
+  }
 
-    // Update with provided values
-    if (options.clientId) {
-      profileData.clientId = options.clientId;
+  let updates = await readFlagValues(options);
+  if (Object.keys(updates).length === 0) {
+    if (!(process.stdin.isTTY && process.stdout.isTTY)) {
+      throw new CliError(
+        ERROR_CODES.INVALID_INPUT,
+        'Nothing to save. Pass options such as --client-id, or run `ipb config` in a terminal to be prompted.'
+      );
     }
-    if (options.apiKey) {
-      profileData.apiKey = options.apiKey;
+    updates = await promptForCredentials(existing);
+    if (Object.keys(updates).length === 0) {
+      console.log('Nothing changed.');
+      return;
     }
-    if (options.clientSecret) {
-      profileData.clientSecret = options.clientSecret;
-    }
-    if (options.cardKey) {
-      profileData.cardKey = options.cardKey;
-    }
-    if (options.openaiKey) {
-      profileData.openaiKey = options.openaiKey;
-    }
-    if (options.sandboxKey) {
-      profileData.sandboxKey = options.sandboxKey;
-    }
-    if (options.mauHost) {
-      profileData.mauHost = options.mauHost;
-    }
-    if (options.mauClientId) {
-      profileData.mauClientId = options.mauClientId;
-    }
-    if (options.mauClientSecret) {
-      profileData.mauClientSecret = options.mauClientSecret;
-    }
-    if (options.mauApiKey) {
-      profileData.mauApiKey = options.mauApiKey;
-    }
+  }
 
+  const merged = { ...existing, ...updates };
+  if (profileName) {
     await runWithConfigSpinner(options, `Saving profile "${profileName}"...`, () =>
-      writeProfile(profileName, profileData)
+      writeProfile(profileName, merged)
     );
     console.log(`🔑 Profile "${profileName}" saved`);
   } else {
-    // Save to default credentials file
-    const cred = await readCredentialsFile(credentialLocation);
-    if (Object.values(cred).every((v) => v === '')) {
-      // File doesn't exist, ensure directory exists
+    if (Object.values(existing).every((v) => v === '')) {
       await ensureCredentialsDirectory(credentialLocation);
     }
-
-    if (options.clientId) {
-      cred.clientId = options.clientId;
-    }
-    if (options.apiKey) {
-      cred.apiKey = options.apiKey;
-    }
-    if (options.clientSecret) {
-      cred.clientSecret = options.clientSecret;
-    }
-    if (options.cardKey) {
-      cred.cardKey = options.cardKey;
-    }
-    if (options.openaiKey) {
-      cred.openaiKey = options.openaiKey;
-    }
-    if (options.sandboxKey) {
-      cred.sandboxKey = options.sandboxKey;
-    }
-    if (options.mauHost) {
-      cred.mauHost = options.mauHost;
-    }
-    if (options.mauClientId) {
-      cred.mauClientId = options.mauClientId;
-    }
-    if (options.mauClientSecret) {
-      cred.mauClientSecret = options.mauClientSecret;
-    }
-    if (options.mauApiKey) {
-      cred.mauApiKey = options.mauApiKey;
-    }
     await runWithConfigSpinner(options, 'Saving credentials...', () =>
-      writeCredentialsFile(credentialLocation.filename, cred)
+      writeCredentialsFile(credentialLocation.filename, merged)
     );
     console.log('🔑 credentials saved');
   }
+}
+
+/**
+ * Collects values passed as flags, reading at most one from stdin when its value is `-`.
+ */
+async function readFlagValues(options: Options): Promise<Partial<Record<ConfigField, string>>> {
+  const updates: Partial<Record<ConfigField, string>> = {};
+  const fromStdin = CONFIG_FIELDS.filter((field) => options[field] === STDIN_VALUE);
+
+  if (fromStdin.length > 1) {
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      `Only one option can read from stdin (-); got ${fromStdin.map((f) => FLAG_NAMES[f]).join(', ')}.`
+    );
+  }
+  const stdinField = fromStdin[0];
+  if (stdinField) {
+    updates[stdinField] = await readSecretFromStdin(FLAG_NAMES[stdinField]);
+  }
+
+  const literalSecrets: string[] = [];
+  for (const field of CONFIG_FIELDS) {
+    const value = options[field];
+    if (!value || value === STDIN_VALUE) {
+      continue;
+    }
+    updates[field] = value;
+    if (SECRET_FIELDS.has(field)) {
+      literalSecrets.push(FLAG_NAMES[field]);
+    }
+  }
+
+  if (literalSecrets.length > 0 && process.stdin.isTTY) {
+    console.warn(
+      chalk.yellow(
+        `Tip: ${literalSecrets.join(', ')} on the command line ends up in your shell history. ` +
+          'Run `ipb config` with no options to be prompted, or pipe the value in with `-`.'
+      )
+    );
+  }
+  return updates;
+}
+
+async function readSecretFromStdin(flagName: string): Promise<string> {
+  if (process.stdin.isTTY) {
+    throw new CliError(
+      ERROR_CODES.INVALID_INPUT,
+      `${flagName} - reads the value from stdin, but nothing was piped in. Example: op read "op://vault/investec/secret" | ipb config ${flagName} -`
+    );
+  }
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  const value = Buffer.concat(chunks)
+    .toString('utf8')
+    .replace(/\r?\n$/, '');
+  if (!value) {
+    throw new CliError(ERROR_CODES.INVALID_INPUT, `${flagName} -: stdin was empty.`);
+  }
+  return value;
+}
+
+async function promptForCredentials(
+  existing: Record<string, string>
+): Promise<Partial<Record<ConfigField, string>>> {
+  const { input, password } = await import('@inquirer/prompts');
+  const fields: { field: ConfigField; label: string }[] = [
+    { field: 'clientId', label: 'Client ID' },
+    { field: 'clientSecret', label: 'Client secret' },
+    { field: 'apiKey', label: 'API key' },
+  ];
+
+  const updates: Partial<Record<ConfigField, string>> = {};
+  for (const { field, label } of fields) {
+    const hint = existing[field] ? ' (leave blank to keep current)' : '';
+    const message = `${label}${hint}:`;
+    const value = SECRET_FIELDS.has(field)
+      ? await password({ message, mask: '*' })
+      : await input({ message });
+    if (value.trim()) {
+      updates[field] = value.trim();
+    }
+  }
+  return updates;
 }

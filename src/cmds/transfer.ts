@@ -11,7 +11,15 @@ import {
   withRetry,
   withSpinnerOutcome,
 } from '../utils.js';
-import type { CommonOptions } from './types.js';
+import {
+  assertCanConfirm,
+  describeOwnAccounts,
+  humanLog,
+  printSummary,
+  reportTransferResults,
+  writeJson,
+} from './payment-helpers.js';
+import type { PaymentOptions } from './types.js';
 
 /**
  * Transfers money between accounts.
@@ -27,20 +35,20 @@ export async function transferCommand(
   beneficiaryAccountId: string,
   amount: number | string,
   reference: string,
-  options: CommonOptions
+  options: PaymentOptions
 ) {
   // Prompt for missing arguments interactively
   if (!accountId) {
     accountId = await input({ message: 'Enter your account ID:' });
   }
-  validateAccountId(accountId);
+  accountId = validateAccountId(accountId);
 
   if (!beneficiaryAccountId) {
     beneficiaryAccountId = await input({
       message: 'Enter beneficiary account ID:',
     });
   }
-  validateAccountId(beneficiaryAccountId);
+  beneficiaryAccountId = validateAccountId(beneficiaryAccountId);
 
   // Commander passes args as strings; coerce before validation/formatting.
   if (!amount) {
@@ -52,22 +60,43 @@ export async function transferCommand(
     reference = await input({ message: 'Enter reference for the transfer:' });
   }
 
-  // Show transfer summary and require confirmation
   printTitleBox();
-  console.log(`\nTransfer Summary:`);
-  console.log('-------------------------');
-  console.log(`From Account: ${accountId}`);
-  console.log(`To Account: ${beneficiaryAccountId}`);
-  console.log(`Amount: R${amount.toFixed(2)}`);
-  console.log(`Reference: ${reference}\n`);
+  const log = humanLog(options.json);
+  const api = await initializePbApi(credentials, options);
+  const [fromLabel = accountId, toLabel = beneficiaryAccountId] = await describeOwnAccounts(api, [
+    accountId,
+    beneficiaryAccountId,
+  ]);
 
+  printSummary(log, options.dryRun ? 'Transfer Summary (dry run)' : 'Transfer Summary', [
+    ['From', fromLabel],
+    ['To', toLabel],
+    ['Amount', `R${amount.toFixed(2)}`],
+    ['Reference', reference],
+  ]);
+
+  if (options.dryRun) {
+    log('Dry run: both accounts checked, nothing was sent.');
+    if (options.json) {
+      writeJson({
+        dryRun: true,
+        accountId,
+        beneficiaryAccountId,
+        amount: amount.toFixed(2),
+        reference,
+      });
+    }
+    return;
+  }
+
+  assertCanConfirm(options.yes, 'transfer');
   const confirmed = await confirmDestructiveOperation(
     'This will transfer money between your accounts. Continue?',
     { yes: options.yes }
   );
 
   if (!confirmed) {
-    console.log('Transfer cancelled.');
+    log('Transfer cancelled.');
     return;
   }
 
@@ -78,7 +107,6 @@ export async function transferCommand(
     isPiped,
   });
   const spinner = createSpinner(spinnerEnabled, '💳 transferring...');
-  const api = await initializePbApi(credentials, options);
 
   const result = await withSpinnerOutcome(spinner, spinnerEnabled, async () => {
     // Use retry logic with rate limit handling
@@ -92,14 +120,12 @@ export async function transferCommand(
             theirReference: reference,
           },
         ]),
-      {
-        maxRetries: 3,
-        verbose,
-      }
+      { verbose }
     );
   });
 
-  for (const transfer of result.data.TransferResponses) {
-    console.log(`Transfer to ${transfer.BeneficiaryAccountId}: ${transfer.Status}`);
+  if (options.json) {
+    writeJson(result.data.TransferResponses ?? []);
   }
+  reportTransferResults(result.data.TransferResponses, 'Transfer', log);
 }

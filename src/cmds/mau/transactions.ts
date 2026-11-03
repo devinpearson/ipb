@@ -1,16 +1,15 @@
 import { credentials, printTitleBox } from '../../runtime-credentials.js';
 import {
-  createSpinner,
+  defaultMauTransactionDateRange,
   initializeMauApi,
   isStdoutPiped,
-  resolveSpinnerState,
   runListCommand,
   validateDateRange,
   validateMauAccountId,
+  withCommandSpinner,
   withRetry,
-  withSpinner,
 } from '../../utils.js';
-import type { MauOptions } from '../types.js';
+import type { MauOptions, MauTransaction } from '../types.js';
 import { extractMauDataList, resolveMauAccountId } from './helpers.js';
 
 interface MauTransactionsOptions extends MauOptions {
@@ -20,40 +19,27 @@ interface MauTransactionsOptions extends MauOptions {
 
 /**
  * Fetch and display Mauritius (MAU) account transactions for a date range.
+ * Defaults to the last 3 months when --from / --to are omitted.
  * @param accountId - MAU account ID
- * @param options - CLI options including --from / --to
+ * @param options - CLI options including optional --from / --to
  */
 export async function mauTransactionsCommand(accountId: string, options: MauTransactionsOptions) {
   const isPiped = isStdoutPiped();
   const resolvedId = validateMauAccountId(await resolveMauAccountId(accountId));
-  const { fromDate, toDate } = validateDateRange(options.from, options.to);
+  const { fromDate, toDate } = validateDateRange(
+    options.from,
+    options.to,
+    defaultMauTransactionDateRange()
+  );
 
   if (!isPiped) {
     printTitleBox();
   }
-  const { spinnerEnabled, verbose } = resolveSpinnerState({
-    spinnerFlag: options.spinner,
-    verboseFlag: options.verbose,
-    isPiped,
-  });
-  const spinner = createSpinner(spinnerEnabled, '💳 fetching MAU transactions...');
-  let transactions:
-    | Array<{
-        description: string;
-        creditAmount: number;
-        debitAmount: number;
-        transactionDate: string;
-        bankReference: string;
-        amount: number;
-        runningBalance: number;
-        postDate?: string;
-      }>
-    | undefined;
 
-  await withSpinner(spinner, spinnerEnabled, async () => {
+  let transactions: MauTransaction[] | undefined;
+  await withCommandSpinner(options, isPiped, '💳 fetching MAU transactions...', async (verbose) => {
     const api = await initializeMauApi(credentials, options);
     const result = await withRetry(() => api.getAccountTransactions(resolvedId, fromDate, toDate), {
-      maxRetries: 3,
       verbose,
     });
     transactions = extractMauDataList(result, 'transactions');

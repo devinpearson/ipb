@@ -8,6 +8,7 @@ export interface Spinner {
   clear: () => Spinner;
   succeed: (text?: string) => Spinner;
   fail: (text?: string) => Spinner;
+  update: (text: string) => void;
   text?: string;
 }
 
@@ -37,14 +38,21 @@ export function createSpinner(enabled: boolean, text: string): Spinner {
       fail(_text?: string) {
         return this;
       },
+      update(_text: string) {},
     };
   }
 
-  return ora({
+  const oraInstance = ora({
     text: safeText,
     discardStdin: false,
     isEnabled: enabled && process.stderr.isTTY,
   });
+
+  (oraInstance as unknown as Spinner).update = (text: string) => {
+    oraInstance.text = getSafeText(text);
+  };
+
+  return oraInstance as unknown as Spinner;
 }
 
 /**

@@ -61,6 +61,6 @@ export function resolveSpinnerState({
   isPiped: boolean;
 }): { spinnerEnabled: boolean; verbose: boolean } {
   const verbose = getVerboseMode(verboseFlag);
-  const spinnerEnabled = !isPiped && spinnerFlag !== true && !verbose;
+  const spinnerEnabled = !isPiped && spinnerFlag !== false && !verbose;
   return { spinnerEnabled, verbose };
 }

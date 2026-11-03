@@ -16,7 +16,7 @@ const CliTable: CliTableConstructor | undefined = (() => {
   return typeof Ctor === 'function' ? Ctor : undefined;
 })();
 
-export interface TableRow {
+interface TableRow {
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -174,7 +174,7 @@ export async function formatOutput(
     }
 
     if (options.output) {
-      await writeFile(options.output, output, 'utf8');
+      await writeFile(options.output, output, { encoding: 'utf8', mode: 0o600 });
       if (!isPiped) {
         console.log(`Output written to ${options.output}`);
       }

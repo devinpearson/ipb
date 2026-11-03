@@ -11,44 +11,11 @@ import type { BasicOptions } from './cmds/types.js';
 import { credentials } from './runtime-credentials.js';
 import { initializePbApi } from './utils.js';
 
-export const getWeatherFunctionCall: OpenAI.ChatCompletionTool = {
-  type: 'function',
-  function: {
-    name: 'get_weather',
-    description: 'Get current temperature for provided coordinates in celsius.',
-    parameters: {
-      type: 'object',
-      properties: {
-        latitude: { type: 'number' },
-        longitude: { type: 'number' },
-      },
-      required: ['latitude', 'longitude'],
-      additionalProperties: false,
-    },
-  },
-};
-
-/**
- * Gets weather information for given coordinates (mock implementation).
- * @param _latitude - Latitude coordinate
- * @param _longitude - Longitude coordinate
- * @returns Mock weather temperature string
- */
-export async function getWeather(_latitude: number, _longitude: number) {
-  // Mock implementation - real API call commented out
-  return '24C';
-  // const response = await fetch(
-  //   `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`
-  // );
-  // const data = await response.json();
-  // return (data as { current: { temperature_2m: string } }).current.temperature_2m;
-}
-
 interface Options extends BasicOptions {
   verbose: boolean;
 }
 
-export const getAccountsFunctionCall: OpenAI.ChatCompletionTool = {
+const getAccountsFunctionCall: OpenAI.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_accounts',
@@ -56,7 +23,7 @@ export const getAccountsFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
-export const getBalanceFunctionCall: OpenAI.ChatCompletionTool = {
+const getBalanceFunctionCall: OpenAI.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_balance',
@@ -72,7 +39,7 @@ export const getBalanceFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
-export const getAccountTransactionFunctionCall: OpenAI.ChatCompletionTool = {
+const getAccountTransactionFunctionCall: OpenAI.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_transactions',
@@ -90,7 +57,7 @@ export const getAccountTransactionFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
-export const getBeneficiariesFunctionCall: OpenAI.ChatCompletionTool = {
+const getBeneficiariesFunctionCall: OpenAI.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_beneficiaries',
@@ -98,7 +65,7 @@ export const getBeneficiariesFunctionCall: OpenAI.ChatCompletionTool = {
   },
 };
 
-export const transferMultipleFunctionCall: OpenAI.ChatCompletionTool = {
+const transferMultipleFunctionCall: OpenAI.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'transfer_multiple',
@@ -125,7 +92,7 @@ export const transferMultipleFunctionCall: OpenAI.ChatCompletionTool = {
  * @returns Array of account objects
  * @throws {Error} When API call fails
  */
-export async function getAccounts(_args?: unknown): Promise<AccountResponse['data']['accounts']> {
+async function getAccounts(_args?: unknown): Promise<AccountResponse['data']['accounts']> {
   const api = await initializePbApi(credentials, {} as Options);
   const result = await api.getAccounts();
   console.log('💳 fetching accounts');
@@ -139,7 +106,7 @@ export async function getAccounts(_args?: unknown): Promise<AccountResponse['dat
  * @returns Account balance object
  * @throws {Error} When accountId is missing or API call fails
  */
-export async function getAccountBalances(args: unknown): Promise<AccountBalance> {
+async function getAccountBalances(args: unknown): Promise<AccountBalance> {
   const options = args as { accountId: string };
   if (!options || typeof options !== 'object' || !('accountId' in options)) {
     throw new Error('getAccountBalances requires { accountId: string }');
@@ -157,7 +124,7 @@ export async function getAccountBalances(args: unknown): Promise<AccountBalance>
  * @returns Array of account transaction objects
  * @throws {Error} When required arguments are missing or API call fails
  */
-export async function getAccountTransactions(args: unknown): Promise<AccountTransaction[]> {
+async function getAccountTransactions(args: unknown): Promise<AccountTransaction[]> {
   const options = args as {
     accountId: string;
     fromDate: string;
@@ -190,7 +157,7 @@ export async function getAccountTransactions(args: unknown): Promise<AccountTran
  * @returns Beneficiaries data object
  * @throws {Error} When API call fails
  */
-export async function getBeneficiaries(_args?: unknown): Promise<BeneficiaryResponse['data']> {
+async function getBeneficiaries(_args?: unknown): Promise<BeneficiaryResponse['data']> {
   const api = await initializePbApi(credentials, {} as Options);
   const result = await api.getBeneficiaries();
   console.log('💳 fetching beneficiaries');
@@ -204,7 +171,7 @@ export async function getBeneficiaries(_args?: unknown): Promise<BeneficiaryResp
  * @returns Array of transfer response objects
  * @throws {Error} When required arguments are missing or transfer fails
  */
-export async function transferMultiple(args: unknown): Promise<Transfer[]> {
+async function transferMultiple(args: unknown): Promise<Transfer[]> {
   const options = args as {
     accountId: string;
     beneficiaryAccountId: string;

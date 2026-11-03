@@ -1,11 +1,11 @@
 /// <reference types="vitest" />
 
+import { Command } from 'commander';
 /**
  * Ensures pay/transfer amount args stay typed the way Commander delivers them (strings)
  * and still succeed end-to-end through the real command handlers.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Command } from 'commander';
 import { payCommand } from '../../src/cmds/pay';
 import { transferCommand } from '../../src/cmds/transfer';
 import { withCommandContext } from '../../src/utils/cli-errors';
@@ -15,6 +15,25 @@ const mockUtilsState = vi.hoisted(() => ({
   pbApi: {
     payMultiple: vi.fn(),
     transferMultiple: vi.fn(),
+    getAccounts: vi.fn(async () => ({
+      data: {
+        accounts: [
+          {
+            accountId: 'mock-account-id',
+            accountNumber: '123456',
+            accountName: 'Mock Account',
+            referenceName: 'Main',
+            productName: 'Cheque',
+          },
+        ],
+      },
+    })),
+    getBeneficiaries: vi.fn(async () => ({
+      data: [
+        { beneficiaryId: 'b1', beneficiaryName: 'John Doe', bank: 'FNB', accountNumber: '111111' },
+      ],
+      meta: { totalPages: 1 },
+    })),
   },
 }));
 
@@ -95,14 +114,18 @@ describe('Commander amount args for pay/transfer', () => {
     mockUtilsState.pbApi.transferMultiple.mockReset();
     mockUtilsState.pbApi.payMultiple.mockResolvedValue({
       data: {
-        TransferResponses: [
-          { BeneficiaryAccountId: 'b1', PaymentReferenceNumber: 'PRN1' },
-        ],
+        TransferResponses: [{ BeneficiaryAccountId: 'b1', PaymentReferenceNumber: 'PRN1' }],
       },
     });
     mockUtilsState.pbApi.transferMultiple.mockResolvedValue({
       data: {
-        TransferResponses: [{ BeneficiaryAccountId: 'mock-account-id', Status: 'Success' }],
+        TransferResponses: [
+          {
+            BeneficiaryAccountId: 'mock-account-id',
+            PaymentReferenceNumber: 'TR1',
+            Status: 'Success',
+          },
+        ],
       },
     });
   });
@@ -112,10 +135,9 @@ describe('Commander amount args for pay/transfer', () => {
     const program = buildPayProgram(actionSpy);
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await program.parseAsync(
-      ['pay', 'mock-account-id', 'b1', '100.00', 'test-payment', '--yes'],
-      { from: 'user' }
-    );
+    await program.parseAsync(['pay', 'mock-account-id', 'b1', '100.00', 'test-payment', '--yes'], {
+      from: 'user',
+    });
 
     expect(actionSpy).toHaveBeenCalled();
     const amountArg = actionSpy.mock.calls[0]?.[2];

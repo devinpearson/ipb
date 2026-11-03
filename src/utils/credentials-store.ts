@@ -91,7 +91,7 @@ export async function ensureCredentialsDirectory(credentialLocation: {
   folder: string;
 }): Promise<void> {
   if (!fs.existsSync(credentialLocation.folder)) {
-    await mkdir(credentialLocation.folder, { recursive: true });
+    await mkdir(credentialLocation.folder, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -161,7 +161,12 @@ export async function writeFileAtomic(
 
   try {
     await ensureCredentialsDirectory({ folder: dir });
-    await writeFile(tempPath, data, { encoding: 'utf8', flag: 'w' });
+    // Create with final permissions so secrets are never briefly world-readable.
+    await writeFile(tempPath, data, {
+      encoding: 'utf8',
+      flag: 'w',
+      mode: options.permissions ?? 0o666,
+    });
 
     const fd = await open(tempPath, 'r+');
     try {
@@ -187,31 +192,6 @@ export async function writeFileAtomic(
   }
 }
 
-export async function cleanupTempFiles(dir: string): Promise<void> {
-  try {
-    if (!fs.existsSync(dir)) {
-      return;
-    }
-    const files = await readdir(dir);
-    const tempFiles = files.filter((f) => f.endsWith('.tmp'));
-    const now = Date.now();
-
-    for (const file of tempFiles) {
-      const filePath = path.join(dir, file);
-      try {
-        const stats = await fs.promises.stat(filePath);
-        if (now - stats.mtimeMs > 3600000) {
-          await unlink(filePath);
-        }
-      } catch {
-        // Ignore errors for individual files
-      }
-    }
-  } catch {
-    // Ignore errors
-  }
-}
-
 export async function writeCredentialsFile(
   filepath: string,
   data: Record<string, string>
@@ -220,11 +200,11 @@ export async function writeCredentialsFile(
   await writeFileAtomic(filepath, jsonData, { permissions: 0o600 });
 }
 
-export function getProfilesDirectory(): string {
+function getProfilesDirectory(): string {
   return path.join(homedir(), '.ipb', 'profiles');
 }
 
-export function getActiveProfileConfigPath(): string {
+function getActiveProfileConfigPath(): string {
   return path.join(homedir(), '.ipb', 'active-profile.json');
 }
 

@@ -76,21 +76,15 @@ export async function deployCommand(options: Options) {
       try {
         const normalizedEnvPath = await validateFilePath(envFilePath);
         const envFileSize = await getFileSize(normalizedEnvPath);
-        spinner.text = getSafeText(
-          `📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
-        );
+        spinner.update(`📦 reading env from ${envFilePath} (${formatFileSize(envFileSize)})...`);
         const envFileContent = await fsPromises.readFile(normalizedEnvPath, 'utf8');
         envObject = dotenv.parse(envFileContent);
-        spinner.text = getSafeText(
-          `📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`
-        );
+        spinner.update(`📦 uploading env from ${envFilePath} (${formatFileSize(envFileSize)})...`);
 
-        // Use retry logic with rate limit handling
         await withRetry(() => api.uploadEnv(cardKey, { variables: envObject }), {
-          maxRetries: 3,
           verbose,
         });
-        spinner.text = getSafeText('📦 env uploaded');
+        spinner.update('📦 env uploaded');
       } catch (error) {
         if (error instanceof CliError && error.code === ERROR_CODES.FILE_NOT_FOUND) {
           throw new CliError(
@@ -102,7 +96,7 @@ export async function deployCommand(options: Options) {
       }
     }
     const codeFileSize = await getFileSize(normalizedFilename);
-    spinner.text = getSafeText(
+    spinner.update(
       `🚀 reading code from ${normalizedFilename} (${formatFileSize(codeFileSize)})...`
     );
     const raw = { code: '' };
@@ -110,20 +104,13 @@ export async function deployCommand(options: Options) {
     const code = await fsPromises.readFile(normalizedFilename, 'utf8');
     raw.code = code;
     const codeSize = Buffer.byteLength(code, 'utf8');
-    spinner.text = getSafeText(`🚀 deploying code (${formatFileSize(codeSize)})...`);
+    spinner.update(`🚀 deploying code (${formatFileSize(codeSize)})...`);
 
-    // Use retry logic with rate limit handling for API calls
-    const uploadResult = await withRetry(() => api.uploadCode(cardKey, raw), {
-      maxRetries: 3,
-      verbose,
-    });
+    const uploadResult = await withRetry(() => api.uploadCode(cardKey, raw), { verbose });
     const codeId = uploadResult.data.result.codeId;
     saveResult = uploadResult;
 
-    await withRetry(() => api.uploadPublishedCode(cardKey, codeId, code), {
-      maxRetries: 3,
-      verbose,
-    });
+    await withRetry(() => api.uploadPublishedCode(cardKey, codeId, code), { verbose });
   });
 
   if (!saveResult) {
