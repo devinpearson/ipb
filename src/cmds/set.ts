@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentialLocation } from '../runtime-credentials.js';
+import { isReadOnlyValue } from '../utils/read-only.js';
+import { isReadOnlyFromEnv } from '../utils/runtime-flags.js';
 import {
   createSpinner,
   deleteProfile,
@@ -65,6 +67,8 @@ type Options = Partial<Record<ConfigField, string>> & {
   profile?: string;
   verbose: boolean;
   spinner?: boolean;
+  /** true from --read-only, false from --no-read-only, undefined when neither is passed. */
+  readOnly?: boolean;
 };
 
 interface ProfileOptions {
@@ -134,7 +138,15 @@ export async function configCommand(options: Options & ProfileOptions) {
     existing = { ...(await readCredentialsFile(credentialLocation)) } as Record<string, string>;
   }
 
-  let updates = await readFlagValues(options);
+  let updates: Record<string, string> = await readFlagValues(options);
+  if (options.readOnly !== undefined) {
+    const readOnly = await resolveReadOnlyChange(options.readOnly);
+    if (readOnly === null) {
+      console.log('Read-only mode left on.');
+      return;
+    }
+    updates = { ...updates, readOnly };
+  }
   if (Object.keys(updates).length === 0) {
     if (!(process.stdin.isTTY && process.stdout.isTTY)) {
       throw new CliError(
@@ -164,6 +176,49 @@ export async function configCommand(options: Options & ProfileOptions) {
     );
     console.log('🔑 credentials saved');
   }
+
+  if (updates.readOnly === 'true') {
+    console.log('🔒 Read-only mode is on: payments, transfers and card code changes are blocked.');
+  } else if (updates.readOnly === 'false') {
+    const defaults = await readCredentialsFile(credentialLocation);
+    if (profileName && isReadOnlyValue(defaults.readOnly)) {
+      console.warn(
+        chalk.yellow(
+          `Read-only mode is still on: it is also set in ${credentialLocation.filename}, which applies to every profile. Run \`ipb config --no-read-only\` without --profile to turn it off there.`
+        )
+      );
+    } else {
+      console.log('Read-only mode is off.');
+    }
+  }
+}
+
+/**
+ * Returns the value to store for readOnly, or null if the user declined to turn it off.
+ * Turning it off needs a person at a terminal, so an agent or script can't do it.
+ */
+async function resolveReadOnlyChange(readOnly: boolean): Promise<'true' | 'false' | null> {
+  if (readOnly) {
+    return 'true';
+  }
+  if (isReadOnlyFromEnv()) {
+    throw new CliError(
+      ERROR_CODES.READ_ONLY,
+      'IPB_READ_ONLY is set in your environment; unset it to leave read-only mode.'
+    );
+  }
+  if (!(process.stdin.isTTY && process.stdout.isTTY)) {
+    throw new CliError(
+      ERROR_CODES.READ_ONLY,
+      'Turning off read-only mode needs an interactive terminal, so a script or agent cannot do it.'
+    );
+  }
+  const { confirm } = await import('@inquirer/prompts');
+  const confirmed = await confirm({
+    message: 'Turn off read-only mode? Payments, transfers and card code changes will be allowed.',
+    default: false,
+  });
+  return confirmed ? 'false' : null;
 }
 
 /**

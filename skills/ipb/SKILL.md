@@ -29,12 +29,23 @@ If `ipb` is missing, tell the user how to install it; do not assume this git rep
 4. **Confirm money movement.** For `transfer` and `pay`, show the planned account/beneficiary/amount and get explicit user approval before running (unless the user already gave exact values and `--yes` intent).
 5. **Confirm destructive card ops.** `deploy`, `publish`, `disable`, and similar change live card behavior — confirm target card key and file first. Use `--yes` only when the user clearly wants non-interactive execution.
 6. **Do not use disabled commands:** `ipb ai`, `ipb bank`, `ipb register`, and `ipb login` are disabled and fail with an error. Do not retry them.
+7. **Respect read-only mode.** If a command fails with `E4022` / `READ_ONLY`, the user has blocked payments and card changes for you. Do not try to turn it off (`ipb config --no-read-only`, editing `~/.ipb`, or unsetting `IPB_READ_ONLY`). Prepare the action with `--dry-run` and give the user the exact command to run themselves.
+8. **Read errors as JSON.** Pass `--json` (or set `IPB_JSON_ERRORS=1`) and branch on `error.code` / `error.exitCode` rather than parsing the message text.
+9. **Never retry a payment blindly.** If `pay`/`transfer` fails or is not confirmed (`E4021`), check `ipb transactions <account-id> --json` before trying again.
 
 ## First-time setup
 
+Ask the user to run credential setup themselves so secrets never pass through the agent:
+
 ```bash
-# Save default credentials (omit secrets from agent transcripts when possible)
-ipb config --client-id <id> --client-secret <secret> --api-key <key>
+# User runs this in their own terminal: prompts with secrets hidden
+ipb config
+
+# Recommended when an agent will use ipb: block payments and card changes
+ipb config --read-only
+
+# Non-interactive alternative: pipe one secret from a password manager
+op read "op://vault/investec/client-secret" | ipb config --client-id <id> --client-secret -
 
 # Optional: card key for card commands
 ipb config --card-key <card-key>
@@ -106,11 +117,15 @@ ipb merchants --json
 ### Payments (high trust)
 
 ```bash
-ipb transfer ...   # between own accounts — confirm details first
-ipb pay ...        # to a beneficiary — confirm details first
+# 1. Check it without sending (works in read-only mode). Prints names, amount and reference.
+ipb pay <account-id> <beneficiary-id> 250.00 "Rent" --dry-run --json
+
+# 2. Only after the user approves those exact values:
+ipb pay <account-id> <beneficiary-id> 250.00 "Rent" --yes --json
+ipb transfer <from-account-id> <to-account-id> 100.00 "Savings" --yes --json
 ```
 
-Always run with `--help` for the exact required flags before executing.
+Amounts are in **rands** as plain decimals (`250` or `250.50`); `1e3` or `0x10` are rejected. Without a terminal, `--yes` is required. A payment that needs approval in the Investec app has `AuthorisationRequired: true` in the JSON result: tell the user to approve it there.
 
 ## Output, scripting, and exit codes
 
@@ -125,7 +140,15 @@ Always run with `--help` for the exact required flags before executing.
 | `--profile <name>` | Non-default credentials profile |
 | `--no-history` | Skip writing to `~/.ipb/history.json` |
 
-Success exits `0`. Non-zero exits are typed (validation, auth, file, API, network, permission). Error text looks like `Error (E####): …`.
+Success exits `0`. Non-zero exits are typed: `2` validation/usage, `3` auth, `4` file, `5` API (incl. rate limits and unconfirmed payments), `6` network, `7` permission (incl. read-only mode).
+
+With `--json` or `IPB_JSON_ERRORS=1`, a failure prints one line on **stderr** and nothing on stdout:
+
+```json
+{"error":{"code":"E4013","name":"INVALID_INPUT","message":"Amount must be positive","exitCode":2,"command":"ipb pay","hint":null}}
+```
+
+Bad arguments give `"name": "USAGE_ERROR"` with `"code": null`; run `ipb <command> --help`.
 
 ## Help the user recover
 
@@ -137,6 +160,8 @@ Success exits `0`. Non-zero exits are typed (validation, auth, file, API, networ
 | Rate limited | Wait and retry; use `--verbose` to see retry behavior |
 | Command unknown | `ipb --help` — do not invent subcommands |
 | Disabled command error | Use editor + `deploy` / `run` instead of `ai` / `login` / `register` / `bank` |
+| `E4022` read-only | Use `--dry-run` and hand the command to the user; do not disable read-only mode |
+| `E4021` payment not confirmed | Check `ipb transactions <account-id> --json` before any retry |
 
 ## Installing this skill on any agent
 

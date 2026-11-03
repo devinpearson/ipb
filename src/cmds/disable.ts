@@ -1,5 +1,6 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   confirmDestructiveOperation,
   createSpinner,
   initializeApi,
@@ -20,6 +21,7 @@ interface Options extends CommonOptions {
  * @throws {CliError} When card key is missing or API call fails
  */
 export async function disableCommand(options: Options) {
+  await assertWritable('ipb disable', options);
   const cardKey = normalizeCardKey(options.cardKey, credentials.cardKey);
   printTitleBox();
 

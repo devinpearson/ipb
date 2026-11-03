@@ -114,6 +114,7 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
         'mauClientId',
         'mauClientSecret',
         'mauApiKey',
+        'readOnly',
       ];
 
       let loaded: Record<string, unknown> = {};
@@ -135,8 +136,10 @@ export async function loadCredentialsFile(credentials: Credentials, credentialsF
 
       credentialKeys.forEach((key) => {
         const value = loaded[key];
-        if (value !== undefined && typeof value === 'string') {
+        if (typeof value === 'string') {
           credentials[key] = value;
+        } else if (key === 'readOnly' && typeof value === 'boolean') {
+          credentials.readOnly = String(value);
         }
       });
     } catch (error) {

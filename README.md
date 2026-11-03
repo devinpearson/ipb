@@ -362,6 +362,28 @@ fi
 
 See [Exit codes](#exit-codes) and [Error codes](#error-codes).
 
+### How to let an AI agent use ipb safely
+
+Turn on **read-only mode** so the agent can read accounts, balances, transactions and cards but can't pay, transfer, or change card code:
+
+```sh
+ipb config --read-only            # stored in ~/.ipb/.credentials.json; applies to every profile
+# or, per process:
+IPB_READ_ONLY=1 ipb accounts --json
+```
+
+In read-only mode `pay`, `transfer`, `deploy`, `upload`, `upload-env`, `publish`, `enable` and `disable` fail with `E4022` (exit 7). `pay --dry-run` and `transfer --dry-run` still work, so an agent can prepare a payment for you to make. Turning it off with `ipb config --no-read-only` asks for confirmation and needs an interactive terminal, so a script or agent without one can't do it.
+
+Read-only mode is a guardrail, not a sandbox: anything that can edit `~/.ipb` or the agent's environment can undo it.
+
+Get **errors as JSON** with `--json`, or for every command with `IPB_JSON_ERRORS=1`. A failure prints one object on stderr (stdout stays empty) and exits with the usual code:
+
+```json
+{"error":{"code":"E4022","name":"READ_ONLY","message":"ipb pay is blocked because read-only mode is on (…)","exitCode":7,"command":"ipb pay","hint":null}}
+```
+
+Bad arguments (unknown option, missing argument) report `"name": "USAGE_ERROR"` with `"code": null` and exit 2.
+
 ---
 
 ## Reference
@@ -413,6 +435,7 @@ Common categories:
 - **API:** `INVESTEC_HOST`, `INVESTEC_CLIENT_ID`, `INVESTEC_CLIENT_SECRET`, `INVESTEC_API_KEY`, `INVESTEC_CARD_KEY`
 - **MAU API:** `INVESTEC_MAU_HOST`, `INVESTEC_MAU_CLIENT_ID`, `INVESTEC_MAU_CLIENT_SECRET`, `INVESTEC_MAU_API_KEY`
 - **Behaviour:** `DEBUG`, `REJECT_UNAUTHORIZED`, `NO_COLOR`, `FORCE_COLOR`, `EDITOR`, `PAGER`, `TMPDIR`, `IPB_NO_UPDATE_CHECK`
+- **Agents and scripts:** `IPB_READ_ONLY` (block payments and card changes), `IPB_JSON_ERRORS` (print errors as JSON)
 
 ### Exit codes
 
@@ -442,10 +465,12 @@ Messages look like `Error (E####): …`.
 | `E4009` | Project exists |
 | `E4010` | File not found |
 | `E4012` | Missing account ID |
+| `E4013` | Invalid input (amount, account ID, beneficiary, option value) |
 | `E4014` | Rate limit exceeded |
 | `E4019` | Unsupported operation |
 | `E4020` | Missing or invalid date range (MAU `--from` / `--to`) |
 | `E4021` | Payment or transfer not confirmed by the bank (no reference number returned) |
+| `E4022` | Blocked by read-only mode (`IPB_READ_ONLY` or `ipb config --read-only`) |
 | `E5001` | Deploy / API operation failed |
 
 Quick fixes: missing card key → `ipb cards` then `-c`; bad auth → `ipb config`; missing `.env.<env>` → create the file or change `-e`.
@@ -478,7 +503,7 @@ Credential files under `~/.ipb/` use owner-only permissions (`600`) and atomic w
 
 ### Agent / automation tip
 
-Copyable skill for AI agents that operate `ipb`: [skills/ipb/](./skills/ipb/). Prefer `--json` and confirm money or deploy steps before running them.
+Copyable skill for AI agents that operate `ipb`: [skills/ipb/](./skills/ipb/). Prefer `--json`, run agents in [read-only mode](#how-to-let-an-ai-agent-use-ipb-safely), and confirm money or deploy steps before running them.
 
 ---
 

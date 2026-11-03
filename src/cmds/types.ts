@@ -37,6 +37,8 @@ export interface Credentials {
   mauClientId: string;
   mauClientSecret: string;
   mauApiKey: string;
+  /** "true" blocks payments, transfers and card code changes. */
+  readOnly?: string;
 }
 
 export interface BasicOptions {

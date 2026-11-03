@@ -34,6 +34,16 @@ export function isUpdateCheckDisabled(): boolean {
   return isTruthyEnv(process.env.IPB_NO_UPDATE_CHECK);
 }
 
+/** True when IPB_READ_ONLY is set, blocking payments, transfers and card code changes. */
+export function isReadOnlyFromEnv(): boolean {
+  return isTruthyEnv(process.env.IPB_READ_ONLY);
+}
+
+/** True when errors should be printed as a JSON object (IPB_JSON_ERRORS), not only with --json. */
+export function isJsonErrorsFromEnv(): boolean {
+  return isTruthyEnv(process.env.IPB_JSON_ERRORS);
+}
+
 /**
  * Gets the effective verbose setting, checking both --verbose flag and DEBUG env var.
  * @param verboseFlag - Value from --verbose flag (can be undefined)

@@ -47,6 +47,8 @@ export const credentials: Credentials = {
   mauClientId: process.env.INVESTEC_MAU_CLIENT_ID || cred.mauClientId || '',
   mauClientSecret: process.env.INVESTEC_MAU_CLIENT_SECRET || cred.mauClientSecret || '',
   mauApiKey: process.env.INVESTEC_MAU_API_KEY || cred.mauApiKey || '',
+  // Hand-edited files may hold a boolean here.
+  readOnly: String(cred.readOnly ?? ''),
 };
 
 /**
@@ -71,6 +73,10 @@ async function resolveCredentialSource(
     }
   }
 
+  // Any layer saying read-only wins, so a profile or credentials file can't switch it off.
+  if (base.readOnly === 'true' || String(creds.readOnly) === 'true') {
+    creds = { ...creds, readOnly: 'true' };
+  }
   return creds;
 }
 

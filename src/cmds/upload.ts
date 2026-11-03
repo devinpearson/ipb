@@ -1,5 +1,6 @@
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   createSpinner,
   initializeApi,
   isStdoutPiped,
@@ -21,6 +22,7 @@ interface Options extends CommonOptions {
  * @throws {CliError} When file doesn't exist, card key is missing, or upload fails
  */
 export async function uploadCommand(options: Options) {
+  await assertWritable('ipb upload', options);
   // Validate and normalize filename
   const normalizedFilename = await validateFilePath(options.filename, ['.js']);
 

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { CliError, ERROR_CODES } from '../errors.js';
 import { credentials, printTitleBox } from '../runtime-credentials.js';
 import {
+  assertWritable,
   confirmDestructiveOperation,
   createSpinner,
   formatFileSize,
@@ -30,6 +31,7 @@ interface Options extends CommonOptions {
  * @throws {CliError} When card key is missing, files don't exist, or deployment fails
  */
 export async function deployCommand(options: Options) {
+  await assertWritable('ipb deploy', options);
   const isPiped = isStdoutPiped();
 
   if (!isPiped) {

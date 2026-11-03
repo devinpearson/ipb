@@ -184,6 +184,8 @@ Examples:
     .option('--mau-client-id <mauClientId>', 'Set Mauritius (MAU) client ID')
     .option('--mau-client-secret <mauClientSecret>', 'Set Mauritius (MAU) client secret')
     .option('--mau-host <mauHost>', 'Set Mauritius (MAU) API host')
+    .option('--read-only', 'Block payments, transfers and card code changes (e.g. for AI agents)')
+    .option('--no-read-only', 'Turn read-only mode off (needs an interactive terminal)')
     .action(withCommandContext('config', configCommand));
 
   // Profile subcommands

@@ -7,7 +7,8 @@
     "src/cmds/payment-helpers.ts",
     "src/utils/input-validation.ts",
     "src/utils/cli-errors.ts",
-    "src/utils/retry.ts"
+    "src/utils/retry.ts",
+    "src/utils/read-only.ts"
   ],
   "ignorePatterns": [".cursor", ".claude", "bin", "dist", "dist-bundle", "reports", "assets"],
   "coverageAnalysis": "perTest",

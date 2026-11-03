@@ -84,6 +84,19 @@ describe('deployCommand', () => {
     vi.clearAllMocks();
     console.log = vi.fn();
     mockFsPromises.access.mockResolvedValue(undefined);
+    delete process.env.IPB_READ_ONLY;
+  });
+
+  it('is blocked in read-only mode before reading files or calling the API', async () => {
+    process.env.IPB_READ_ONLY = '1';
+
+    await expect(
+      deployCommand({ filename: 'test.js', cardKey: 'k', yes: true } as never)
+    ).rejects.toSatisfy(
+      (err: unknown) => err instanceof CliError && err.code === ERROR_CODES.READ_ONLY
+    );
+    expect(mockFsPromises.readFile).not.toHaveBeenCalled();
+    expect(mockApi.uploadCode).not.toHaveBeenCalled();
   });
 
   it('should deploy code successfully without env file', async () => {
