@@ -8,6 +8,7 @@ import { accountsCommand } from './cmds/accounts.js';
 import { balancesCommand } from './cmds/balances.js';
 import { beneficiariesCommand } from './cmds/beneficiaries.js';
 import {
+  runConfigDelete,
   runConfigEdit,
   runConfigProfileDelete,
   runConfigProfileList,
@@ -222,6 +223,15 @@ Examples:
         runConfigProfileDelete(profileName)
       )
     );
+
+  configCmd
+    .command('delete')
+    .description(
+      'Delete stored credentials (~/.ipb/.credentials.json). Use --all to delete every profile too. Asks for confirmation.'
+    )
+    .option('--all', 'Also delete all profiles and the active profile setting')
+    .option('--yes', 'Skip the confirmation prompt (not allowed while read-only mode is on)')
+    .action(withCommandContext('config delete', runConfigDelete));
 
   // Edit command - opens credentials file in editor
   configCmd
@@ -530,9 +540,12 @@ Examples:
   $ ipb currencies --json
   $ ipb currencies --yaml
   $ ipb currencies --output currencies.json
+  $ ipb currencies --search rand
       `
       )
-  ).action(withCommandContext('currencies', currenciesCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('currencies', currenciesCommand));
   addApiCredentialOptions(
     program
       .command('countries')
@@ -547,9 +560,12 @@ Examples:
   $ ipb countries --json
   $ ipb countries --yaml
   $ ipb countries --output countries.json
+  $ ipb countries --search africa
       `
       )
-  ).action(withCommandContext('countries', countriesCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('countries', countriesCommand));
   addApiCredentialOptions(
     program
       .command('merchants')
@@ -564,9 +580,13 @@ Examples:
   $ ipb merchants --json
   $ ipb merchants --yaml
   $ ipb merchants --output merchants.json
+  $ ipb merchants --search grocery
+  $ ipb merchants --search 5411 --json
       `
       )
-  ).action(withCommandContext('merchants', merchantsCommand));
+  )
+    .option('--search <text>', 'only show entries whose code or name contains this text')
+    .action(withCommandContext('merchants', merchantsCommand));
   // Account Management
   addApiCredentialOptions(
     program

@@ -33,6 +33,22 @@ interface RunReadUploadCommandOptions<TResult> {
 }
 
 /**
+ * Keeps items where any field contains `search` (case-insensitive). No search keeps everything.
+ */
+export function filterBySearch<T extends object>(
+  items: T[] | null | undefined,
+  search: string | undefined
+): T[] | null | undefined {
+  const query = search?.trim().toLowerCase();
+  if (!query || !items) {
+    return items;
+  }
+  return items.filter((item) =>
+    Object.values(item).some((value) => String(value).toLowerCase().includes(query))
+  );
+}
+
+/**
  * Handles common list command output behavior (empty, table, structured output).
  * @param options - List command rendering options
  */

@@ -3,6 +3,7 @@
   "packageManager": "npm",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": { "pool": "forks" },
   "mutate": [
     "src/cmds/payment-helpers.ts",
     "src/utils/input-validation.ts",

@@ -1,6 +1,7 @@
 export { initializeApi, initializeMauApi, initializePbApi, normalizeCardKey } from './utils/api.js';
 export { determineExitCode, handleCliError, withCommandContext } from './utils/cli-errors.js';
 export {
+  filterBySearch,
   runListCommand,
   runReadUploadCommand,
   runWriteCommand,
@@ -8,10 +9,12 @@ export {
 } from './utils/command-runners.js';
 export {
   deleteProfile,
+  deleteStoredCredentials,
   ensureCredentialsDirectory,
   getActiveProfile,
   getProfilePath,
   listProfiles,
+  listStoredCredentialPaths,
   readCredentialsFile,
   readProfile,
   setActiveProfile,

@@ -283,6 +283,37 @@ export async function deleteProfile(profileName: string): Promise<void> {
   }
 }
 
+/**
+ * Lists the stored credential files that exist: the default credentials file and,
+ * with `includeProfiles`, every profile plus the active-profile setting.
+ */
+export function listStoredCredentialPaths(includeProfiles: boolean): string[] {
+  const paths = [path.join(homedir(), '.ipb', '.credentials.json')];
+  if (includeProfiles) {
+    const profilesDir = getProfilesDirectory();
+    if (fs.existsSync(profilesDir)) {
+      for (const file of fs.readdirSync(profilesDir)) {
+        if (file.endsWith('.json')) {
+          paths.push(path.join(profilesDir, file));
+        }
+      }
+    }
+    paths.push(getActiveProfileConfigPath());
+  }
+  return paths.filter((p) => fs.existsSync(p));
+}
+
+export async function deleteStoredCredentials(paths: string[]): Promise<void> {
+  for (const filePath of paths) {
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new CliError(ERROR_CODES.PERMISSION_DENIED, `Failed to delete ${filePath}: ${message}`);
+    }
+  }
+}
+
 export async function getActiveProfile(): Promise<string | null> {
   const activeProfilePath = getActiveProfileConfigPath();
   if (!fs.existsSync(activeProfilePath)) {
