@@ -73,7 +73,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^7.47.0",
     "ora": "^10.0.0",
-    "programmable-card-code-emulator": "^2.0.1",
+    "programmable-card-code-emulator": "^3.0.1",
     "undici": "^8.12.3",
     "zod": "^4.6.7"
   },
