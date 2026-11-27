@@ -116,6 +116,12 @@
   },
   "overrides": {
     "qs": "^6.17.1",
-    "re2js": "^2.9.1"
+    "re2js": "^2.9.1",
+    "@stryker-mutator/core": {
+      "minimatch": "^11.0.9"
+    },
+    "micromark-extension-math": {
+      "katex": "^0.18.11"
+    }
   }
 }
